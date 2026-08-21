@@ -1,0 +1,49 @@
+# Dependensi
+node_modules/
+vendor/
+
+# Build
+public/build/
+public/hot
+
+# Lingkungan — JANGAN pernah di-commit.
+# Berisi kredensial database dan PII_HASH_KEY yang melindungi NIK/No. KK.
+.env
+.env.*
+!.env.example
+
+# Laravel
+storage/*.key
+storage/pail
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/logs/*
+bootstrap/cache/*
+!**/.gitkeep
+
+# Unggahan pengguna — SELURUH isi storage/app, bukan hanya public/.
+#
+# Lampiran pengaduan disimpan pada disk PRIVAT (storage/app/lampiran-pengaduan)
+# dan kerap memuat foto rumah, wajah orang, atau dokumen pribadi warga.
+# Mengabaikan public/ saja akan membuat berkas-berkas itu ikut ter-commit.
+storage/app/*
+!storage/app/.gitignore
+!storage/app/public/
+storage/app/public/*
+!storage/app/public/.gitignore
+
+# Tautan symlink `php artisan storage:link` — dibuat ulang saat setup.
+public/storage
+
+# Editor & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
+
+# Cache build
+*.tsbuildinfo
+.phpunit.result.cache
+auth.json

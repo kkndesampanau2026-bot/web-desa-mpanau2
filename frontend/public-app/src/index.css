@@ -1,0 +1,120 @@
+/*
+ * Huruf dimuat dari Google Fonts dengan `display=swap`: teks langsung terbaca
+ * memakai huruf cadangan sementara huruf utama diunduh, alih-alih menyisakan
+ * halaman kosong pada koneksi lambat.
+ *
+ * WAJIB berada di baris paling atas: aturan CSS menuntut seluruh @import
+ * mendahului aturan lain, dan bundler MEMBUANG @import yang terlambat tanpa
+ * peringatan — gejalanya font gagal termuat tanpa pesan galat apa pun.
+ */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700&display=swap');
+
+@import 'tailwindcss';
+
+/*
+ * Design system — Website Profil Desa Mpanau.
+ *
+ * Bahasa desain: NAVY + EMAS di atas KREM, dengan heading serif.
+ * Dipilih karena situs ini adalah kanal resmi pemerintah desa: warna
+ * institusional dan huruf serif memberi kesan berwibawa, sementara latar krem
+ * menahan silau pada layar ponsel kelas menengah-bawah yang lazim dipakai
+ * warga (PRD 12.5).
+ *
+ * Seluruh warna didefinisikan sebagai token di sini, bukan ditulis langsung
+ * di komponen — supaya penyesuaian identitas desa cukup dilakukan di satu
+ * tempat.
+ */
+@theme {
+  /* --- Warna utama --- */
+  --color-navy: #0b2545;
+  --color-navy-dark: #071a33;
+  --color-navy-light: #1a3d6e;
+
+  /* --- Aksen --- */
+  --color-gold: #c9a227;
+  --color-gold-dark: #a3821c;
+  --color-gold-light: #e8c766;
+
+  /* --- Permukaan --- */
+  --color-cream: #faf7f0;
+
+  /* --- Huruf --- */
+  --font-sans: 'Manrope', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-heading: 'Fraunces', Georgia, 'Times New Roman', serif;
+}
+
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-cream font-sans text-slate-800 antialiased;
+}
+
+/* Judul memakai serif; berat 600–700 agar tetap tegas pada ukuran kecil. */
+h1,
+h2,
+h3 {
+  @apply font-heading;
+}
+
+/*
+ * Cincin fokus yang terlihat jelas pada seluruh elemen interaktif.
+ * Aksesibilitas keyboard (PRD 12.4) mudah hilang begitu outline bawaan
+ * peramban ditimpa, jadi penggantinya ditetapkan global di sini.
+ */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  @apply outline-2 outline-offset-2 outline-gold;
+}
+
+/*
+ * Gaya untuk HTML rich text dari CMS (sambutan, sejarah, isi berita).
+ * Ditulis manual, bukan memakai plugin @tailwindcss/typography, agar kelas
+ * yang dihasilkan editor WYSIWYG tetap tampil rapi tanpa menambah dependensi.
+ */
+.prose-desa {
+  @apply leading-relaxed text-slate-700;
+}
+
+.prose-desa > * + * {
+  @apply mt-4;
+}
+
+.prose-desa h2 {
+  @apply font-heading mt-8 text-xl font-bold text-navy;
+}
+
+.prose-desa h3 {
+  @apply font-heading mt-6 text-lg font-bold text-navy;
+}
+
+.prose-desa a {
+  @apply text-navy underline underline-offset-2 hover:text-gold-dark;
+}
+
+.prose-desa ul {
+  @apply list-disc space-y-1 pl-5;
+}
+
+.prose-desa ol {
+  @apply list-decimal space-y-1 pl-5;
+}
+
+.prose-desa blockquote {
+  @apply border-l-4 border-gold pl-4 text-slate-600 italic;
+}
+
+.prose-desa img {
+  @apply rounded-xl;
+}
+
+.prose-desa table {
+  @apply w-full border-collapse text-sm;
+}
+
+.prose-desa th,
+.prose-desa td {
+  @apply border border-slate-200 px-3 py-2 text-left;
+}

@@ -1,0 +1,14 @@
+@import 'tailwindcss';
+
+/* Tailwind v4 dikonfigurasi lewat CSS, bukan tailwind.config.js. */
+@theme {
+  --font-sans: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  @apply font-sans antialiased text-slate-900;
+}

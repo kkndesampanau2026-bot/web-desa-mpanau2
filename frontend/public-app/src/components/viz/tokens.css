@@ -1,0 +1,61 @@
+/*
+ * Token visualisasi data.
+ *
+ * Palet ini TERVALIDASI, bukan hasil kira-kira: ketiga slot lolos seluruh
+ * pemeriksaan (rentang lightness, chroma, keterpisahan bagi penyandang buta
+ * warna, dan kontras) pada mode terang maupun gelap.
+ *
+ * Catatan penting: pada mode terang, slot-3 (aqua) berada di bawah kontras
+ * 3:1 terhadap latar. Karena itu setiap grafik yang memakainya WAJIB
+ * menyertakan label nilai yang terbaca atau tabel data — warna tidak boleh
+ * menjadi satu-satunya pembawa makna.
+ */
+.viz-root {
+  color-scheme: light;
+
+  --viz-surface: #fcfcfb;
+  --viz-text-primary: #0b0b0b;
+  --viz-text-secondary: #52514e;
+  --viz-text-muted: #898781;
+  --viz-grid: #e1e0d9;
+  --viz-axis: #c3c2b7;
+
+  --viz-series-1: #2a78d6; /* biru */
+  --viz-series-2: #eb6834; /* oranye */
+  --viz-series-3: #1baf7a; /* aqua */
+
+  --viz-good: #0ca30c;
+  --viz-critical: #d03b3b;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme='light'])) .viz-root {
+    color-scheme: dark;
+
+    --viz-surface: #1a1a19;
+    --viz-text-primary: #ffffff;
+    --viz-text-secondary: #c3c2b7;
+    --viz-text-muted: #898781;
+    --viz-grid: #2c2c2a;
+    --viz-axis: #383835;
+
+    --viz-series-1: #3987e5;
+    --viz-series-2: #d95926;
+    --viz-series-3: #199e70;
+  }
+}
+
+:root[data-theme='dark'] .viz-root {
+  color-scheme: dark;
+
+  --viz-surface: #1a1a19;
+  --viz-text-primary: #ffffff;
+  --viz-text-secondary: #c3c2b7;
+  --viz-text-muted: #898781;
+  --viz-grid: #2c2c2a;
+  --viz-axis: #383835;
+
+  --viz-series-1: #3987e5;
+  --viz-series-2: #d95926;
+  --viz-series-3: #199e70;
+}
