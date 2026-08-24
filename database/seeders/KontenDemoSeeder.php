@@ -8,6 +8,7 @@ use App\Models\ImportantPhoneNumber;
 use App\Models\News;
 use App\Models\NewsCategory;
 use App\Models\Official;
+use App\Models\PpidInformationItem;
 use App\Models\Setting;
 use App\Models\SocialMediaLink;
 use App\Models\User;
@@ -48,6 +49,7 @@ class KontenDemoSeeder extends Seeder
         $this->pengaturan($village);
         $this->berita($village);
         $this->galeri($village);
+        $this->ppid($village);
 
         $this->command->info('Konten demo Fase 2 dibuat (data fiktif).');
     }
@@ -85,19 +87,25 @@ class KontenDemoSeeder extends Seeder
 
     private function sotk(Village $village): void
     {
+        // Tingkat menyusun bagan: 0 Kepala Desa, 1 Sekretaris, 2 para Kaur/Kasi.
         $aparat = [
-            ['Nama Kepala Desa', 'Kepala Desa'],
-            ['Nama Sekretaris', 'Sekretaris Desa'],
-            ['Nama Kaur Keuangan', 'Kaur Keuangan'],
-            ['Nama Kaur Perencanaan', 'Kaur Perencanaan'],
-            ['Nama Kasi Pemerintahan', 'Kasi Pemerintahan'],
-            ['Nama Kasi Kesejahteraan', 'Kasi Kesejahteraan'],
+            ['Nama Kepala Desa', 'Kepala Desa', 0],
+            ['Nama Sekretaris', 'Sekretaris Desa', 1],
+            ['Nama Kaur Keuangan', 'Kaur Keuangan', 2],
+            ['Nama Kaur Perencanaan', 'Kaur Perencanaan', 2],
+            ['Nama Kasi Pemerintahan', 'Kasi Pemerintahan', 2],
+            ['Nama Kasi Kesejahteraan', 'Kasi Kesejahteraan', 2],
         ];
 
-        foreach ($aparat as $i => [$nama, $jabatan]) {
+        foreach ($aparat as $i => [$nama, $jabatan, $tingkat]) {
             Official::updateOrCreate(
                 ['village_id' => $village->id, 'nama' => $nama],
-                ['jabatan' => $jabatan, 'urutan_tampil' => $i + 1, 'status_aktif' => true]
+                [
+                    'jabatan' => $jabatan,
+                    'urutan_tampil' => $i + 1,
+                    'tingkat' => $tingkat,
+                    'status_aktif' => true,
+                ]
             );
         }
 
@@ -229,5 +237,67 @@ class KontenDemoSeeder extends Seeder
                 ]
             );
         }
+    }
+
+    /**
+     * Dokumen informasi publik PPID, dikelompokkan per kategori sesuai kategori
+     * baku UU Keterbukaan Informasi Publik. Satu berkas contoh (`demo.pdf`)
+     * disalin ke storage agar tautan unduh dapat diuji; sisanya bertaut ke
+     * berkas yang sama demi kesederhanaan demo.
+     */
+    private function ppid(Village $village): void
+    {
+        $demo = $this->siapkanBerkasDemo();
+
+        $dokumen = [
+            // [jenis, kategori, judul, deskripsi, periode, hariLalu]
+            ['berkala', 'Anggaran Pendapatan dan Belanja Desa', 'APBDes Tahun Anggaran 2025',
+                'Dokumen rincian Anggaran Pendapatan dan Belanja Desa Mpanau Tahun Anggaran 2025.', 'TA 2025', 40],
+            ['berkala', 'Ringkasan Laporan Keuangan', 'Laporan Realisasi APBDes Semester I 2025',
+                'Ringkasan realisasi pendapatan dan belanja desa hingga semester pertama 2025.', 'Semester I 2025', 20],
+            ['berkala', 'Struktur Organisasi Pemerintah Desa', 'Bagan Susunan Organisasi dan Tata Kerja 2025',
+                'Bagan SOTK Pemerintah Desa Mpanau beserta nama pejabat pengisi.', null, 60],
+            ['serta-merta', 'Keadaan Darurat', 'Imbauan Kesiapsiagaan Bencana Musim Hujan',
+                'Informasi darurat terkait potensi bencana banjir dan longsor pada musim hujan.', null, 5],
+            ['setiap-saat', 'Profil Desa', 'Profil Desa Mpanau 2025',
+                'Dokumen profil desa memuat sejarah, visi-misi, dan data geografis.', null, 90],
+            ['setiap-saat', 'Daftar Informasi Publik', 'Daftar Informasi Publik (DIP) Desa Mpanau',
+                'Daftar seluruh informasi publik yang dikuasai Pemerintah Desa Mpanau.', null, 15],
+        ];
+
+        foreach ($dokumen as [$jenis, $kategori, $judul, $deskripsi, $periode, $hariLalu]) {
+            PpidInformationItem::updateOrCreate(
+                ['village_id' => $village->id, 'jenis' => $jenis, 'judul' => $judul],
+                [
+                    'deskripsi' => $deskripsi,
+                    'kategori' => $kategori,
+                    'periode' => $periode,
+                    'file' => $demo,
+                    'tanggal_publish' => now()->subDays($hariLalu)->toDateString(),
+                    'status_tampil' => true,
+                ]
+            );
+        }
+    }
+
+    /** Menyalin berkas PDF contoh ke storage publik; mengembalikan path relatifnya. */
+    private function siapkanBerkasDemo(): string
+    {
+        $path = 'ppid/demo.pdf';
+        $tujuan = storage_path('app/public/'.$path);
+
+        if (! file_exists($tujuan)) {
+            @mkdir(dirname($tujuan), 0755, true);
+            // PDF minimal yang sah agar peramban dapat membukanya.
+            file_put_contents(
+                $tujuan,
+                "%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n"
+                ."2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n"
+                ."3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 300 144]>>endobj\n"
+                ."trailer<</Root 1 0 R>>\n%%EOF"
+            );
+        }
+
+        return $path;
     }
 }

@@ -13,16 +13,27 @@ return [
     |--------------------------------------------------------------------------
     |
     | Requests from the following domains / hosts will receive stateful API
-    | authentication cookies. Typically, these should include your local
-    | and production domains which access your API via a frontend SPA.
+    | authentication cookies.
+    |
+    | SEMENTARA — bersifat monolit, bukan SPA lintas origin.
+    |
+    | Sejak dashboard disajikan Laravel sendiri, `/api/v1/admin/*` dipanggil
+    | dari halaman pada HOST YANG SAMA. Karena itu `currentRequestHost()`
+    | diaktifkan: daftar tetap yang berisi port pengembangan (5173/5174, atau
+    | 8000 saja) gagal begitu situs dibuka lewat port atau domain lain, dan
+    | gejalanya membingungkan — halaman terbuka normal, operator terlihat
+    | sudah masuk, tetapi setiap panggilan data berbalas 401.
+    |
+    | Ini aman di sini karena tidak ada klien pihak ketiga yang memakai API
+    | tersebut. Seluruh baris ini ikut hilang bersama `routes/api.php` setelah
+    | modul CMS terakhir berpindah ke Inertia (Fase 5).
     |
     */
 
     'stateful' => explode(',', env('SANCTUM_STATEFUL_DOMAINS', sprintf(
-        '%s%s',
+        '%s,%s',
         'localhost,localhost:3000,127.0.0.1,127.0.0.1:8000,::1',
-        Sanctum::currentApplicationUrlWithPort(),
-        // Sanctum::currentRequestHost(),
+        Sanctum::currentRequestHost(),
     ))),
 
     /*

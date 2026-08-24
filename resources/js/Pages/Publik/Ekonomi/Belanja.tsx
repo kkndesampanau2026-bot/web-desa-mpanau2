@@ -1,0 +1,201 @@
+import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { Head, Link, router } from '@inertiajs/react'
+import { EmptyState } from '@/Components/EmptyState'
+import { ChipFilter } from '@/Components/ui'
+import { TombolHubungi } from '@/Components/TombolHubungi'
+import { LayoutPublik } from '@/Layouts/LayoutPublik'
+import { formatRupiah } from '@/lib/format'
+import type { Berhalaman } from '@/types/inertia'
+import type { KategoriProduk, ProdukRingkas } from '@/types/api'
+
+const DESKRIPSI = 'Produk unggulan pelaku UMKM desa yang dapat dipesan langsung ke penjual.'
+
+interface Props {
+  produk: Berhalaman<ProdukRingkas>
+  kategori: KategoriProduk[]
+  filter: { kategori: string | null; cari: string | null }
+}
+
+/**
+ * Katalog UMKM — PRD 6.12.
+ *
+ * Katalog saja: pengunjung menelusuri produk lalu menghubungi penjual
+ * langsung. Fitur keranjang dan pesan checkout WhatsApp tidak dibuat atas
+ * permintaan pemilik produk (lihat DEVIASI A4).
+ */
+export default function Belanja({ produk, kategori, filter }: Props) {
+  const [cari, setCari] = useState(filter.cari ?? '')
+  const pertamaKali = useRef(true)
+
+  /**
+   * Pencarian ditunda 350 ms setelah ketikan terakhir.
+   *
+   * Dulu setiap penekanan tombol langsung mengubah query string; sejak daftar
+   * ini dirender server, pola itu berarti satu kunjungan penuh per huruf.
+   * Penundaan ini yang menahannya.
+   */
+  useEffect(() => {
+    if (pertamaKali.current) {
+      pertamaKali.current = false
+
+      return
+    }
+
+    const timer = setTimeout(() => {
+      jelajah({ cari: cari || undefined, page: undefined })
+    }, 350)
+
+    return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cari])
+
+  function jelajah(perubahan: Record<string, string | number | undefined>) {
+    router.get(
+      '/belanja',
+      {
+        kategori: filter.kategori ?? undefined,
+        cari: filter.cari ?? undefined,
+        ...perubahan,
+      },
+      { preserveState: true, preserveScroll: true, replace: true },
+    )
+  }
+
+  // Benar-benar kosong berarti belum ada produk sama sekali — bukan sekadar
+  // pencarian yang tidak menemukan apa pun.
+  if (produk.items.length === 0 && !filter.kategori && !filter.cari) {
+    return (
+      <>
+        <Head title="Belanja — Katalog UMKM" />
+        <EmptyState judul="Belanja — Katalog UMKM" deskripsi={DESKRIPSI} />
+      </>
+    )
+  }
+
+  return (
+    <div className="mx-auto max-w-5xl px-6 py-10">
+      <Head title="Belanja" />
+
+      <h1 className="font-heading text-2xl font-bold text-navy">Belanja</h1>
+      <p className="mt-2 text-slate-600">{DESKRIPSI}</p>
+
+      <div className="mt-6 flex flex-wrap items-end gap-4">
+        <div className="min-w-56 flex-1">
+          <label htmlFor="cari-produk" className="block text-sm font-medium text-slate-700">
+            Cari Produk atau Penjual
+          </label>
+          <input
+            id="cari-produk"
+            value={cari}
+            onChange={(e) => setCari(e.target.value)}
+            placeholder="mis. keripik atau nama penjual"
+            className="mt-1 w-full rounded-lg border border-navy/20 px-3 py-2 text-sm outline-none focus:border-navy"
+          />
+        </div>
+      </div>
+
+      {kategori.length > 0 && (
+        <nav aria-label="Filter kategori" className="mt-4 flex flex-wrap gap-2">
+          <ChipFilter
+            aktif={!filter.kategori}
+            onClick={() => jelajah({ kategori: undefined, page: undefined })}
+          >
+            Semua
+          </ChipFilter>
+          {kategori.map((k) => (
+            <ChipFilter
+              key={k.kategori}
+              aktif={filter.kategori === k.kategori}
+              onClick={() => jelajah({ kategori: k.kategori, page: undefined })}
+            >
+              {k.kategori} ({k.jumlah})
+            </ChipFilter>
+          ))}
+        </nav>
+      )}
+
+      {produk.items.length === 0 ? (
+        <p className="mt-10 rounded-lg border border-dashed border-navy/20 bg-navy/3 px-6 py-10 text-center text-slate-600">
+          Tidak ada produk yang cocok dengan pencarian Anda.
+        </p>
+      ) : (
+        <ul className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {produk.items.map((p) => (
+            <li
+              key={p.id}
+              className="flex flex-col overflow-hidden rounded-2xl border border-black/5 bg-white shadow-sm transition hover:shadow-sm"
+            >
+              <Link href={`/belanja/${p.slug}`} className="block">
+                {p.foto_utama ? (
+                  <img
+                    src={p.foto_utama}
+                    alt=""
+                    loading="lazy"
+                    className="h-40 w-full object-cover"
+                  />
+                ) : (
+                  <div aria-hidden="true" className="h-40 w-full bg-navy/5" />
+                )}
+              </Link>
+
+              <div className="flex flex-1 flex-col p-4">
+                {p.kategori && (
+                  <span className="text-xs font-medium text-slate-500">{p.kategori}</span>
+                )}
+
+                <h2 className="mt-1 font-semibold text-navy">
+                  <Link href={`/belanja/${p.slug}`} className="hover:underline">
+                    {p.nama_produk}
+                  </Link>
+                </h2>
+
+                <p className="mt-1 text-navy">
+                  {formatRupiah(p.harga)}
+                  {p.satuan && <span className="text-sm text-slate-500"> / {p.satuan}</span>}
+                </p>
+
+                {/* Ketersediaan dinyatakan dengan teks, bukan warna saja. */}
+                {!p.tersedia && (
+                  <p className="mt-1 text-sm font-medium text-slate-500">Stok habis</p>
+                )}
+
+                <p className="mt-2 text-sm text-slate-600">{p.penjual.nama}</p>
+
+                <div className="mt-auto pt-4">
+                  <TombolHubungi penjual={p.penjual} namaProduk={p.nama_produk} />
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {produk.meta.last_page > 1 && (
+        <nav
+          aria-label="Navigasi halaman"
+          className="mt-10 flex items-center justify-center gap-2"
+        >
+          <button
+            onClick={() => jelajah({ page: produk.meta.current_page - 1 })}
+            disabled={produk.meta.current_page <= 1}
+            className="rounded-lg border border-navy/20 px-3 py-1.5 text-sm disabled:opacity-40"
+          >
+            Sebelumnya
+          </button>
+          <span className="text-sm text-slate-600">
+            Halaman {produk.meta.current_page} dari {produk.meta.last_page}
+          </span>
+          <button
+            onClick={() => jelajah({ page: produk.meta.current_page + 1 })}
+            disabled={produk.meta.current_page >= produk.meta.last_page}
+            className="rounded-lg border border-navy/20 px-3 py-1.5 text-sm disabled:opacity-40"
+          >
+            Berikutnya
+          </button>
+        </nav>
+      )}
+    </div>
+  )
+}
+
+Belanja.layout = (page: ReactNode) => <LayoutPublik>{page}</LayoutPublik>

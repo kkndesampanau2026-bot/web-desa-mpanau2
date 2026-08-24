@@ -91,6 +91,7 @@ class OfficialController extends Controller
             'periode_mulai' => ['nullable', 'date'],
             'periode_selesai' => ['nullable', 'date', 'after_or_equal:periode_mulai'],
             'urutan_tampil' => ['nullable', 'integer', 'min:0', 'max:9999'],
+            'tingkat' => ['nullable', 'integer', 'min:0', 'max:20'],
             'status_aktif' => ['nullable', 'boolean'],
             'foto' => MediaService::aturanGambar(),
         ], MediaService::pesanValidasi('foto'));

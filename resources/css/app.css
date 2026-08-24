@@ -101,6 +101,30 @@ h3 {
 }
 
 /*
+ * Mode kontras tinggi — dinyalakan dari menu aksesibilitas mengambang.
+ *
+ * Menaikkan kontras teks terhadap latar: krem dijadikan putih murni, teks
+ * abu-abu redup digelapkan, dan tautan diberi garis bawah agar tetap dikenali
+ * tanpa mengandalkan warna saja (PRD 12.4).
+ */
+.kontras-tinggi {
+  --color-cream: #ffffff;
+}
+
+.kontras-tinggi body {
+  color: #0a0a0a;
+}
+
+.kontras-tinggi .text-slate-500,
+.kontras-tinggi .text-slate-600 {
+  color: #1e293b !important;
+}
+
+.kontras-tinggi main a {
+  text-decoration: underline;
+}
+
+/*
  * Gaya untuk HTML rich text dari CMS (sambutan, sejarah, isi berita).
  * Ditulis manual, bukan memakai plugin @tailwindcss/typography, agar kelas
  * yang dihasilkan editor WYSIWYG tetap tampil rapi tanpa menambah dependensi.

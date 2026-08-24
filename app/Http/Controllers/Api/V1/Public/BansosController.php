@@ -3,15 +3,13 @@
 namespace App\Http\Controllers\Api\V1\Public;
 
 use App\Http\Controllers\Controller;
-use App\Models\BansosRecipient;
-use App\Models\BansosType;
 use App\Services\BansosSearchService;
 use App\Services\CaptchaVerifier;
 use App\Services\CurrentVillage;
+use App\Services\DataInfografis;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 
 /**
  * Bantuan Sosial — endpoint publik (PRD 9.2).
@@ -23,59 +21,17 @@ use Illuminate\Support\Facades\Cache;
  */
 class BansosController extends Controller
 {
-    private const TTL = 3600;
-
     public function __construct(
         private readonly CurrentVillage $village,
         private readonly BansosSearchService $pencarian,
         private readonly CaptchaVerifier $captcha,
+        private readonly DataInfografis $infografis,
     ) {}
 
     /** Rekap jumlah penerima per jenis bantuan — agregat, tanpa identitas. */
     public function infografis(): JsonResponse
     {
-        $villageId = $this->village->id();
-
-        $data = Cache::remember("infografis:bansos:{$villageId}", self::TTL, function () use ($villageId) {
-            $tahunTerbaru = BansosRecipient::where('village_id', $villageId)
-                ->max('tahun_anggaran');
-
-            if (! $tahunTerbaru) {
-                return null;   // empty-state (PRD 3.2)
-            }
-
-            $perJenis = BansosType::query()
-                ->where('village_id', $villageId)
-                ->where('status_aktif', true)
-                ->withCount([
-                    'recipients as jumlah_penerima' => fn ($q) => $q
-                        ->where('tahun_anggaran', $tahunTerbaru)
-                        ->where('status', 'aktif'),
-                ])
-                ->orderBy('urutan_tampil')
-                ->get()
-                ->map(fn ($t) => [
-                    'jenis_bantuan' => $t->nama,
-                    'deskripsi' => $t->deskripsi,
-                    'sumber_dana' => $t->sumber_dana,
-                    'jumlah_penerima' => $t->jumlah_penerima,
-                ]);
-
-            return [
-                'tahun_anggaran' => (int) $tahunTerbaru,
-                'total_penerima' => BansosRecipient::where('village_id', $villageId)
-                    ->where('tahun_anggaran', $tahunTerbaru)
-                    ->where('status', 'aktif')
-                    ->count(),
-                'per_jenis' => $perJenis,
-                'tahun_tersedia' => BansosRecipient::where('village_id', $villageId)
-                    ->distinct()
-                    ->orderByDesc('tahun_anggaran')
-                    ->pluck('tahun_anggaran'),
-            ];
-        });
-
-        return ApiResponse::success($data);
+        return ApiResponse::success($this->infografis->bansos());
     }
 
     /**

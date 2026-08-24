@@ -23,6 +23,7 @@ class Official extends Model
         'periode_mulai',
         'periode_selesai',
         'urutan_tampil',
+        'tingkat',
         'status_aktif',
     ];
 
@@ -33,6 +34,7 @@ class Official extends Model
             'periode_selesai' => 'date',
             'status_aktif' => 'boolean',
             'urutan_tampil' => 'integer',
+            'tingkat' => 'integer',
         ];
     }
 
@@ -41,10 +43,15 @@ class Official extends Model
         return $this->belongsTo(Village::class);
     }
 
-    /** Yang tampil di halaman publik: hanya aparat aktif, sesuai urutan admin. */
+    /**
+     * Yang tampil di halaman publik: hanya aparat aktif, diurutkan menurut
+     * tingkat lebih dulu (agar bagan tersusun dari atas ke bawah) baru urutan
+     * di dalam tingkat yang sama.
+     */
     public function scopeTampil(Builder $query): Builder
     {
         return $query->where('status_aktif', true)
+            ->orderBy('tingkat')
             ->orderBy('urutan_tampil')
             ->orderBy('nama');
     }

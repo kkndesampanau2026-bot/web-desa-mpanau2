@@ -1,5 +1,22 @@
 import type { ReactNode } from 'react'
-import { Link, router } from '@inertiajs/react'
+import { Head, Link, router } from '@inertiajs/react'
+import {
+  Bell,
+  FileText,
+  HandCoins,
+  Images,
+  Landmark,
+  LayoutDashboard,
+  LogOut,
+  MapPin,
+  MessageSquareWarning,
+  Newspaper,
+  Settings,
+  Store,
+  Users,
+  UsersRound,
+  type LucideIcon,
+} from 'lucide-react'
 import { punyaIzin, useHalaman } from '@/types/inertia'
 
 /**
@@ -12,11 +29,34 @@ import { punyaIzin, useHalaman } from '@/types/inertia'
  * Menu untuk modul yang belum berpindah ke Inertia sengaja belum didaftarkan
  * di sini agar tidak ada tautan yang menuju halaman kosong.
  */
-const MENU = [
-  { ke: '/admin', label: 'Dashboard', izin: 'view-dashboard', ujung: true },
+const MENU: { ke: string; label: string; izin: string; ikon: LucideIcon; ujung?: boolean }[] = [
+  { ke: '/admin', label: 'Dashboard', izin: 'view-dashboard', ikon: LayoutDashboard, ujung: true },
+  { ke: '/admin/profil', label: 'Profil Desa', izin: 'manage-village-profile', ikon: Landmark },
+  { ke: '/admin/sotk-bpd', label: 'SOTK & BPD', izin: 'manage-officials', ikon: Users },
+  { ke: '/admin/berita', label: 'Berita', izin: 'manage-news', ikon: Newspaper },
+  { ke: '/admin/galeri', label: 'Galeri', izin: 'manage-gallery', ikon: Images },
+  { ke: '/admin/penduduk', label: 'Data Penduduk', izin: 'manage-population-data', ikon: UsersRound },
+  { ke: '/admin/ekonomi', label: 'Potensi & Ekonomi', izin: 'manage-potential', ikon: Store },
+  { ke: '/admin/peta', label: 'Titik Lokasi', izin: 'manage-poi', ikon: MapPin },
+  { ke: '/admin/pengaduan', label: 'Pengaduan', izin: 'respond-complaint', ikon: MessageSquareWarning },
+  { ke: '/admin/bansos', label: 'Bantuan Sosial', izin: 'manage-bansos', ikon: HandCoins },
+  { ke: '/admin/ppid', label: 'PPID', izin: 'manage-ppid-content', ikon: FileText },
+  { ke: '/admin/pengaturan', label: 'Pengaturan Umum', izin: 'manage-settings', ikon: Settings },
 ]
 
-export function LayoutAdmin({ children }: { children: ReactNode }) {
+/**
+ * `judul` mengisi tab peramban, menjadi konteks pada breadcrumb topbar, dan
+ * menghemat satu `<Head>` di tiap halaman: layar CMS mengembalikan satu elemen
+ * akar (form atau div), sehingga menambahkan <Head> di dalamnya menuntut
+ * pembungkus fragment tambahan yang tidak memberi manfaat apa pun.
+ */
+export function LayoutAdmin({
+  judul,
+  children,
+}: {
+  judul?: string
+  children: ReactNode
+}) {
   const { props, url } = useHalaman()
   const pengguna = props.auth.user
 
@@ -27,67 +67,116 @@ export function LayoutAdmin({ children }: { children: ReactNode }) {
     return ujung ? jalur === ke : jalur === ke || jalur.startsWith(`${ke}/`)
   }
 
+  const inisial = (pengguna?.nama ?? 'A').charAt(0).toUpperCase()
+
   return (
-    <div className="area-admin flex min-h-screen bg-slate-100">
-      <aside className="hidden w-60 shrink-0 border-r border-slate-200 bg-white lg:block">
-        <div className="border-b border-slate-200 px-5 py-4">
-          <p className="font-semibold text-slate-900">Dashboard Desa</p>
-          <p className="mt-0.5 truncate text-xs text-slate-500">{pengguna?.nama}</p>
+    <div className="area-admin flex min-h-screen bg-[#f8f9ff]">
+      {judul && <Head title={judul} />}
+
+      <aside className="hidden w-64 shrink-0 border-r border-slate-200 bg-white lg:flex lg:flex-col">
+        <div className="flex items-center gap-3 border-b border-slate-200 px-6 py-4">
+          <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-teal-600 text-white">
+            <Landmark className="size-5" aria-hidden="true" />
+          </span>
+          <span className="min-w-0">
+            <span className="block font-bold tracking-tight text-teal-700">Dashboard Desa</span>
+            <span className="block text-xs font-semibold text-slate-500">
+              Sistem Informasi Desa
+            </span>
+          </span>
         </div>
 
-        <nav aria-label="Navigasi dashboard" className="space-y-0.5 p-3">
-          {menuTampil.map((m) => (
-            <Link
-              key={m.ke}
-              href={m.ke}
-              aria-current={aktif(m.ke, m.ujung) ? 'page' : undefined}
-              className={`block rounded-lg px-3 py-2 text-sm transition ${
-                aktif(m.ke, m.ujung)
-                  ? 'bg-slate-900 text-white'
-                  : 'text-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              {m.label}
-            </Link>
-          ))}
+        <nav aria-label="Navigasi dashboard" className="flex-1 space-y-1 overflow-y-auto p-3">
+          {menuTampil.map((m) => {
+            const ini = aktif(m.ke, m.ujung)
+
+            return (
+              <Link
+                key={m.ke}
+                href={m.ke}
+                aria-current={ini ? 'page' : undefined}
+                className={`flex items-center gap-3 rounded-lg py-2.5 text-sm font-medium transition ${
+                  ini
+                    ? 'border-l-4 border-teal-700 bg-teal-600/10 pr-3 pl-3 text-teal-700'
+                    : 'px-3 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                }`}
+              >
+                <m.ikon className="size-[18px] shrink-0" aria-hidden="true" />
+                {m.label}
+              </Link>
+            )
+          })}
         </nav>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="border-b border-slate-200 bg-white">
           <div className="flex items-center justify-between gap-4 px-6 py-3">
-            {/* Navigasi ringkas untuk layar kecil. */}
-            <nav aria-label="Navigasi dashboard" className="flex gap-1 overflow-x-auto lg:hidden">
-              {menuTampil.map((m) => (
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="hidden text-sm text-slate-500 sm:inline">Dashboard Admin</span>
+              <span className="hidden text-slate-300 sm:inline" aria-hidden="true">
+                ›
+              </span>
+              <span className="truncate text-lg font-bold tracking-tight text-teal-700">
+                {judul ?? 'Dashboard'}
+              </span>
+            </div>
+
+            <div className="flex shrink-0 items-center gap-3">
+              <span
+                aria-hidden="true"
+                className="hidden rounded-full p-2 text-slate-500 hover:bg-slate-100 sm:inline-flex"
+              >
+                <Bell className="size-5" />
+              </span>
+
+              <div className="hidden text-right sm:block">
+                <p className="text-sm font-medium text-slate-900">{pengguna?.nama}</p>
+                <p className="text-xs text-slate-500">{pengguna?.roles.join(', ')}</p>
+              </div>
+
+              <span className="grid size-9 shrink-0 place-items-center rounded-full bg-teal-600 text-sm font-semibold text-white">
+                {inisial}
+              </span>
+
+              {/*
+                Keluar wajib POST: sebagai tautan GET ia dapat dipicu oleh
+                prefetch peramban atau tag <img> di situs lain, membuat operator
+                terlempar keluar tanpa pernah menekan apa pun.
+              */}
+              <button
+                onClick={() => router.post('/admin/keluar')}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 transition hover:bg-slate-50"
+              >
+                <LogOut className="size-4" aria-hidden="true" />
+                <span className="hidden sm:inline">Keluar</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Navigasi ringkas untuk layar kecil. */}
+          <nav
+            aria-label="Navigasi dashboard"
+            className="flex gap-1 overflow-x-auto border-t border-slate-200 px-3 py-2 lg:hidden"
+          >
+            {menuTampil.map((m) => {
+              const ini = aktif(m.ke, m.ujung)
+
+              return (
                 <Link
                   key={m.ke}
                   href={m.ke}
-                  aria-current={aktif(m.ke, m.ujung) ? 'page' : undefined}
-                  className={`shrink-0 rounded-md px-2.5 py-1.5 text-sm ${
-                    aktif(m.ke, m.ujung) ? 'bg-slate-900 text-white' : 'text-slate-600'
+                  aria-current={ini ? 'page' : undefined}
+                  className={`flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium ${
+                    ini ? 'bg-teal-600 text-white' : 'text-slate-600 hover:bg-slate-100'
                   }`}
                 >
+                  <m.ikon className="size-4 shrink-0" aria-hidden="true" />
                   {m.label}
                 </Link>
-              ))}
-            </nav>
-
-            <span className="hidden text-sm text-slate-500 lg:block">
-              {pengguna?.roles.join(', ')}
-            </span>
-
-            {/*
-              Keluar wajib POST: sebagai tautan GET ia dapat dipicu oleh
-              prefetch peramban atau tag <img> di situs lain, membuat operator
-              terlempar keluar tanpa pernah menekan apa pun.
-            */}
-            <button
-              onClick={() => router.post('/admin/keluar')}
-              className="shrink-0 rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50"
-            >
-              Keluar
-            </button>
-          </div>
+              )
+            })}
+          </nav>
         </header>
 
         <main className="flex-1 p-6">{children}</main>

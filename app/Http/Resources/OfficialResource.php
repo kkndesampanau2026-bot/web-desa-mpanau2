@@ -18,6 +18,8 @@ class OfficialResource extends JsonResource
             'periode_mulai' => $this->periode_mulai?->toDateString(),
             'periode_selesai' => $this->periode_selesai?->toDateString(),
             'urutan_tampil' => $this->urutan_tampil,
+            // Tingkat dalam bagan struktur: 0 = puncak, membesar ke bawah.
+            'tingkat' => $this->tingkat,
             // no_sk_pengangkatan sengaja TIDAK diekspos ke publik —
             // dokumen kepegawaian bukan informasi yang wajib diumumkan.
         ];

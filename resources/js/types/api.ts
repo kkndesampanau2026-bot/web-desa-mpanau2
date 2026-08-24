@@ -34,6 +34,8 @@ export interface Official {
   periode_mulai: string | null
   periode_selesai: string | null
   urutan_tampil: number
+  /** Tingkat pada bagan struktur: 0 = puncak (Kepala Desa), membesar ke bawah. */
+  tingkat: number
 }
 
 export interface BpdMember {

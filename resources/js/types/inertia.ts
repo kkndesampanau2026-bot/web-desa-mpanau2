@@ -39,6 +39,11 @@ export interface PropsBersama {
   /** Null pada halaman dashboard: kerangka CMS tidak memakai header situs. */
   pengaturan: Pengaturan | null
   statistik_kunjungan: StatistikKunjungan | null
+  /**
+   * Kategori pengaduan untuk formulir "Aduan Warga" yang dapat dibuka dari
+   * tombol mengambang di halaman mana pun. Null pada dashboard CMS.
+   */
+  kategori_pengaduan: string[] | null
   flash: { sukses: string | null; galat: string | null }
   errors: Record<string, string>
   [key: string]: unknown

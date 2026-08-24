@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { Head, Link } from '@inertiajs/react'
+import { Lightbox } from '@/Components/Lightbox'
 import { LayoutPublik } from '@/Layouts/LayoutPublik'
 import { formatTanggal } from '@/lib/format'
 import type { AlbumDetail } from '@/types/api'
@@ -47,37 +48,7 @@ export default function AlbumDetailHalaman({ album }: { album: AlbumDetail }) {
           </ul>
         )}
 
-        {/* Lightbox — PRD 6.13. */}
-        {fotoAktif !== null && foto[fotoAktif] && (
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label={foto[fotoAktif].alt_text}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
-            onClick={() => setFotoAktif(null)}
-          >
-            <button
-              onClick={() => setFotoAktif(null)}
-              aria-label="Tutup"
-              className="absolute top-4 right-4 rounded-full bg-white/10 px-3 py-1 text-white"
-            >
-              ✕
-            </button>
-
-            <figure onClick={(e) => e.stopPropagation()} className="max-h-full">
-              <img
-                src={foto[fotoAktif].url}
-                alt={foto[fotoAktif].alt_text}
-                className="max-h-[80vh] rounded-lg object-contain"
-              />
-              {foto[fotoAktif].caption && (
-                <figcaption className="mt-3 text-center text-sm text-white/80">
-                  {foto[fotoAktif].caption}
-                </figcaption>
-              )}
-            </figure>
-          </div>
-        )}
+        <Lightbox foto={foto} indeks={fotoAktif} onTutup={() => setFotoAktif(null)} />
       </div>
     </>
   )

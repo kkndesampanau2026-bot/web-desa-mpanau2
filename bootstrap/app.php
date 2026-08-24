@@ -9,6 +9,8 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
@@ -90,5 +92,26 @@ return Application::configure(basePath: dirname(__DIR__))
                 ),
                 default => null,   // galat tak terduga: biarkan Laravel menanganinya
             };
+        });
+
+        /*
+         * Galat pada jalur halaman dirender sebagai halaman Inertia, lengkap
+         * dengan header & footer situs, bukan layar galat bawaan Laravel.
+         *
+         * Hanya berlaku di luar mode debug: saat mengembangkan, jejak galat
+         * Laravel jauh lebih berguna daripada pesan ramah untuk pengunjung.
+         */
+        $exceptions->respond(function (Response $response, Throwable $e, Request $request) {
+            if ($request->is('api/*') || $request->expectsJson() || config('app.debug')) {
+                return $response;
+            }
+
+            if (! in_array($response->getStatusCode(), [403, 404, 419, 500, 503], true)) {
+                return $response;
+            }
+
+            return Inertia::render('Galat', ['status' => $response->getStatusCode()])
+                ->toResponse($request)
+                ->setStatusCode($response->getStatusCode());
         });
     })->create();

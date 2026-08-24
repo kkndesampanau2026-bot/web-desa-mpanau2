@@ -108,8 +108,8 @@ export function BatangKategori({
   const tinggi = Math.max(180, data.length * 38)
 
   return (
-    <figure className="viz-root m-0">
-      <figcaption className="mb-3 font-heading text-sm font-bold text-navy">{judul}</figcaption>
+    <figure className="viz-root m-0 rounded-2xl border border-black/5 bg-white p-6 shadow-md">
+      <figcaption className="mb-3 font-heading text-lg font-bold text-navy">{judul}</figcaption>
 
       <div aria-hidden="true">
         <ResponsiveContainer width="100%" height={tinggi}>
@@ -174,8 +174,8 @@ export function GarisTren({
   if (data.length === 0) return null
 
   return (
-    <figure className="viz-root m-0">
-      <figcaption className="mb-3 font-heading text-sm font-bold text-navy">{judul}</figcaption>
+    <figure className="viz-root m-0 rounded-2xl border border-black/5 bg-white p-6 shadow-md">
+      <figcaption className="mb-3 font-heading text-lg font-bold text-navy">{judul}</figcaption>
 
       {data.length === 1 && (
         <p className="mb-2 text-xs text-slate-500">
@@ -254,8 +254,8 @@ export function BatangPerbandingan({
   if (total === 0) return null
 
   return (
-    <figure className="viz-root m-0">
-      <figcaption className="mb-3 font-heading text-sm font-bold text-navy">{judul}</figcaption>
+    <figure className="viz-root m-0 rounded-2xl border border-black/5 bg-white p-6 shadow-md">
+      <figcaption className="mb-3 font-heading text-lg font-bold text-navy">{judul}</figcaption>
 
       <div aria-hidden="true">
         <ResponsiveContainer width="100%" height={140}>
@@ -313,13 +313,13 @@ export function KartuAngka({
   keterangan?: string
 }) {
   return (
-    <div className="rounded-xl border border-navy/10 bg-white p-5">
-      <p className="text-sm text-slate-500">{label}</p>
-      <p className="mt-1 text-2xl font-semibold text-slate-900">
+    <div className="rounded-2xl bg-navy p-5 text-center shadow-md">
+      <p className="text-xs font-medium tracking-wide text-gold uppercase">{label}</p>
+      <p className="font-heading mt-1 text-2xl font-bold text-white">
         {typeof nilai === 'number' ? formatAngka(nilai) : nilai}
-        {satuan && <span className="ml-1 text-base font-normal text-slate-500">{satuan}</span>}
+        {satuan && <span className="ml-1 text-base font-normal text-white/70">{satuan}</span>}
       </p>
-      {keterangan && <p className="mt-1 text-xs text-slate-500">{keterangan}</p>}
+      {keterangan && <p className="mt-1 text-xs text-white/60">{keterangan}</p>}
     </div>
   )
 }

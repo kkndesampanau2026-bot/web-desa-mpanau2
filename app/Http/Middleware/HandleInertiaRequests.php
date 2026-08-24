@@ -82,6 +82,13 @@ class HandleInertiaRequests extends Middleware
                 : fn () => app(VisitorTracker::class)->ringkasan(app(CurrentVillage::class)->id()),
 
             /*
+             * Kategori pengaduan dibagikan agar tombol mengambang "Aduan Warga"
+             * dapat menampilkan formulir lengkap dari halaman publik mana pun,
+             * tanpa permintaan tambahan. Konstanta kecil, jadi murah dibawa.
+             */
+            'kategori_pengaduan' => $diAreaAdmin ? null : \App\Models\Complaint::KATEGORI,
+
+            /*
              * Pesan sekali-tampil setelah redirect. Menggantikan pola lama di
              * mana komponen React menyimpan sendiri hasil mutasi dari respons
              * axios — kini server yang menyatakannya dan Inertia yang membawa.

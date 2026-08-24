@@ -68,36 +68,62 @@ di akhir migrasi.
 - [x] Dashboard admin (kerangka)
 - [x] `tests/Feature/Publik/BerandaTest.php` — pola uji `assertInertia`
 
-### ⬜ Fase 3 — Sisa halaman publik
+### ✅ Fase 3 — Sisa halaman publik
 
-- [ ] Infografis: Penduduk, APBDes, Stunting, IDM, SDGs, Bansos (+ tata letak
-      sub-tab)
-- [ ] Ekonomi: Potensi, Wisata (daftar + detail), Belanja (daftar + detail)
-- [ ] PPID: beranda, dasar hukum, informasi berkala/serta-merta/setiap-saat,
+- [x] Infografis: Penduduk, APBDes, Stunting, Bansos, IDM, SDGs (+ tata letak
+      sub-tab); `/infografis` mengalihkan ke sub-tab pertama
+- [x] Ekonomi: Potensi, Wisata (daftar + detail), Belanja (daftar + detail)
+- [x] PPID: beranda, dasar hukum, informasi berkala/serta-merta/setiap-saat,
       permohonan + pelacakan
-- [ ] Pengaduan: formulir + pelacakan
-- [ ] Peta (Leaflet)
-- [ ] Halaman galat Inertia (404/403/500) — saat ini masih halaman galat Laravel
+- [x] Pengaduan: formulir (termasuk unggahan lampiran) + pelacakan
+- [x] Peta Leaflet
+- [x] Halaman galat Inertia (403/404/419/500/503) memakai kerangka situs
+- [x] `tests/Feature/Publik/RuteHalamanTest.php` — menguji peta situs sebagai
+      satu kesatuan, 24 halaman publik + 12 layar CMS
 
-Formulir publik (cek bansos, permohonan PPID, pengaduan) berpindah dari
-`axios.post` ke `useForm` Inertia. CAPTCHA Turnstile ikut pada langkah ini.
+Formulir publik (cek bansos, permohonan PPID, pengaduan) kini memakai `useForm`
+Inertia. Hasilnya dititipkan lewat flash session, bukan disimpan di state React:
+menyegarkan halaman membuang hasil pencarian bansos maupun tanda terima — memang
+disengaja, karena keduanya menyangkut data pribadi seseorang dan tidak
+sepatutnya tetap terpampang di layar bersama kantor desa.
 
-### ⬜ Fase 4 — Dashboard CMS
+### 🟡 Fase 4 — Dashboard CMS
 
-- [ ] Profil Desa, SOTK & BPD, Berita, Galeri, Pengaturan Umum
-- [ ] Data Penduduk (termasuk impor CSV)
-- [ ] Potensi & Ekonomi, Titik Lokasi, Pengaduan, Bansos, PPID
+Kesebelas layar **sudah berjalan** di dalam monolit: route, kerangka, menu, dan
+pagar permission per modul lengkap. Yang belum berpindah adalah **cara mereka
+mengambil data** — masih XHR ke `/api/v1/admin/*`, belum prop Inertia.
+
+- [x] Semua layar disajikan Laravel lewat Inertia beserta permission-nya:
+      Profil, SOTK & BPD, Berita, Galeri, Data Penduduk, Potensi & Ekonomi,
+      Titik Lokasi, Pengaduan, Bansos, PPID, Pengaturan Umum
+- [x] Menu `LayoutAdmin` lengkap, disaring menurut permission
+- [x] `Sanctum::currentRequestHost()` diaktifkan agar XHR same-origin tetap
+      terautentikasi berapa pun port yang dipakai
+- [ ] Ganti `useQuery` → prop Inertia pada tiap layar
+- [ ] Ganti `useMutation` + axios → `useForm` Inertia
 - [ ] Unggah berkas lewat `useForm` (Inertia mendukung `multipart` langsung)
-- [ ] Menu `LayoutAdmin` dilengkapi seiring modul berpindah
+
+Selama butir-butir itu belum selesai, `@tanstack/react-query`, `axios`,
+`resources/js/lib/api.ts`, dan `routes/api.php` tetap dibutuhkan.
 
 ### ⬜ Fase 5 — Pembersihan
 
 - [ ] Hapus `routes/api.php` beserta `app/Http/Controllers/Api/`
-- [ ] Hapus `$middleware->statefulApi()` dan `config/cors.php`
+- [ ] Hapus `$middleware->statefulApi()`, `config/cors.php`, `config/sanctum.php`
+- [ ] Hapus `resources/js/lib/api.ts`, `axios`, `@tanstack/react-query`
 - [ ] Hapus workaround header `Origin` pada `tests/TestCase.php`
-- [ ] Pindahkan 191 test dari asersi JSON ke `assertInertia`
+- [ ] Pindahkan test API yang tersisa ke asersi `assertInertia`
 - [ ] Hapus direktori `frontend/`
 - [ ] Perbarui `README.md`, `docs/DEPLOYMENT.md`, `docs/DEVIASI.md`
+
+## Utang yang ditemukan selama migrasi
+
+**CAPTCHA tidak pernah terpasang di sisi klien.** `CaptchaVerifier` dan
+`config/captcha.php` sudah lengkap di server, tetapi tidak satu pun formulir
+publik — dulu maupun sekarang — mengirimkan token Turnstile. Selama
+`TURNSTILE_SECRET_KEY` kosong verifikasi dilewati sehingga tidak ada gejala;
+begitu kunci itu diisi, **ketiga formulir publik akan berbalas 422**. Widget
+Turnstile perlu dipasang lebih dulu sebelum kunci diaktifkan.
 
 ## Keputusan yang mengikat sisa pekerjaan
 
