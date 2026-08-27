@@ -74,15 +74,47 @@ Route::middleware('catat.kunjungan')->group(function () {
 
     /*
     | Potensi, Wisata & Katalog UMKM — PRD 6.11 & 6.12.
+    |
+    | Satu alamat untuk ketiganya. /potensi memuat seluruh kategori potensi
+    | desa, dan dua di antaranya menampilkan modul yang sudah punya datanya
+    | sendiri: `?kategori=Pariwisata` menampilkan daftar destinasi,
+    | `?kategori=Ekonomi` menampilkan katalog UMKM.
+    |
+    | Halaman detailnya sengaja ikut tinggal di bawah /potensi. Sewaktu
+    | destinasi dan produk punya alamat sendiri (/wisata/{slug} dan
+    | /ekonomi/{slug}), menekan sebuah kartu memindahkan pengunjung ke rute
+    | lain — dan tombol "kembali" di sana tidak punya cara mengetahui daftar
+    | mana yang tadi dibuka, sehingga selalu memulangkan ke pangkal halaman
+    | dan membuang kategori, kata kunci, serta nomor halaman yang sedang
+    | aktif. Dengan slug berada di bawah /potensi, query string daftarnya ikut
+    | terbawa dan tinggal dipasang kembali pada tautan kembalinya.
     */
     Route::get('/potensi', [EkonomiController::class, 'potensi'])->name('potensi');
+    Route::get('/potensi/{slug}', [EkonomiController::class, 'potensiDetail'])
+        ->name('potensi.show');
 
-    Route::get('/wisata', [EkonomiController::class, 'wisata'])->name('wisata.index');
-    Route::get('/wisata/{slug}', [EkonomiController::class, 'wisataDetail'])->name('wisata.show');
+    /*
+    | Alamat lama. Ketiganya pernah menjadi halaman tersendiri dan tautannya
+    | sudah terlanjur dibagikan warga serta diindeks mesin pencari, jadi tetap
+    | dijawab — kini sebagai pengalihan permanen ke kategori yang bersangkutan.
+    */
+    Route::redirect('/wisata', '/potensi?kategori=Pariwisata', 301);
+    Route::get(
+        '/wisata/{slug}',
+        fn (string $slug) => redirect("/potensi/{$slug}?kategori=Pariwisata", 301)
+    );
 
-    Route::get('/belanja', [EkonomiController::class, 'belanja'])->name('belanja.index');
-    Route::get('/belanja/{slug}', [EkonomiController::class, 'produkDetail'])
-        ->name('belanja.show');
+    Route::redirect('/ekonomi', '/potensi?kategori=Ekonomi', 301);
+    Route::get(
+        '/ekonomi/{slug}',
+        fn (string $slug) => redirect("/potensi/{$slug}?kategori=Ekonomi", 301)
+    );
+
+    Route::redirect('/belanja', '/potensi?kategori=Ekonomi', 301);
+    Route::get(
+        '/belanja/{slug}',
+        fn (string $slug) => redirect("/potensi/{$slug}?kategori=Ekonomi", 301)
+    );
 
     /*
     | PPID — struktur mengikuti kategori baku UU No. 14/2008.
@@ -186,6 +218,10 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
         ['berita', 'Berita', 'manage-news'],
         ['galeri', 'Galeri', 'manage-gallery'],
         ['penduduk', 'Penduduk', 'manage-population-data'],
+        ['apbdes', 'Apbdes', 'manage-apbdes'],
+        ['stunting', 'Stunting', 'manage-stunting'],
+        ['idm', 'Idm', 'manage-idm'],
+        ['sdgs', 'Sdgs', 'manage-sdgs'],
         ['ekonomi', 'Ekonomi', 'manage-potential'],
         ['peta', 'Peta', 'manage-poi'],
         ['pengaduan', 'Pengaduan', 'respond-complaint'],

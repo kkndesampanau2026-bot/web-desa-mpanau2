@@ -54,8 +54,10 @@ class PetaController extends Controller
                     // Tautan ke halaman terkait bila titik ini memang destinasi
                     // wisata atau produk UMKM terdaftar (PRD 6.9).
                     'tautan' => match (true) {
-                        $p->tourismSpot !== null => '/wisata/'.$p->tourismSpot->slug,
-                        $p->product !== null => '/belanja/'.$p->product->slug,
+                        $p->tourismSpot !== null => '/potensi/'.$p->tourismSpot->slug
+                            .'?kategori=Pariwisata',
+                        $p->product !== null => '/potensi/'.$p->product->slug
+                            .'?kategori=Ekonomi',
                         default => null,
                     },
                 ]);

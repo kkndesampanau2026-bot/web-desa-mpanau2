@@ -28,6 +28,11 @@ class EkonomiController extends Controller
         );
     }
 
+    public function potensiDetail(string $slug): JsonResponse
+    {
+        return ApiResponse::success($this->ekonomi->potensiDetail($slug));
+    }
+
     public function wisata(): JsonResponse
     {
         return ApiResponse::success($this->ekonomi->wisata());

@@ -38,9 +38,7 @@ export default function Stunting({ data }: { data: InfografisStunting | null }) 
     <div className="mx-auto max-w-6xl px-6 py-10">
       <Head title="Data Stunting" />
 
-      <p className="text-center text-sm text-slate-500">Data periode {data.periode}</p>
-
-      <div className="mt-8 grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-3">
         <KartuAngka
           label="Balita Diukur"
           nilai={data.ringkasan.jumlah_balita_diukur}

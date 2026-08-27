@@ -47,10 +47,10 @@ const PINTASAN = [
     isi: 'Titik lokasi fasilitas penting di seluruh desa.',
   },
   {
-    ke: '/belanja',
+    ke: '/potensi?kategori=Ekonomi',
     ikon: ShoppingBag,
-    judul: 'Belanja UMKM',
-    isi: 'Produk unggulan pelaku usaha warga desa.',
+    judul: 'Ekonomi Desa',
+    isi: 'Katalog produk unggulan pelaku UMKM warga desa.',
   },
   {
     ke: '/ppid',

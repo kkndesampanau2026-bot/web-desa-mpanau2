@@ -158,6 +158,8 @@ export interface InfografisPenduduk {
 
 export interface InfografisApbdes {
   tahun: number
+  /** Tahun anggaran yang dipublikasikan, terbaru lebih dulu — isi dropdown. */
+  tahun_tersedia: number[]
   ringkasan: {
     total_pendapatan: number
     total_belanja: number
@@ -306,6 +308,8 @@ export interface DaftarPotensi {
   items: PotensiItem[]
   kategori_tersedia: string[]
 }
+
+export type PotensiDetail = PotensiItem
 
 export interface WisataRingkas {
   id: number

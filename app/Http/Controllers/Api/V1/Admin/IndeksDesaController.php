@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Dusun;
 use App\Models\IdmIndicator;
 use App\Models\IdmScore;
 use App\Models\SdgsScore;
@@ -32,6 +33,17 @@ class IndeksDesaController extends Controller
     // ------------------------------------------------------------------
     // Stunting — PRD 6.5
     // ------------------------------------------------------------------
+
+    /** Master dusun untuk mengisi pilihan pada form stunting per-dusun. */
+    public function dusuns(): JsonResponse
+    {
+        $data = Dusun::where('village_id', $this->village->id())
+            ->orderBy('urutan_tampil')
+            ->orderBy('nama')
+            ->get(['id', 'nama']);
+
+        return ApiResponse::success($data);
+    }
 
     public function stuntingIndex(): JsonResponse
     {

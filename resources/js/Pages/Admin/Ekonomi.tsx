@@ -15,7 +15,10 @@ interface Potensi {
   slug: string
   deskripsi: string | null
   foto: string | null
+  latitude: string | null
+  longitude: string | null
   status_tampil: boolean
+  urutan_tampil: number
 }
 
 interface Wisata {
@@ -52,6 +55,16 @@ const KATEGORI_POTENSI = [
   'Lingkungan/Kelestarian',
 ]
 
+const POTENSI_KOSONG = {
+  kategori: KATEGORI_POTENSI[0],
+  judul: '',
+  deskripsi: '',
+  latitude: '',
+  longitude: '',
+  urutan_tampil: '',
+  status_tampil: true,
+}
+
 const FORMAT_RUPIAH = new Intl.NumberFormat('id-ID', {
   style: 'currency',
   currency: 'IDR',
@@ -74,6 +87,15 @@ export default function EkonomiAdminPage() {
         <p className="mt-1 text-sm text-slate-600">
           Kelola potensi desa, destinasi wisata, dan katalog produk UMKM yang tampil di
           situs publik.
+        </p>
+        <p className="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
+          Ketiga tab ini mengisi satu halaman publik, <code>/potensi</code>:{' '}
+          <strong className="font-medium">Potensi Desa</strong> tampil pada kategorinya
+          masing-masing, <strong className="font-medium">Wisata</strong> di{' '}
+          <code>/potensi?kategori=Pariwisata</code>, dan{' '}
+          <strong className="font-medium">Produk UMKM</strong> di{' '}
+          <code>/potensi?kategori=Ekonomi</code>. Detail tiap isinya berada di{' '}
+          <code>/potensi/&lt;slug&gt;</code> dengan kategori yang sama ikut terbawa.
         </p>
       </div>
 
@@ -110,7 +132,8 @@ export default function EkonomiAdminPage() {
 
 function PanelPotensi() {
   const queryClient = useQueryClient()
-  const [form, setForm] = useState({ kategori: KATEGORI_POTENSI[0], judul: '', deskripsi: '' })
+  const [sunting, setSunting] = useState<Potensi | null>(null)
+  const [form, setForm] = useState(POTENSI_KOSONG)
   const [foto, setFoto] = useState<File | null>(null)
   const [galat, setGalat] = useState<ApiRequestError | null>(null)
 
@@ -122,12 +145,51 @@ function PanelPotensi() {
     },
   })
 
-  const tambah = useMutation({
-    mutationFn: () => api.post('/admin/potensi', keFormData({ ...form, foto })),
+  function bersihkan() {
+    setSunting(null)
+    setForm(POTENSI_KOSONG)
+    setFoto(null)
+    setGalat(null)
+  }
+
+  function mulaiSunting(potensi: Potensi) {
+    setSunting(potensi)
+    setForm({
+      kategori: potensi.kategori,
+      judul: potensi.judul,
+      deskripsi: potensi.deskripsi ?? '',
+      latitude: potensi.latitude ?? '',
+      longitude: potensi.longitude ?? '',
+      urutan_tampil: String(potensi.urutan_tampil ?? ''),
+      status_tampil: potensi.status_tampil,
+    })
+    setFoto(null)
+    setGalat(null)
+  }
+
+  const simpan = useMutation({
+    mutationFn: () => {
+      const isi = {
+        ...form,
+        // Dikirim sebagai string kosong, bukan dilewati: Laravel mengubahnya
+        // menjadi null, sehingga koordinat yang terlanjur salah bisa
+        // dikosongkan lagi — kunci yang dilewati justru mempertahankan isinya.
+        latitude: form.latitude.trim(),
+        longitude: form.longitude.trim(),
+        // Kolomnya NOT NULL berdefault 0, jadi kosong berarti 0, bukan null.
+        urutan_tampil: form.urutan_tampil.trim() || 0,
+        foto,
+      }
+
+      // Pembaruan dikirim sebagai POST dengan `_method=PUT`: PHP tidak mengurai
+      // body multipart pada request PUT, sehingga formulir yang membawa foto
+      // akan tiba dalam keadaan kosong bila dikirim apa adanya.
+      return sunting
+        ? api.post(`/admin/potensi/${sunting.id}`, keFormData(isi, { method: 'PUT' }))
+        : api.post('/admin/potensi', keFormData(isi))
+    },
     onSuccess: () => {
-      setForm({ kategori: form.kategori, judul: '', deskripsi: '' })
-      setFoto(null)
-      setGalat(null)
+      bersihkan()
       void queryClient.invalidateQueries({ queryKey: ['admin', 'potensi'] })
     },
     onError: (e) =>
@@ -136,25 +198,32 @@ function PanelPotensi() {
 
   const hapus = useMutation({
     mutationFn: (id: number) => api.delete(`/admin/potensi/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'potensi'] }),
+    onSuccess: (_, id) => {
+      if (sunting?.id === id) bersihkan()
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'potensi'] })
+    },
   })
 
   return (
     <div className="space-y-6">
       <Kartu
-        judul="Tambah Potensi Desa"
+        judul={sunting ? `Ubah Potensi: ${sunting.judul}` : 'Tambah Potensi Desa'}
         anak={
           <form
             onSubmit={(e: FormEvent) => {
               e.preventDefault()
-              tambah.mutate()
+              simpan.mutate()
             }}
             className="space-y-4"
           >
             {galat && !galat.errors && <Pemberitahuan jenis="galat" pesan={galat.message} />}
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <Kolom label="Kategori" htmlFor="kategori-potensi">
+              <Kolom
+                label="Kategori"
+                htmlFor="kategori-potensi"
+                petunjuk="Menjadi penyaring di halaman publik /potensi"
+              >
                 <select
                   id="kategori-potensi"
                   value={form.kategori}
@@ -180,14 +249,68 @@ function PanelPotensi() {
               </Kolom>
             </div>
 
-            <Kolom label="Deskripsi" htmlFor="deskripsi-potensi">
+            <Kolom
+              label="Deskripsi"
+              htmlFor="deskripsi-potensi"
+              petunjuk="Tampil utuh di halaman detail potensi. Pisahkan paragraf dengan baris kosong."
+            >
               <TextArea
                 id="deskripsi-potensi"
-                rows={3}
+                rows={5}
                 value={form.deskripsi}
                 onChange={(e) => setForm({ ...form, deskripsi: e.target.value })}
               />
             </Kolom>
+
+            <div className="grid gap-4 sm:grid-cols-3">
+              <Kolom
+                label="Latitude"
+                htmlFor="latitude-potensi"
+                petunjuk="Opsional"
+                galat={galat?.fieldError('latitude')}
+              >
+                <Input
+                  id="latitude-potensi"
+                  inputMode="decimal"
+                  placeholder="mis. -0.8532140"
+                  value={form.latitude}
+                  onChange={(e) => setForm({ ...form, latitude: e.target.value })}
+                  galat={galat?.fieldError('latitude')}
+                />
+              </Kolom>
+
+              <Kolom
+                label="Longitude"
+                htmlFor="longitude-potensi"
+                petunjuk="Opsional"
+                galat={galat?.fieldError('longitude')}
+              >
+                <Input
+                  id="longitude-potensi"
+                  inputMode="decimal"
+                  placeholder="mis. 119.8707420"
+                  value={form.longitude}
+                  onChange={(e) => setForm({ ...form, longitude: e.target.value })}
+                  galat={galat?.fieldError('longitude')}
+                />
+              </Kolom>
+
+              <Kolom
+                label="Urutan Tampil"
+                htmlFor="urutan-potensi"
+                petunjuk="Angka kecil tampil lebih dulu"
+                galat={galat?.fieldError('urutan_tampil')}
+              >
+                <Input
+                  id="urutan-potensi"
+                  type="number"
+                  min={0}
+                  value={form.urutan_tampil}
+                  onChange={(e) => setForm({ ...form, urutan_tampil: e.target.value })}
+                  galat={galat?.fieldError('urutan_tampil')}
+                />
+              </Kolom>
+            </div>
 
             <InputBerkas
               label="Foto Potensi"
@@ -195,11 +318,41 @@ function PanelPotensi() {
               berkas={foto}
               onPilih={setFoto}
               galat={galat?.fieldError('foto')}
+              pathTersimpan={sunting?.foto}
+              petunjuk={
+                sunting?.foto ? 'Biarkan kosong bila foto lama tetap dipakai.' : undefined
+              }
             />
 
-            <Tombol type="submit" disabled={tambah.isPending}>
-              {tambah.isPending ? 'Menyimpan…' : 'Tambah Potensi'}
-            </Tombol>
+            <label className="flex items-start gap-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={form.status_tampil}
+                onChange={(e) => setForm({ ...form, status_tampil: e.target.checked })}
+                className="mt-0.5 size-4 rounded border-slate-300"
+              />
+              Tampilkan di situs publik
+            </label>
+
+            <div className="flex items-center gap-3">
+              <Tombol type="submit" disabled={simpan.isPending}>
+                {simpan.isPending
+                  ? 'Menyimpan…'
+                  : sunting
+                    ? 'Simpan Perubahan'
+                    : 'Tambah Potensi'}
+              </Tombol>
+
+              {sunting && (
+                <button
+                  type="button"
+                  onClick={bersihkan}
+                  className="text-sm text-slate-600 hover:underline"
+                >
+                  Batal
+                </button>
+              )}
+            </div>
           </form>
         }
       />
@@ -213,29 +366,61 @@ function PanelPotensi() {
           ) : (
             <ul className="divide-y divide-slate-100">
               {data.map((p) => (
-                <li key={p.id} className="flex items-center justify-between gap-4 py-3">
-                  {p.foto && (
+                <li key={p.id} className="flex items-center gap-4 py-3">
+                  {p.foto ? (
                     <img
                       src={urlBerkas(p.foto) ?? undefined}
                       alt=""
                       className="h-11 w-11 shrink-0 rounded-lg border border-slate-200 object-cover"
                     />
+                  ) : (
+                    <span
+                      aria-hidden="true"
+                      className="h-11 w-11 shrink-0 rounded-lg border border-dashed border-slate-300"
+                    />
                   )}
+
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium text-slate-900">{p.judul}</p>
                     <p className="truncate text-sm text-slate-500">
-                      {p.kategori}
-                      {!p.status_tampil && ' · disembunyikan'}
+                      {[
+                        p.kategori,
+                        p.latitude && 'berkoordinat',
+                        !p.status_tampil && 'disembunyikan',
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
                     </p>
                   </div>
-                  <button
-                    onClick={() => {
-                      if (confirm(`Hapus potensi "${p.judul}"?`)) hapus.mutate(p.id)
-                    }}
-                    className="shrink-0 text-sm text-red-600 hover:underline"
-                  >
-                    Hapus
-                  </button>
+
+                  <div className="flex shrink-0 items-center gap-3 text-sm">
+                    {/* Tautan keluar, bukan Inertia Link: halaman publik berada
+                        di luar dashboard dan sengaja dibuka di tab terpisah. */}
+                    {p.status_tampil && (
+                      <a
+                        href={`/potensi/${p.slug}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-slate-700 hover:underline"
+                      >
+                        Lihat
+                      </a>
+                    )}
+                    <button
+                      onClick={() => mulaiSunting(p)}
+                      className="text-slate-700 hover:underline"
+                    >
+                      Ubah
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (confirm(`Hapus potensi "${p.judul}"?`)) hapus.mutate(p.id)
+                      }}
+                      className="text-red-600 hover:underline"
+                    >
+                      Hapus
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>

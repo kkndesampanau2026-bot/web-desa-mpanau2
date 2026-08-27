@@ -1,19 +1,27 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { BookOpen, Compass, IdCard, Map, Save } from 'lucide-react'
-import { api, ApiRequestError, getData } from '@/lib/api'
+import { BookOpen, Compass, IdCard, Map, Network, Save } from 'lucide-react'
+import { api, ApiRequestError, getData, urlBerkas } from '@/lib/api'
 import { keFormData } from '@/lib/berkas'
 import { Kartu, Kolom, Input, Pemberitahuan, TextArea, Tombol } from '@/Components/Admin/Form'
 import { InputBerkas } from '@/Components/Admin/Berkas'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 import type { ReactNode } from 'react'
 
-/** Kolom gambar pada profil desa, beserta labelnya di formulir. */
-const GAMBAR = [
-  ['foto_kepala_desa', 'Foto Kepala Desa'],
+/**
+ * Bagan struktur organisasi yang tampil berdampingan di halaman Profil publik.
+ *
+ * Dipisahkan dari foto kepala desa karena keduanya gambar lebar yang menjadi
+ * satu-satunya sumber bagan pada halaman publik — operator perlu melihat versi
+ * yang sedang tayang sebelum menggantinya.
+ */
+const BAGAN = [
   ['bagan_pemerintahan', 'Bagan Struktur Pemerintah Desa'],
   ['bagan_bpd', 'Bagan Struktur BPD'],
 ] as const
+
+/** Kolom gambar pada profil desa, beserta labelnya di formulir. */
+const GAMBAR = [['foto_kepala_desa', 'Foto Kepala Desa'], ...BAGAN] as const
 
 type KolomGambar = (typeof GAMBAR)[number][0]
 
@@ -212,22 +220,57 @@ export default function ProfilPage() {
                   </div>
                 </fieldset>
 
-                {/* Foto & bagan — tetap dipertahankan meski desain Figma hanya
-                    menampilkan satu unggahan bagan. */}
-                <div className="space-y-5 border-t border-slate-100 pt-5">
-                  {GAMBAR.map(([kunci, label]) => (
-                    <InputBerkas
-                      key={kunci}
-                      label={label}
-                      jenis="gambar"
-                      berkas={gambar[kunci]}
-                      onPilih={(b) => {
-                        setGambar((g) => ({ ...g, [kunci]: b }))
-                        setSukses(false)
-                      }}
-                      pathTersimpan={data?.[kunci] as string | null}
-                      galat={galat?.fieldError(kunci)}
-                    />
+                {/* Bagan punya kartunya sendiri di bawah; di sini cukup foto
+                    kepala desa yang menyertai sambutan. */}
+                <div className="border-t border-slate-100 pt-5">
+                  <InputBerkas
+                    label="Foto Kepala Desa"
+                    jenis="gambar"
+                    berkas={gambar.foto_kepala_desa}
+                    onPilih={(b) => {
+                      setGambar((g) => ({ ...g, foto_kepala_desa: b }))
+                      setSukses(false)
+                    }}
+                    pathTersimpan={data?.foto_kepala_desa as string | null}
+                    galat={galat?.fieldError('foto_kepala_desa')}
+                  />
+                </div>
+              </div>
+            }
+          />
+
+          <Kartu
+            judul="Bagan Struktur Organisasi"
+            ikon={Network}
+            anak={
+              <div className="space-y-6">
+                <p className="text-sm text-slate-600">
+                  Kedua bagan tampil sebagai gambar berdampingan di halaman Profil publik.
+                  Gunakan gambar mendatar (landscape) agar kotak jabatan tetap terbaca;
+                  mengunggah berkas baru otomatis menggantikan bagan yang lama.
+                </p>
+
+                <div className="grid gap-6 md:grid-cols-2">
+                  {BAGAN.map(([kunci, label]) => (
+                    <div key={kunci} className="space-y-3">
+                      <PratinjauBagan
+                        label={label}
+                        berkas={gambar[kunci]}
+                        pathTersimpan={data?.[kunci] as string | null}
+                      />
+
+                      <InputBerkas
+                        label={label}
+                        jenis="gambar"
+                        berkas={gambar[kunci]}
+                        onPilih={(b) => {
+                          setGambar((g) => ({ ...g, [kunci]: b }))
+                          setSukses(false)
+                        }}
+                        pathTersimpan={data?.[kunci] as string | null}
+                        galat={galat?.fieldError(kunci)}
+                      />
+                    </div>
                   ))}
                 </div>
               </div>
@@ -347,6 +390,64 @@ export default function ProfilPage() {
         </div>
       </div>
     </form>
+  )
+}
+
+/**
+ * Pratinjau bagan seukuran layak baca — berkas pilihan baru bila ada, kalau
+ * tidak bagan yang sedang tayang.
+ *
+ * InputBerkas hanya memajang thumbnail 64 px yang dipotong persegi; untuk bagan
+ * mendatar itu tidak cukup untuk memastikan gambar yang benar sudah terpasang.
+ * Object URL dicabut saat berkas berganti agar sesi CMS yang panjang tidak
+ * menahan puluhan gambar di memori.
+ */
+function PratinjauBagan({
+  label,
+  berkas,
+  pathTersimpan,
+}: {
+  label: string
+  berkas: File | null
+  pathTersimpan: string | null | undefined
+}) {
+  const [pratinjau, setPratinjau] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!berkas) {
+      setPratinjau(null)
+      return
+    }
+
+    const url = URL.createObjectURL(berkas)
+    setPratinjau(url)
+
+    return () => URL.revokeObjectURL(url)
+  }, [berkas])
+
+  const sumber = pratinjau ?? urlBerkas(pathTersimpan)
+
+  return (
+    <figure className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+      {sumber ? (
+        <img
+          src={sumber}
+          alt={pratinjau ? `Pratinjau ${label}` : `${label} yang sedang tayang`}
+          className="mx-auto max-h-48 w-full object-contain"
+        />
+      ) : (
+        <div className="grid h-48 place-items-center px-4 text-center text-sm text-slate-400">
+          Belum ada bagan. Bagian ini tidak tampil di halaman Profil publik sampai
+          gambarnya diunggah.
+        </div>
+      )}
+
+      {sumber && (
+        <figcaption className="mt-2 text-center text-xs text-slate-500">
+          {pratinjau ? 'Pratinjau berkas baru — belum tersimpan.' : 'Bagan yang tayang saat ini.'}
+        </figcaption>
+      )}
+    </figure>
   )
 }
 

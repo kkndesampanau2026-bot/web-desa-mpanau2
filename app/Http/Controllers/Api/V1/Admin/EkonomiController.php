@@ -478,13 +478,10 @@ class EkonomiController extends Controller
 
     private function bersihkanCachePotensi(): void
     {
-        $villageId = $this->village->id();
-
-        Cache::forget("potensi:{$villageId}:semua");
-
-        foreach (Potential::KATEGORI as $kategori) {
-            Cache::forget("potensi:{$villageId}:{$kategori}");
-        }
+        // Seluruh potensi desa ini hidup di satu entri cache, sehingga satu
+        // panggilan cukup — tidak ada lagi kunci per-kategori yang bisa
+        // terlewat dan menyisakan data basi di situs publik.
+        Cache::forget("potensi:{$this->village->id()}");
     }
 
     private function bersihkanCacheWisata(): void

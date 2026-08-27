@@ -1,31 +1,39 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { Head, Link, router } from '@inertiajs/react'
-import { EmptyState } from '@/Components/EmptyState'
-import { ChipFilter } from '@/Components/ui'
+import { useEffect, useRef, useState } from 'react'
+import { Link, router } from '@inertiajs/react'
 import { TombolHubungi } from '@/Components/TombolHubungi'
-import { LayoutPublik } from '@/Layouts/LayoutPublik'
 import { formatRupiah } from '@/lib/format'
+import { useJelajahPotensi, type Jelajah } from '@/lib/tautan'
 import type { Berhalaman } from '@/types/inertia'
 import type { KategoriProduk, ProdukRingkas } from '@/types/api'
 
-const DESKRIPSI = 'Produk unggulan pelaku UMKM desa yang dapat dipesan langsung ke penjual.'
-
 interface Props {
   produk: Berhalaman<ProdukRingkas>
-  kategori: KategoriProduk[]
-  filter: { kategori: string | null; cari: string | null }
+  cari: string | null
+  /** Kategori produk beserta jumlahnya, untuk penyaring di atas katalog. */
+  jenisProduk?: KategoriProduk[]
+  jenisAktif?: string | null
 }
 
 /**
- * Katalog UMKM — PRD 6.12.
+ * Katalog produk UMKM — PRD 6.12.
  *
  * Katalog saja: pengunjung menelusuri produk lalu menghubungi penjual
  * langsung. Fitur keranjang dan pesan checkout WhatsApp tidak dibuat atas
  * permintaan pemilik produk (lihat DEVIASI A4).
  */
-export default function Belanja({ produk, kategori, filter }: Props) {
-  const [cari, setCari] = useState(filter.cari ?? '')
-  const pertamaKali = useRef(true)
+export function KatalogUmkm({ produk, cari: cariTersimpan, jenisProduk, jenisAktif = null }: Props) {
+  const jelajah = useJelajahPotensi()
+  const [cari, setCari] = useState(cariTersimpan ?? '')
+
+  /**
+   * Kata kunci yang sudah terwakili oleh daftar di layar.
+   *
+   * Sengaja bukan penanda "baru pertama kali dijalankan": efek di React
+   * dijalankan dua kali saat pemasangan di mode pengembangan, dan penanda
+   * seperti itu lolos pada jalan kedua — mengirim kunjungan yang membuang
+   * nomor halaman, tepat sesudah tombol "kembali" memulihkannya.
+   */
+  const sudahDicari = useRef(cariTersimpan ?? '')
 
   /**
    * Pencarian ditunda 350 ms setelah ketikan terakhir.
@@ -35,51 +43,30 @@ export default function Belanja({ produk, kategori, filter }: Props) {
    * Penundaan ini yang menahannya.
    */
   useEffect(() => {
-    if (pertamaKali.current) {
-      pertamaKali.current = false
-
+    if (cari === sudahDicari.current) {
       return
     }
 
     const timer = setTimeout(() => {
-      jelajah({ cari: cari || undefined, page: undefined })
+      sudahDicari.current = cari
+      telusuri({ cari: cari || undefined, page: undefined })
     }, 350)
 
     return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cari])
 
-  function jelajah(perubahan: Record<string, string | number | undefined>) {
+  function telusuri(perubahan: Jelajah) {
     router.get(
-      '/belanja',
-      {
-        kategori: filter.kategori ?? undefined,
-        cari: filter.cari ?? undefined,
-        ...perubahan,
-      },
+      jelajah.daftar(perubahan),
+      {},
       { preserveState: true, preserveScroll: true, replace: true },
     )
   }
 
-  // Benar-benar kosong berarti belum ada produk sama sekali — bukan sekadar
-  // pencarian yang tidak menemukan apa pun.
-  if (produk.items.length === 0 && !filter.kategori && !filter.cari) {
-    return (
-      <>
-        <Head title="Belanja — Katalog UMKM" />
-        <EmptyState judul="Belanja — Katalog UMKM" deskripsi={DESKRIPSI} />
-      </>
-    )
-  }
-
   return (
-    <div className="mx-auto max-w-5xl px-6 py-10">
-      <Head title="Belanja" />
-
-      <h1 className="font-heading text-2xl font-bold text-navy">Belanja</h1>
-      <p className="mt-2 text-slate-600">{DESKRIPSI}</p>
-
-      <div className="mt-6 flex flex-wrap items-end gap-4">
+    <>
+      <div className="flex flex-wrap items-end gap-4">
         <div className="min-w-56 flex-1">
           <label htmlFor="cari-produk" className="block text-sm font-medium text-slate-700">
             Cari Produk atau Penjual
@@ -92,27 +79,32 @@ export default function Belanja({ produk, kategori, filter }: Props) {
             className="mt-1 w-full rounded-lg border border-navy/20 px-3 py-2 text-sm outline-none focus:border-navy"
           />
         </div>
-      </div>
 
-      {kategori.length > 0 && (
-        <nav aria-label="Filter kategori" className="mt-4 flex flex-wrap gap-2">
-          <ChipFilter
-            aktif={!filter.kategori}
-            onClick={() => jelajah({ kategori: undefined, page: undefined })}
-          >
-            Semua
-          </ChipFilter>
-          {kategori.map((k) => (
-            <ChipFilter
-              key={k.kategori}
-              aktif={filter.kategori === k.kategori}
-              onClick={() => jelajah({ kategori: k.kategori, page: undefined })}
+        {/* Penyaring kategori produk sengaja berupa daftar pilihan, bukan
+            barisan chip: halaman induknya sudah punya barisan chip sendiri,
+            dan dua baris chip berdampingan hanya membuat pengunjung
+            menebak-nebak yang mana menyaring apa. */}
+        {jenisProduk && jenisProduk.length > 0 && (
+          <div className="min-w-48">
+            <label htmlFor="jenis-produk" className="block text-sm font-medium text-slate-700">
+              Kategori Produk
+            </label>
+            <select
+              id="jenis-produk"
+              value={jenisAktif ?? ''}
+              onChange={(e) => telusuri({ jenis: e.target.value || undefined, page: undefined })}
+              className="mt-1 w-full rounded-lg border border-navy/20 bg-white px-3 py-2 text-sm outline-none focus:border-navy"
             >
-              {k.kategori} ({k.jumlah})
-            </ChipFilter>
-          ))}
-        </nav>
-      )}
+              <option value="">Semua kategori</option>
+              {jenisProduk.map((j) => (
+                <option key={j.kategori} value={j.kategori}>
+                  {j.kategori} ({j.jumlah})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
 
       {produk.items.length === 0 ? (
         <p className="mt-10 rounded-lg border border-dashed border-navy/20 bg-navy/3 px-6 py-10 text-center text-slate-600">
@@ -125,7 +117,7 @@ export default function Belanja({ produk, kategori, filter }: Props) {
               key={p.id}
               className="flex flex-col overflow-hidden rounded-2xl border border-black/5 bg-white shadow-sm transition hover:shadow-sm"
             >
-              <Link href={`/belanja/${p.slug}`} className="block">
+              <Link href={jelajah.detail(p.slug)} className="block">
                 {p.foto_utama ? (
                   <img
                     src={p.foto_utama}
@@ -144,7 +136,7 @@ export default function Belanja({ produk, kategori, filter }: Props) {
                 )}
 
                 <h2 className="mt-1 font-semibold text-navy">
-                  <Link href={`/belanja/${p.slug}`} className="hover:underline">
+                  <Link href={jelajah.detail(p.slug)} className="hover:underline">
                     {p.nama_produk}
                   </Link>
                 </h2>
@@ -171,12 +163,9 @@ export default function Belanja({ produk, kategori, filter }: Props) {
       )}
 
       {produk.meta.last_page > 1 && (
-        <nav
-          aria-label="Navigasi halaman"
-          className="mt-10 flex items-center justify-center gap-2"
-        >
+        <nav aria-label="Navigasi halaman" className="mt-10 flex items-center justify-center gap-2">
           <button
-            onClick={() => jelajah({ page: produk.meta.current_page - 1 })}
+            onClick={() => telusuri({ page: produk.meta.current_page - 1 })}
             disabled={produk.meta.current_page <= 1}
             className="rounded-lg border border-navy/20 px-3 py-1.5 text-sm disabled:opacity-40"
           >
@@ -186,7 +175,7 @@ export default function Belanja({ produk, kategori, filter }: Props) {
             Halaman {produk.meta.current_page} dari {produk.meta.last_page}
           </span>
           <button
-            onClick={() => jelajah({ page: produk.meta.current_page + 1 })}
+            onClick={() => telusuri({ page: produk.meta.current_page + 1 })}
             disabled={produk.meta.current_page >= produk.meta.last_page}
             className="rounded-lg border border-navy/20 px-3 py-1.5 text-sm disabled:opacity-40"
           >
@@ -194,8 +183,6 @@ export default function Belanja({ produk, kategori, filter }: Props) {
           </button>
         </nav>
       )}
-    </div>
+    </>
   )
 }
-
-Belanja.layout = (page: ReactNode) => <LayoutPublik>{page}</LayoutPublik>

@@ -30,11 +30,7 @@ export default function Bansos({
     <div className="mx-auto max-w-6xl px-6 py-10">
       <Head title={`Bantuan Sosial ${data.tahun_anggaran}`} />
 
-      <p className="text-center text-sm text-slate-500">
-        Bantuan Sosial · Tahun Anggaran {data.tahun_anggaran}
-      </p>
-
-      <div className="mt-8 max-w-xs">
+      <div className="max-w-xs">
         <KartuAngka
           label="Total Penerima"
           nilai={data.total_penerima}

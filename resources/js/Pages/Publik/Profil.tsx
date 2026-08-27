@@ -1,45 +1,42 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Head } from '@inertiajs/react'
 import { MapContainer, Marker, TileLayer } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { BookOpen, Eye, MapPin, Quote, Target, Users, X } from 'lucide-react'
+import { BookOpen, Eye, MapPin, Maximize2, Quote, Target, Users } from 'lucide-react'
 import { KontenKaya } from '@/Components/KontenKaya'
 import { EmptyState } from '@/Components/EmptyState'
+import { Lightbox, type FotoLightbox } from '@/Components/Lightbox'
 import { IsiHalaman, Kartu } from '@/Components/ui'
 import { LayoutPublik } from '@/Layouts/LayoutPublik'
 import { formatAngka } from '@/lib/format'
 import { useHalaman } from '@/types/inertia'
-import type { BpdMember, Official, Profil as ProfilDesa } from '@/types/api'
+import type { Profil as ProfilDesa } from '@/types/api'
 
 const DESKRIPSI =
   'Sambutan Kepala Desa, sejarah, visi-misi, struktur organisasi Pemerintah Desa dan BPD, data geografis, serta peta lokasi kantor desa.'
-
-type OrangPerangkat = Official | BpdMember
 
 /**
  * Profil Desa — PRD 6.1.
  *
  * Tata letak mengikuti desain Figma (node 33:250): kepala halaman terpusat di
- * atas latar krem, kartu Visi & Misi bergaris emas, bagan struktur organisasi
- * berupa kotak yang dapat diklik, kartu Sejarah, lalu peta lokasi berdampingan
- * dengan ringkasan data geografis & batas wilayah.
+ * atas latar krem, kartu Visi & Misi bergaris emas, kedua bagan struktur
+ * organisasi berdampingan, kartu Sejarah, lalu peta lokasi berdampingan dengan
+ * ringkasan data geografis & batas wilayah.
+ *
+ * Bagan Pemerintah Desa dan BPD ditampilkan sebagai gambar utuh yang diunggah
+ * admin (CMS Profil Desa), bukan disusun dari data SOTK: bagan resmi desa kerap
+ * memuat garis komando, dusun, dan lembaga yang tidak terwakili oleh daftar
+ * jabatan. Susunan aparat beserta fotonya tetap tersedia di halaman Pemerintah
+ * Desa.
  *
  * Data tiba bersama halaman, jadi satu-satunya keadaan yang tersisa adalah
  * kemungkinan admin desa belum mengisinya — ditangani lewat empty-state.
  */
-export default function Profil({
-  profil,
-  aparat,
-  bpd,
-}: {
-  profil: ProfilDesa | null
-  aparat: Official[]
-  bpd: BpdMember[]
-}) {
+export default function Profil({ profil }: { profil: ProfilDesa | null }) {
   const { props } = useHalaman()
   const namaDesa = props.pengaturan?.nama_desa ?? 'Desa Mpanau'
-  const [detail, setDetail] = useState<OrangPerangkat | null>(null)
+  const [baganTampil, setBaganTampil] = useState<number | null>(null)
 
   if (!profil) {
     return (
@@ -52,6 +49,7 @@ export default function Profil({
 
   const luasKm2 = luasDalamKm2(profil.geografis.luas_desa_m2, profil.geografis.luas_desa_hektar)
   const pusatPeta = koordinat(profil.peta.latitude, profil.peta.longitude)
+  const bagan = daftarBagan(profil)
 
   return (
     <>
@@ -130,26 +128,29 @@ export default function Profil({
             </div>
           )}
 
-          {/* Bagan Struktur Organisasi Desa — kotak yang dapat diklik. */}
-          {aparat.length > 0 && (
+          {/* Bagan Pemerintah Desa & BPD — dua gambar berdampingan. Keduanya
+              lembaga terpisah (PRD 3.2), karena itu tetap dua bagan sendiri. */}
+          {bagan.length > 0 && (
             <section>
               <div className="text-center">
                 <h2 className="font-heading text-2xl font-bold text-navy">
-                  Bagan Struktur Organisasi Desa
+                  Bagan Struktur Organisasi
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  Klik salah satu kotak untuk melihat foto dan detail perangkat desa
+                  Klik gambar untuk melihatnya lebih besar
                 </p>
               </div>
-              {/* Tiap tingkat menjadi satu baris; baris menumpuk membentuk
-                  pohon dari Kepala Desa di atas ke perangkat di bawahnya. */}
-              <div className="mt-6 flex flex-col items-center gap-4">
-                {kelompokTingkat(aparat).map((baris, i) => (
-                  <div key={i} className="flex flex-wrap justify-center gap-4">
-                    {baris.map((o) => (
-                      <KotakPerangkat key={o.id} orang={o} onClick={() => setDetail(o)} />
-                    ))}
-                  </div>
+
+              <div
+                className={`mt-6 grid gap-6 ${bagan.length > 1 ? 'lg:grid-cols-2' : 'mx-auto max-w-3xl'}`}
+              >
+                {bagan.map((b, i) => (
+                  <KartuBagan
+                    key={b.url}
+                    judul={b.caption}
+                    gambar={b.url}
+                    onLihat={() => setBaganTampil(i)}
+                  />
                 ))}
               </div>
             </section>
@@ -239,30 +240,10 @@ export default function Profil({
               </div>
             </div>
           </section>
-
-          {/* BPD — lembaga terpisah dari aparat desa (PRD 3.2), memakai bahasa
-              visual yang sama meski tidak digambarkan pada Figma. */}
-          {bpd.length > 0 && (
-            <section>
-              <div className="text-center">
-                <h2 className="font-heading text-2xl font-bold text-navy">
-                  Badan Permusyawaratan Desa
-                </h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  Lembaga permusyawaratan desa, mitra kerja Kepala Desa.
-                </p>
-              </div>
-              <div className="mt-6 flex flex-wrap justify-center gap-4">
-                {bpd.map((o) => (
-                  <KotakPerangkat key={o.id} orang={o} onClick={() => setDetail(o)} />
-                ))}
-              </div>
-            </section>
-          )}
         </div>
       </IsiHalaman>
 
-      <DetailPerangkat orang={detail} onTutup={() => setDetail(null)} />
+      <Lightbox foto={bagan} indeks={baganTampil} onTutup={() => setBaganTampil(null)} />
     </>
   )
 }
@@ -287,34 +268,62 @@ const IKON_DESA = L.divIcon({
 })
 
 /**
- * Mengelompokkan aparat menjadi baris-baris menurut `tingkat`, terurut naik.
+ * Bagan yang benar-benar sudah diunggah admin, siap dipakai kartu & lightbox.
  *
- * Data sudah datang terurut dari server (tingkat lalu urutan_tampil), jadi di
- * sini cukup dikumpulkan per tingkat sambil mempertahankan urutannya.
+ * Bagan yang kosong tidak menghasilkan kartu kosong: halaman publik lebih baik
+ * menyembunyikan yang belum ada daripada memajang bingkai "belum diisi" kepada
+ * warga. Urutannya tetap — indeks kartu sama dengan indeks di lightbox.
  */
-function kelompokTingkat(aparat: Official[]): Official[][] {
-  const peta = new Map<number, Official[]>()
+function daftarBagan(profil: ProfilDesa): Array<FotoLightbox & { caption: string }> {
+  const sumber: Array<[string | null, string]> = [
+    [profil.bagan_pemerintahan, 'Struktur Organisasi Pemerintah Desa'],
+    [profil.bagan_bpd, 'Badan Permusyawaratan Desa (BPD)'],
+  ]
 
-  for (const orang of aparat) {
-    const baris = peta.get(orang.tingkat) ?? []
-    baris.push(orang)
-    peta.set(orang.tingkat, baris)
-  }
-
-  return [...peta.entries()].sort(([a], [b]) => a - b).map(([, baris]) => baris)
+  return sumber
+    .filter((pasangan): pasangan is [string, string] => Boolean(pasangan[0]))
+    .map(([url, judul]) => ({ url, alt_text: `Bagan ${judul}`, caption: judul }))
 }
 
-/** Kotak nama perangkat pada bagan struktur — jabatan di atas, nama di bawah. */
-function KotakPerangkat({ orang, onClick }: { orang: OrangPerangkat; onClick: () => void }) {
+/** Kartu bagan — gambar utuh yang dapat diklik untuk diperbesar. */
+function KartuBagan({
+  judul,
+  gambar,
+  onLihat,
+}: {
+  judul: string
+  gambar: string
+  onLihat: () => void
+}) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="w-40 rounded-xl border-2 border-navy/20 bg-white px-[18px] py-3.5 text-center shadow-sm transition hover:border-gold hover:shadow-md"
-    >
-      <span className="font-heading block text-sm font-bold text-navy">{orang.jabatan}</span>
-      <span className="mt-0.5 block text-xs text-slate-500">{orang.nama}</span>
-    </button>
+    <Kartu className="overflow-hidden border-t-4 border-t-gold shadow-md">
+      <h3 className="font-heading border-b border-navy/10 px-6 py-4 text-center text-lg font-bold text-navy">
+        {judul}
+      </h3>
+
+      <button
+        type="button"
+        onClick={onLihat}
+        aria-label={`Perbesar bagan ${judul}`}
+        className="group relative block w-full cursor-zoom-in bg-white p-4"
+      >
+        {/* object-contain: bagan desa bermacam rasio, dan memotongnya berarti
+            memotong kotak jabatan di tepi. */}
+        <img
+          src={gambar}
+          alt={`Bagan ${judul}`}
+          loading="lazy"
+          className="mx-auto max-h-105 w-full object-contain"
+        />
+
+        <span
+          aria-hidden="true"
+          className="absolute right-6 bottom-6 grid size-9 place-items-center rounded-full bg-navy/80 text-white opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100"
+        >
+          <Maximize2 className="size-4" />
+        </span>
+      </button>
+    </Kartu>
   )
 }
 
@@ -326,72 +335,6 @@ function StatDesa({ label, nilai }: { label: string; nilai: string | null }) {
       <p className="font-heading mt-1 text-xl font-bold text-white">
         {nilai ?? <span className="text-base font-normal text-white/50">Belum diisi</span>}
       </p>
-    </div>
-  )
-}
-
-/**
- * Dialog detail perangkat desa — foto dan keterangan, dibuka dari bagan.
- *
- * Mengikuti pola Lightbox: Escape menutup, klik latar menutup, dan konten
- * menghentikan propagasi klik agar tidak ikut menutup.
- */
-function DetailPerangkat({ orang, onTutup }: { orang: OrangPerangkat | null; onTutup: () => void }) {
-  useEffect(() => {
-    if (!orang) return
-
-    function tanganiTombol(e: KeyboardEvent) {
-      if (e.key === 'Escape') onTutup()
-    }
-
-    window.addEventListener('keydown', tanganiTombol)
-
-    return () => window.removeEventListener('keydown', tanganiTombol)
-  }, [orang, onTutup])
-
-  if (!orang) return null
-
-  const rentang = rentangPeriode(orang.periode_mulai, orang.periode_selesai)
-
-  return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={`Detail ${orang.nama}`}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
-      onClick={onTutup}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-sm rounded-2xl bg-white p-8 text-center shadow-xl"
-      >
-        <button
-          onClick={onTutup}
-          aria-label="Tutup"
-          className="absolute top-3 right-3 rounded-full p-1.5 text-slate-500 transition hover:bg-navy/5 hover:text-navy"
-        >
-          <X className="size-5" />
-        </button>
-
-        {orang.foto ? (
-          <img
-            src={orang.foto}
-            alt={`Foto ${orang.nama}`}
-            className="mx-auto size-32 rounded-full border-4 border-gold object-cover"
-          />
-        ) : (
-          <span
-            aria-hidden="true"
-            className="font-heading mx-auto grid size-32 place-items-center rounded-full border-4 border-gold/40 bg-navy/5 text-3xl font-bold text-navy/40"
-          >
-            {orang.nama.charAt(0)}
-          </span>
-        )}
-
-        <p className="font-heading mt-4 text-xl font-bold text-navy">{orang.nama}</p>
-        <p className="mt-1 text-slate-600">{orang.jabatan}</p>
-        {rentang && <p className="mt-2 text-sm text-slate-500">Periode {rentang}</p>}
-      </div>
     </div>
   )
 }
@@ -419,18 +362,6 @@ function luasDalamKm2(m2: number | null, hektar: number | null): string | null {
   const km2 = m2 != null ? m2 / 1_000_000 : hektar != null ? hektar / 100 : null
 
   return km2 == null ? null : km2.toLocaleString('id-ID', { maximumFractionDigits: 2 })
-}
-
-/** "2019–2025" / "2019–sekarang" dari tanggal atau tahun mentah. */
-function rentangPeriode(mulai: string | null, selesai: string | null): string | null {
-  if (!mulai) return null
-
-  return `${tahun(mulai)}–${selesai ? tahun(selesai) : 'sekarang'}`
-}
-
-function tahun(nilai: string): string {
-  const tanggal = new Date(nilai)
-  return Number.isNaN(tanggal.getTime()) ? nilai : String(tanggal.getFullYear())
 }
 
 Profil.layout = (page: ReactNode) => <LayoutPublik>{page}</LayoutPublik>

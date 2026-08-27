@@ -6,6 +6,8 @@ import {
   Legend,
   Line,
   LineChart,
+  Pie,
+  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -291,6 +293,117 @@ export function BatangPerbandingan({
       <TabelSetara
         judul={judul}
         data={data as unknown as Record<string, string | number>[]}
+        kolom={[
+          ['label', 'Kategori'],
+          ['jumlah', 'Jumlah'],
+        ]}
+      />
+    </figure>
+  )
+}
+
+/**
+ * Palet kualitatif untuk juring diagram lingkaran.
+ *
+ * Tiga slot pertama memakai token deret yang sudah tervalidasi; sisanya warna
+ * pelengkap agar juring yang bersebelahan tetap terbedakan saat kategori lebih
+ * dari tiga. Karena diagram lingkaran menyandingkan legenda berisi nilai dan
+ * persentase, warna bukan satu-satunya pembawa makna di sini.
+ */
+const PALET_LINGKARAN = [
+  'var(--viz-series-1)',
+  'var(--viz-series-2)',
+  'var(--viz-series-3)',
+  '#8b5cf6',
+  '#e0b021',
+  '#d6608f',
+  '#0f9c9c',
+  '#6b7280',
+]
+
+/**
+ * Diagram lingkaran (donat) untuk komposisi satu keseluruhan menjadi bagian.
+ *
+ * Dipakai saat proporsi "bagian terhadap total" yang ingin ditonjolkan, bukan
+ * perbandingan nilai absolut antar-kategori (untuk itu {@link BatangKategori}
+ * lebih tepat). Setiap juring diberi nilai dan persentase pada legenda agar
+ * angkanya tidak hanya terbaca lewat sudut juring.
+ */
+export function Lingkaran({
+  judul,
+  data,
+  formatNilai = formatAngka,
+}: {
+  judul: string
+  data: { label: string; jumlah: number; warna?: string }[]
+  formatNilai?: (n: number) => string
+}) {
+  const juring = data
+    .filter((d) => d.jumlah > 0)
+    .map((d, i) => ({
+      ...d,
+      warna: d.warna ?? PALET_LINGKARAN[i % PALET_LINGKARAN.length],
+    }))
+
+  const total = juring.reduce((n, d) => n + d.jumlah, 0)
+
+  if (total === 0) return null
+
+  return (
+    <figure className="viz-root m-0 rounded-2xl border border-black/5 bg-white p-6 shadow-md">
+      <figcaption className="mb-3 font-heading text-lg font-bold text-navy">{judul}</figcaption>
+
+      <div className="flex flex-col items-center gap-5 sm:flex-row">
+        <div aria-hidden="true" className="shrink-0">
+          <ResponsiveContainer width={200} height={200}>
+            <PieChart>
+              <Pie
+                data={juring}
+                dataKey="jumlah"
+                nameKey="label"
+                cx="50%"
+                cy="50%"
+                innerRadius={56}
+                outerRadius={92}
+                paddingAngle={juring.length > 1 ? 1.5 : 0}
+                stroke="var(--viz-surface)"
+                strokeWidth={2}
+              >
+                {juring.map((d) => (
+                  <Cell key={d.label} fill={d.warna} />
+                ))}
+              </Pie>
+              <Tooltip
+                contentStyle={GAYA_TOOLTIP}
+                formatter={(nilai) => [formatNilai(keAngka(nilai)), 'Jumlah']}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Legenda membawa nilai dan persentase eksplisit tiap juring. */}
+        <ul className="w-full space-y-2">
+          {juring.map((d) => (
+            <li key={d.label} className="flex items-center gap-2 text-sm">
+              <span
+                className="inline-block h-3 w-3 shrink-0 rounded-sm"
+                style={{ backgroundColor: d.warna }}
+              />
+              <span className="flex-1 text-slate-700">{d.label}</span>
+              <span className="font-medium text-slate-900 tabular-nums">
+                {formatNilai(d.jumlah)}
+              </span>
+              <span className="w-14 text-right text-slate-500 tabular-nums">
+                {((d.jumlah / total) * 100).toFixed(1)}%
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <TabelSetara
+        judul={judul}
+        data={juring as unknown as Record<string, string | number>[]}
         kolom={[
           ['label', 'Kategori'],
           ['jumlah', 'Jumlah'],

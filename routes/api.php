@@ -104,6 +104,7 @@ Route::prefix('v1')->group(function () {
 
         // --- Potensi, Wisata & UMKM (Fase 5) ---
         Route::get('/potensi', [EkonomiController::class, 'potensi']);
+        Route::get('/potensi/{slug}', [EkonomiController::class, 'potensiDetail']);
         Route::get('/wisata', [EkonomiController::class, 'wisata']);
         Route::get('/wisata/{slug}', [EkonomiController::class, 'wisataDetail']);
         // Didaftarkan SEBELUM /produk/{slug} agar segmen literal tidak
@@ -217,6 +218,7 @@ Route::prefix('v1')->group(function () {
 
         // Stunting
         Route::middleware('permission:manage-stunting')->group(function () {
+            Route::get('/stunting/dusuns', [IndeksDesaController::class, 'dusuns']);
             Route::get('/stunting', [IndeksDesaController::class, 'stuntingIndex']);
             Route::post('/stunting', [IndeksDesaController::class, 'stuntingSimpan']);
             Route::delete('/stunting/{stuntingRecord}', [IndeksDesaController::class, 'stuntingHapus']);

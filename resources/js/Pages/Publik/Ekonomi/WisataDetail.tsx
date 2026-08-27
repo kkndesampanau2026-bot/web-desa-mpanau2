@@ -6,14 +6,21 @@ import { labelHari } from '@/lib/format'
 import type { WisataDetail as Wisata } from '@/types/api'
 
 /** Detail destinasi wisata — PRD 6.11. */
-export default function WisataDetail({ wisata }: { wisata: Wisata }) {
+export default function WisataDetail({
+  wisata,
+  kembali = '/potensi?kategori=Pariwisata',
+}: {
+  wisata: Wisata
+  /** Alamat daftar tempat pengunjung berangkat, disusun oleh controller. */
+  kembali?: string
+}) {
   const [fotoAktif, setFotoAktif] = useState<number | null>(null)
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-10">
       <Head title={wisata.nama} />
 
-      <Link href="/wisata" className="text-sm text-slate-500 hover:text-navy">
+      <Link href={kembali} className="text-sm text-slate-500 hover:text-navy">
         ← Kembali ke daftar wisata
       </Link>
 

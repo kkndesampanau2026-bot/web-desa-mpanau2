@@ -129,6 +129,14 @@ class DataInfografis
 
             return [
                 'tahun' => $tahun->tahun,
+                // Pilihan tahun anggaran pada halaman publik. Diambil dari tahun
+                // yang dipublikasikan saja, sehingga tahun yang masih disusun
+                // admin tidak muncul di dropdown.
+                'tahun_tersedia' => BudgetYear::where('village_id', $villageId)
+                    ->where('publikasikan', true)
+                    ->orderByDesc('tahun')
+                    ->pluck('tahun')
+                    ->all(),
                 'ringkasan' => [
                     'total_pendapatan' => $pendapatan,
                     'total_belanja' => $belanja,

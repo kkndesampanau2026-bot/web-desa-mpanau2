@@ -17,12 +17,26 @@ import { AduanWarga } from '@/Components/AduanWarga'
  * Identitas desa datang dari prop bersama Inertia, sehingga header & footer
  * sudah terisi pada render pertama — tanpa kedipan nama desa kosong.
  */
-const MENU_UTAMA = [
+interface ItemMenu {
+  ke: string
+  label: string
+  ujung?: boolean
+}
+
+/**
+ * Menu datar, tanpa cabang.
+ *
+ * "Potensi & Ekonomi" sempat bercabang ke /wisata dan /ekonomi. Keduanya kini
+ * tampil sebagai kategori di dalam /potensi itu sendiri — berikut halaman
+ * detailnya — sehingga panel yang harus dibuka dulu hanya menambah satu
+ * ketukan menuju isi yang sama.
+ */
+const MENU_UTAMA: ItemMenu[] = [
   { ke: '/', label: 'Home', ujung: true },
   { ke: '/profil', label: 'Profil Desa' },
   { ke: '/infografis', label: 'Infografis' },
   { ke: '/listing', label: 'Listing' },
-  { ke: '/potensi', label: 'Potensi Desa' },
+  { ke: '/potensi', label: 'Potensi & Ekonomi' },
   { ke: '/berita', label: 'Berita Desa' },
   { ke: '/ppid', label: 'PPID' },
   { ke: '/layanan-mandiri', label: 'Layanan Mandiri' },
@@ -36,11 +50,18 @@ const MENU_UTAMA = [
  * sisanya cocok bila URL berada di bawahnya (agar `/berita/judul` tetap
  * menyalakan menu Berita Desa).
  */
-function sedangAktif(url: string, ke: string, ujung?: boolean): boolean {
+function sedangAktif(url: string, menu: ItemMenu): boolean {
   const jalur = url.split('?')[0]
 
-  return ujung ? jalur === ke : jalur === ke || jalur.startsWith(`${ke}/`)
+  return menu.ujung
+    ? jalur === menu.ke
+    : jalur === menu.ke || jalur.startsWith(`${menu.ke}/`)
 }
+
+const gayaMenu = (aktif: boolean) =>
+  `rounded-md px-3 py-2 text-sm font-semibold transition ${
+    aktif ? 'bg-gold text-navy' : 'text-white/85 hover:bg-white/10 hover:text-white'
+  }`
 
 export function LayoutPublik({ children }: { children: ReactNode }) {
   const { props, url } = useHalaman()
@@ -125,22 +146,16 @@ export function LayoutPublik({ children }: { children: ReactNode }) {
             </Link>
 
             <nav aria-label="Navigasi utama" className="hidden items-center gap-1 lg:flex">
-              {MENU_UTAMA.map((menu) => {
-                const aktif = sedangAktif(url, menu.ke, menu.ujung)
-
-                return (
-                  <Link
-                    key={menu.label}
-                    href={menu.ke}
-                    aria-current={aktif ? 'page' : undefined}
-                    className={`rounded-md px-3 py-2 text-sm font-semibold transition ${
-                      aktif ? 'bg-gold text-navy' : 'text-white/85 hover:bg-white/10 hover:text-white'
-                    }`}
-                  >
-                    {menu.label}
-                  </Link>
-                )
-              })}
+              {MENU_UTAMA.map((menu) => (
+                <Link
+                  key={menu.label}
+                  href={menu.ke}
+                  aria-current={sedangAktif(url, menu) ? 'page' : undefined}
+                  className={gayaMenu(sedangAktif(url, menu))}
+                >
+                  {menu.label}
+                </Link>
+              ))}
             </nav>
 
             <button
@@ -162,7 +177,7 @@ export function LayoutPublik({ children }: { children: ReactNode }) {
             >
               <div className="mx-auto max-w-6xl px-4 py-2">
                 {MENU_UTAMA.map((menu) => {
-                  const aktif = sedangAktif(url, menu.ke, menu.ujung)
+                  const aktif = sedangAktif(url, menu)
 
                   return (
                     <Link
@@ -253,6 +268,8 @@ export function LayoutPublik({ children }: { children: ReactNode }) {
               <ul className="mt-3 space-y-2 text-sm">
                 {[
                   ['/profil', 'Profil Desa'],
+                  ['/potensi?kategori=Pariwisata', 'Wisata Desa'],
+                  ['/potensi?kategori=Ekonomi', 'Ekonomi Desa'],
                   ['/ppid', 'PPID Desa'],
                   ['/layanan-mandiri', 'Layanan Mandiri'],
                   ['/berita', 'Berita Desa'],

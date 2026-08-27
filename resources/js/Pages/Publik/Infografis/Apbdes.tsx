@@ -1,6 +1,7 @@
-import { Head } from '@inertiajs/react'
+import { useId } from 'react'
+import { Head, router } from '@inertiajs/react'
 import { EmptyState } from '@/Components/EmptyState'
-import { GarisTren, KartuAngka } from '@/Components/viz/Grafik'
+import { GarisTren, KartuAngka, Lingkaran } from '@/Components/viz/Grafik'
 import { bungkusInfografis } from '@/Layouts/LayoutInfografis'
 import { formatRupiah, formatRupiahRingkas } from '@/lib/format'
 import type { InfografisApbdes } from '@/types/api'
@@ -21,11 +22,21 @@ export default function Apbdes({ data }: { data: InfografisApbdes | null }) {
 
   const surplus = data.ringkasan.surplus_defisit
 
+  // Komposisi per kelompok: proporsi tiap kategori terhadap total kelompoknya.
+  const juringKelompok = (nama: string) =>
+    (data.kelompok.find((k) => k.kelompok === nama)?.kategori ?? []).map((kategori) => ({
+      label: kategori.nama,
+      jumlah: kategori.total_anggaran,
+    }))
+
+  const komposisiPendapatan = juringKelompok('Pendapatan')
+  const komposisiBelanja = juringKelompok('Belanja')
+
   return (
     <div className="mx-auto max-w-6xl px-6 py-10">
       <Head title={`APBDes ${data.tahun}`} />
 
-      <p className="text-center text-sm text-slate-500">Tahun Anggaran {data.tahun}</p>
+      <PemilihTahun tahun={data.tahun} tersedia={data.tahun_tersedia} />
 
       <div className="mt-8 grid gap-4 sm:grid-cols-3">
         <KartuAngka
@@ -39,6 +50,25 @@ export default function Apbdes({ data }: { data: InfografisApbdes | null }) {
           keterangan="Total Pendapatan − Total Belanja"
         />
       </div>
+
+      {(komposisiPendapatan.length > 0 || komposisiBelanja.length > 0) && (
+        <div className="mt-6 grid gap-6 lg:grid-cols-2">
+          {komposisiPendapatan.length > 0 && (
+            <Lingkaran
+              judul="Komposisi Pendapatan"
+              data={komposisiPendapatan}
+              formatNilai={formatRupiahRingkas}
+            />
+          )}
+          {komposisiBelanja.length > 0 && (
+            <Lingkaran
+              judul="Komposisi Belanja"
+              data={komposisiBelanja}
+              formatNilai={formatRupiahRingkas}
+            />
+          )}
+        </div>
+      )}
 
       {data.tren.length > 0 && (
         <div className="mt-12">
@@ -102,6 +132,51 @@ export default function Apbdes({ data }: { data: InfografisApbdes | null }) {
           </section>
         ))}
       </div>
+    </div>
+  )
+}
+
+/**
+ * Pemilih tahun anggaran.
+ *
+ * Tahun dipilih lewat query string, bukan state React: alamat halaman menjadi
+ * dapat dibagikan dan ditandai (mis. /infografis/apbdes?tahun=2024), dan data
+ * tetap dirakit di server bersama seluruh isi halaman. `replace` dipakai agar
+ * berpindah-pindah tahun tidak menumpuk riwayat peramban.
+ *
+ * Hanya satu tahun terbit? Dropdown tak ada gunanya — cukup tampilkan tahunnya.
+ */
+function PemilihTahun({ tahun, tersedia }: { tahun: number; tersedia: number[] }) {
+  const id = useId()
+
+  if (tersedia.length < 2) {
+    return <p className="text-center text-sm text-slate-500">Tahun Anggaran {tahun}</p>
+  }
+
+  return (
+    <div className="flex flex-wrap items-center justify-center gap-2">
+      <label htmlFor={id} className="text-sm text-slate-500">
+        Tahun Anggaran
+      </label>
+
+      <select
+        id={id}
+        value={tahun}
+        onChange={(e) =>
+          router.get(
+            '/infografis/apbdes',
+            { tahun: e.target.value },
+            { preserveScroll: true, replace: true },
+          )
+        }
+        className="rounded-full border-2 border-navy/20 bg-white px-4 py-1.5 text-sm font-semibold text-navy transition outline-none hover:border-navy/40 focus:border-navy"
+      >
+        {tersedia.map((t) => (
+          <option key={t} value={t}>
+            {t}
+          </option>
+        ))}
+      </select>
     </div>
   )
 }

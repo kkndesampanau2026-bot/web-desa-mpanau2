@@ -12,6 +12,14 @@ class Potential extends Model
 {
     use HasFactory;
 
+    /**
+     * Seluruh kategori potensi — semuanya tampil di /potensi, tanpa kecuali.
+     *
+     * Sempat ada dua kategori (Pariwisata & Ekonomi) yang dikeluarkan dari
+     * daftar karena diselipkan ke halaman /wisata dan /belanja. Pemisahan itu
+     * dibatalkan: potensi desa kini utuh di satu tempat, sementara /wisata dan
+     * /ekonomi murni berisi destinasi dan katalog produk.
+     */
     public const KATEGORI = [
         'Ekonomi',
         'Pariwisata',

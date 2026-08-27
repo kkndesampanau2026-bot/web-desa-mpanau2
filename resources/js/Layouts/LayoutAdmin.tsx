@@ -3,7 +3,9 @@ import { Head, Link, router } from '@inertiajs/react'
 import {
   Bell,
   FileText,
+  Gauge,
   HandCoins,
+  HeartPulse,
   Images,
   Landmark,
   LayoutDashboard,
@@ -13,8 +15,10 @@ import {
   Newspaper,
   Settings,
   Store,
+  Target,
   Users,
   UsersRound,
+  Wallet,
   type LucideIcon,
 } from 'lucide-react'
 import { punyaIzin, useHalaman } from '@/types/inertia'
@@ -36,6 +40,10 @@ const MENU: { ke: string; label: string; izin: string; ikon: LucideIcon; ujung?:
   { ke: '/admin/berita', label: 'Berita', izin: 'manage-news', ikon: Newspaper },
   { ke: '/admin/galeri', label: 'Galeri', izin: 'manage-gallery', ikon: Images },
   { ke: '/admin/penduduk', label: 'Data Penduduk', izin: 'manage-population-data', ikon: UsersRound },
+  { ke: '/admin/apbdes', label: 'APBDes', izin: 'manage-apbdes', ikon: Wallet },
+  { ke: '/admin/stunting', label: 'Stunting', izin: 'manage-stunting', ikon: HeartPulse },
+  { ke: '/admin/idm', label: 'IDM', izin: 'manage-idm', ikon: Gauge },
+  { ke: '/admin/sdgs', label: 'SDGs Desa', izin: 'manage-sdgs', ikon: Target },
   { ke: '/admin/ekonomi', label: 'Potensi & Ekonomi', izin: 'manage-potential', ikon: Store },
   { ke: '/admin/peta', label: 'Titik Lokasi', izin: 'manage-poi', ikon: MapPin },
   { ke: '/admin/pengaduan', label: 'Pengaduan', izin: 'respond-complaint', ikon: MessageSquareWarning },

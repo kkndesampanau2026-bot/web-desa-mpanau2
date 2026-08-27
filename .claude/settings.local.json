@@ -2,7 +2,14 @@
   "permissions": {
     "allow": [
       "Bash(composer require *)",
-      "Bash(php artisan *)"
+      "Bash(php artisan *)",
+      "PowerShell(php artisan tinker --execute=\"try { \\\\$r = app\\('Illuminate\\\\Contracts\\\\Http\\\\Kernel'\\)->handle\\(Illuminate\\\\Http\\\\Request::create\\('/infografis/apbdes','GET'\\)\\); echo 'STATUS: '.\\\\$r->getStatusCode\\(\\).PHP_EOL; echo substr\\(strip_tags\\(\\\\$r->getContent\\(\\)\\),0,600\\); } catch \\(\\\\Throwable \\\\$e\\) { echo get_class\\(\\\\$e\\).': '.\\\\$e->getMessage\\(\\).' @ '.\\\\$e->getFile\\(\\).':'.\\\\$e->getLine\\(\\); }\" 2>&1 | Select-Object -Last 30)",
+      "PowerShell(php artisan test tests/Feature/Sementara/CekApbdesTest.php 2>&1 | Select-Object -First 45)",
+      "PowerShell(Start-Process -FilePath \"php\" -ArgumentList \"artisan\",\"serve\",\"--port=8123\" -WorkingDirectory \"d:\\\\Khaechal\\\\KKN\\\\web desa mpanau2\" -WindowStyle Hidden; Start-Sleep -Seconds 4; try { $r = Invoke-WebRequest -Uri \"http://127.0.0.1:8123/infografis/apbdes\" -UseBasicParsing -TimeoutSec 60; \"STATUS: $\\($r.StatusCode\\)\" } catch { \"ERR STATUS: $\\($_.Exception.Response.StatusCode.value__\\)\" })",
+      "PowerShell($r = Invoke-WebRequest -Uri \"http://127.0.0.1:8123/infografis/apbdes\" -Headers @{ \"X-Inertia\" = \"true\"; \"X-Inertia-Version\" = \"\"; \"Accept\" = \"text/html, application/xhtml+xml\" } -UseBasicParsing -TimeoutSec 60; \"STATUS: $\\($r.StatusCode\\)\"; $r.Content.Substring\\(0, [Math]::Min\\(1500, $r.Content.Length\\)\\))",
+      "PowerShell($r = Invoke-WebRequest -Uri \"http://127.0.0.1:8123/infografis/apbdes\" -UseBasicParsing -TimeoutSec 60; $c = $r.Content; \"punya tahun_tersedia: \" + \\($c -match 'tahun_tersedia'\\); if \\($c -match '\\(\\\\{&quot;tahun&quot;.{0,400}\\)'\\) { $matches[1] })",
+      "PowerShell(php artisan test tests/Feature/Sementara/CekApbdesTest.php 2>&1 | Select-Object -First 40)",
+      "PowerShell(foreach \\($u in @\\(\"http://127.0.0.1:8123/infografis/apbdes?tahun=2025\",\"http://127.0.0.1:8123/infografis/apbdes?tahun=2026\",\"http://127.0.0.1:8123/infografis/apbdes?tahun=2024\",\"http://127.0.0.1:8123/infografis/penduduk\"\\)\\) { try { $r = Invoke-WebRequest -Uri $u -UseBasicParsing -TimeoutSec 60; \"$u -> $\\($r.StatusCode\\)\" } catch { \"$u -> ERR $\\($_.Exception.Response.StatusCode.value__\\)\" } })"
     ]
   }
 }

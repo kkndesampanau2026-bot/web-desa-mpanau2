@@ -10,6 +10,7 @@ use App\Models\Village;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -126,6 +127,250 @@ class EkonomiTest extends TestCase
             'judul' => 'Kopi Robusta',
             'deskripsi' => 'Deskripsi diperbarui.',
         ])->assertOk()->assertJsonPath('data.slug', 'kopi-robusta');
+    }
+
+    // ------------------------------------------------------------------
+    // Isi /potensi dan alamat lamanya
+    // ------------------------------------------------------------------
+
+    /**
+     * Seluruh kategori tampil di /potensi, termasuk Pariwisata dan Ekonomi.
+     *
+     * Keduanya sempat dikeluarkan karena diselipkan ke /wisata dan /belanja —
+     * akibatnya dua kategori raib dari filter dan pengunjung yang menyaringnya
+     * di sini selalu menemui daftar kosong.
+     */
+    public function test_seluruh_kategori_tampil_di_daftar_potensi(): void
+    {
+        foreach (['Pariwisata', 'Ekonomi', 'Pertanian'] as $i => $kategori) {
+            Potential::create([
+                'village_id' => $this->village->id,
+                'kategori' => $kategori,
+                'judul' => "Potensi {$kategori}",
+                'slug' => 'potensi-'.$i,
+            ]);
+        }
+
+        $data = $this->getJson('/api/v1/potensi')->assertOk()->json('data');
+
+        $this->assertSame(['Ekonomi', 'Pariwisata', 'Pertanian'], $data['kategori_tersedia']);
+        $this->assertCount(3, $data['items']);
+    }
+
+    /**
+     * Chip kategori selalu lengkap, terisi maupun tidak.
+     *
+     * Sejak menu bercabang di bilah navigasi dihapus, barisan chip inilah
+     * satu-satunya jalan menuju destinasi wisata dan katalog UMKM — chip yang
+     * disembunyikan karena kosong berarti isinya tidak terjangkau sama sekali.
+     */
+    public function test_chip_kategori_selalu_lengkap(): void
+    {
+        $this->get('/potensi')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Publik/Ekonomi/Potensi')
+                ->where('kategori', Potential::KATEGORI)
+            );
+    }
+
+    /** Kategori Pariwisata diisi daftar destinasi, bukan kartu potensi. */
+    public function test_kategori_pariwisata_diisi_destinasi_wisata(): void
+    {
+        TourismSpot::create([
+            'village_id' => $this->village->id,
+            'nama' => 'Air Terjun Mpanau', 'slug' => 'air-terjun-mpanau',
+        ]);
+        Potential::create([
+            'village_id' => $this->village->id,
+            'kategori' => 'Pariwisata', 'judul' => 'Bukit Panorama', 'slug' => 'bukit-panorama',
+        ]);
+
+        $this->get('/potensi?kategori=Pariwisata')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Publik/Ekonomi/Potensi')
+                ->where('wisata.0.nama', 'Air Terjun Mpanau')
+                ->missing('data')
+            );
+    }
+
+    /** Kategori Ekonomi diisi katalog UMKM, bukan kartu potensi. */
+    public function test_kategori_ekonomi_diisi_katalog_umkm(): void
+    {
+        $this->buatProduk(['nama_produk' => 'Keripik Pisang', 'slug' => 'keripik-pisang']);
+        Potential::create([
+            'village_id' => $this->village->id,
+            'kategori' => 'Ekonomi', 'judul' => 'Kopi Robusta', 'slug' => 'kopi-robusta',
+        ]);
+
+        $this->get('/potensi?kategori=Ekonomi')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Publik/Ekonomi/Potensi')
+                ->where('produk.items.0.nama_produk', 'Keripik Pisang')
+                ->missing('data')
+            );
+    }
+
+    /** Pencarian produk ikut bekerja saat katalog tampil di dalam /potensi. */
+    public function test_pencarian_produk_bekerja_di_dalam_potensi(): void
+    {
+        $this->buatProduk(['nama_produk' => 'Keripik Pisang', 'slug' => 'keripik-pisang']);
+        $this->buatProduk(['nama_produk' => 'Gula Aren', 'slug' => 'gula-aren']);
+
+        $this->get('/potensi?kategori=Ekonomi&cari=Keripik')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('filter.cari', 'Keripik')
+                ->has('produk.items', 1)
+                ->where('produk.items.0.nama_produk', 'Keripik Pisang')
+            );
+    }
+
+    /** Kategori biasa tetap menampilkan kartu potensi seperti sedia kala. */
+    public function test_kategori_biasa_tetap_menampilkan_kartu_potensi(): void
+    {
+        Potential::create([
+            'village_id' => $this->village->id,
+            'kategori' => 'Pertanian', 'judul' => 'Sawah Produktif', 'slug' => 'sawah',
+        ]);
+
+        $this->get('/potensi?kategori=Pertanian')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('data.items.0.judul', 'Sawah Produktif')
+                ->missing('produk')
+                ->missing('wisata')
+            );
+    }
+
+    /**
+     * Kategori produk pada tab Ekonomi memakai `jenis`, bukan `kategori`.
+     *
+     * Keduanya sempat berbagi satu nama parameter. Akibatnya menyaring
+     * "Makanan" lalu membuka salah satu produknya membuat halaman detail
+     * membaca "Makanan" sebagai kategori potensi — dan berakhir 404.
+     */
+    public function test_penyaring_kategori_produk_terpisah_dari_kategori_potensi(): void
+    {
+        $this->buatProduk([
+            'nama_produk' => 'Keripik Pisang', 'slug' => 'keripik-pisang', 'kategori' => 'Makanan',
+        ]);
+        $this->buatProduk([
+            'nama_produk' => 'Tikar Rotan', 'slug' => 'tikar-rotan', 'kategori' => 'Kerajinan',
+        ]);
+
+        $this->get('/potensi?kategori=Ekonomi&jenis=Makanan')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Publik/Ekonomi/Potensi')
+                ->where('filter.jenis', 'Makanan')
+                ->has('produk.items', 1)
+                ->where('produk.items.0.nama_produk', 'Keripik Pisang')
+            );
+    }
+
+    /**
+     * Alamat lama tidak boleh berakhir 404: tautannya sudah terlanjur dibagikan
+     * warga dan diindeks mesin pencari.
+     */
+    public function test_alamat_lama_dialihkan_ke_potensi(): void
+    {
+        $this->get('/wisata')->assertRedirect('/potensi?kategori=Pariwisata');
+        $this->get('/wisata/air-terjun')
+            ->assertRedirect('/potensi/air-terjun?kategori=Pariwisata');
+
+        $this->get('/ekonomi')->assertRedirect('/potensi?kategori=Ekonomi');
+        $this->get('/ekonomi/keripik-pisang')
+            ->assertRedirect('/potensi/keripik-pisang?kategori=Ekonomi');
+
+        $this->get('/belanja')->assertRedirect('/potensi?kategori=Ekonomi');
+        $this->get('/belanja/keripik-pisang')
+            ->assertRedirect('/potensi/keripik-pisang?kategori=Ekonomi');
+    }
+
+    /**
+     * Detail destinasi dan produk tinggal di bawah /potensi, dengan kategori
+     * yang ikut terbawa dari daftarnya.
+     */
+    public function test_detail_wisata_dan_produk_dibuka_di_bawah_potensi(): void
+    {
+        TourismSpot::create([
+            'village_id' => $this->village->id,
+            'nama' => 'Air Terjun Mpanau', 'slug' => 'air-terjun-mpanau',
+        ]);
+        $this->buatProduk(['nama_produk' => 'Keripik Pisang', 'slug' => 'keripik-pisang']);
+
+        $this->get('/potensi/air-terjun-mpanau?kategori=Pariwisata')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Publik/Ekonomi/WisataDetail')
+                ->where('wisata.nama', 'Air Terjun Mpanau')
+            );
+
+        $this->get('/potensi/keripik-pisang?kategori=Ekonomi')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Publik/Ekonomi/ProdukDetail')
+                ->where('produk.nama_produk', 'Keripik Pisang')
+            );
+    }
+
+    /**
+     * Tombol "kembali" memulangkan pengunjung ke daftar yang tadi dibuka —
+     * lengkap dengan kategori, penyaring, kata kunci, dan nomor halamannya.
+     *
+     * Inilah alasan halaman detail dipindahkan ke bawah /potensi. Sewaktu
+     * detail produk tinggal di /ekonomi/<slug>, tombol itu tidak punya cara
+     * mengetahui daftar mana yang tadi dibuka dan selalu mendarat di /ekonomi.
+     */
+    public function test_tautan_kembali_memulihkan_keadaan_daftar(): void
+    {
+        $this->buatProduk([
+            'nama_produk' => 'Keripik Pisang', 'slug' => 'keripik-pisang', 'kategori' => 'Makanan',
+        ]);
+
+        $this->get('/potensi/keripik-pisang?kategori=Ekonomi&jenis=Makanan&cari=Keripik&page=2')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where(
+                    'kembali',
+                    '/potensi?cari=Keripik&jenis=Makanan&kategori=Ekonomi&page=2'
+                )
+            );
+    }
+
+    /**
+     * Seluruh isi potensi dapat dibuka pengunjung, bukan berhenti di ringkasan
+     * kartu pada daftar.
+     */
+    public function test_detail_potensi_dapat_dibuka(): void
+    {
+        Potential::create([
+            'village_id' => $this->village->id,
+            'kategori' => 'Pariwisata', 'judul' => 'Air Terjun', 'slug' => 'air-terjun',
+            'deskripsi' => 'Air terjun bertingkat di hulu sungai.',
+        ]);
+
+        $this->get('/potensi/air-terjun')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Publik/Ekonomi/PotensiDetail')
+                ->where('potensi.judul', 'Air Terjun')
+                ->where('potensi.deskripsi', 'Air terjun bertingkat di hulu sungai.')
+            );
+    }
+
+    public function test_detail_potensi_yang_disembunyikan_menghasilkan_404(): void
+    {
+        Potential::create([
+            'village_id' => $this->village->id,
+            'kategori' => 'Pertanian', 'judul' => 'Draf', 'slug' => 'draf',
+            'status_tampil' => false,
+        ]);
+
+        $this->get('/potensi/draf')->assertNotFound();
     }
 
     // ------------------------------------------------------------------

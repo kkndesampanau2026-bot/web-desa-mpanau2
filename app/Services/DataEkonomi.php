@@ -6,6 +6,7 @@ use App\Models\Potential;
 use App\Models\Product;
 use App\Models\TourismSpot;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -26,47 +27,89 @@ class DataEkonomi
     // ------------------------------------------------------------------
 
     /**
+     * Daftar potensi untuk halaman /potensi.
+     *
+     * Seluruh kategori ikut, termasuk Pariwisata dan Ekonomi. Keduanya sempat
+     * dikeluarkan karena diselipkan ke /wisata dan /belanja — akibatnya dua
+     * kategori hilang dari filter dan pengunjung yang menyaring "Ekonomi" di
+     * sini selalu menemui daftar kosong.
+     *
      * @return array<string, mixed>|null
      */
     public function potensi(?string $kategori = null): ?array
     {
-        $villageId = $this->village->id();
-        $kunci = "potensi:{$villageId}:".($kategori ?: 'semua');
+        $daftar = $this->potensiTampil();
 
-        return Cache::remember($kunci, self::TTL, function () use ($villageId, $kategori) {
-            $daftar = Potential::query()
+        if ($daftar->isEmpty()) {
+            return null;   // empty-state (PRD 3.2)
+        }
+
+        return [
+            'items' => ($kategori ? $daftar->where('kategori', $kategori) : $daftar)
+                ->values(),
+            // Kategori yang benar-benar terisi saja — menampilkan filter
+            // yang pasti kosong hanya membuat pengunjung menemui jalan buntu.
+            'kategori_tersedia' => $daftar->pluck('kategori')->unique()->sort()->values(),
+        ];
+    }
+
+    /**
+     * Satu potensi beserta seluruh isinya — halaman detail publik.
+     *
+     * @return array<string, mixed>
+     */
+    public function potensiDetail(string $slug): array
+    {
+        $potensi = Potential::query()
+            ->where('village_id', $this->village->id())
+            ->where('slug', $slug)
+            ->where('status_tampil', true)
+            ->firstOrFail();
+
+        return $this->bentukPotensi($potensi);
+    }
+
+    /**
+     * Seluruh potensi yang ditampilkan, sudah dibentuk siap pakai.
+     *
+     * Disimpan sebagai satu entri cache lalu disaring di PHP. Sebelumnya tiap
+     * kombinasi filter punya kuncinya sendiri, sehingga satu penyuntingan di
+     * CMS harus membatalkan sebanyak mungkin kunci sebagaimana kategori yang
+     * ada — dan satu kunci yang terlewat berarti data basi di situs publik.
+     *
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function potensiTampil(): Collection
+    {
+        $villageId = $this->village->id();
+
+        return Cache::remember(
+            "potensi:{$villageId}",
+            self::TTL,
+            fn () => Potential::query()
                 ->where('village_id', $villageId)
                 ->tampil()
-                ->when($kategori, fn ($q, $k) => $q->where('kategori', $k))
                 ->get()
-                ->map(fn ($p) => [
-                    'id' => $p->id,
-                    'kategori' => $p->kategori,
-                    'judul' => $p->judul,
-                    'slug' => $p->slug,
-                    'deskripsi' => $p->deskripsi,
-                    'foto' => $p->foto ? asset('storage/'.$p->foto) : null,
-                    'koordinat' => $p->latitude === null ? null : [
-                        'latitude' => $p->latitude,
-                        'longitude' => $p->longitude,
-                    ],
-                ]);
+                ->map(fn ($p) => $this->bentukPotensi($p))
+                ->values()
+        );
+    }
 
-            if ($daftar->isEmpty()) {
-                return null;   // empty-state (PRD 3.2)
-            }
-
-            return [
-                'items' => $daftar,
-                // Kategori yang benar-benar terisi saja — menampilkan filter
-                // yang pasti kosong hanya membuat pengunjung menemui jalan buntu.
-                'kategori_tersedia' => Potential::where('village_id', $villageId)
-                    ->where('status_tampil', true)
-                    ->distinct()
-                    ->orderBy('kategori')
-                    ->pluck('kategori'),
-            ];
-        });
+    /** @return array<string, mixed> */
+    private function bentukPotensi(Potential $potensi): array
+    {
+        return [
+            'id' => $potensi->id,
+            'kategori' => $potensi->kategori,
+            'judul' => $potensi->judul,
+            'slug' => $potensi->slug,
+            'deskripsi' => $potensi->deskripsi,
+            'foto' => $potensi->foto ? asset('storage/'.$potensi->foto) : null,
+            'koordinat' => $potensi->latitude === null ? null : [
+                'latitude' => $potensi->latitude,
+                'longitude' => $potensi->longitude,
+            ],
+        ];
     }
 
     // ------------------------------------------------------------------

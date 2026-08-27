@@ -6,12 +6,19 @@ import { formatRupiah } from '@/lib/format'
 import type { ProdukDetail as Produk } from '@/types/api'
 
 /** Detail produk UMKM — PRD 6.12. */
-export default function ProdukDetail({ produk }: { produk: Produk }) {
+export default function ProdukDetail({
+  produk,
+  kembali = '/potensi?kategori=Ekonomi',
+}: {
+  produk: Produk
+  /** Alamat katalog tempat pengunjung berangkat, disusun oleh controller. */
+  kembali?: string
+}) {
   return (
     <div className="mx-auto max-w-3xl px-6 py-10">
       <Head title={produk.nama_produk} />
 
-      <Link href="/belanja" className="text-sm text-slate-500 hover:text-navy">
+      <Link href={kembali} className="text-sm text-slate-500 hover:text-navy">
         ← Kembali ke katalog
       </Link>
 

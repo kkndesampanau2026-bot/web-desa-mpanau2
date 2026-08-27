@@ -30,11 +30,7 @@ export default function Idm({ data }: { data: InfografisIdm | null }) {
     <div className="mx-auto max-w-6xl px-6 py-10">
       <Head title={`Indeks Desa Membangun ${data.tahun}`} />
 
-      <p className="text-center text-sm text-slate-500">
-        Indeks Desa Membangun · Tahun {data.tahun}
-      </p>
-
-      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KartuAngka label="Skor IDM" nilai={data.skor.idm?.toFixed(4).replace('.', ',') ?? '—'} />
         <KartuAngka label="Status Desa" nilai={data.status_idm ?? '—'} />
         <KartuAngka label="Target Status" nilai={data.target.status ?? '—'} />

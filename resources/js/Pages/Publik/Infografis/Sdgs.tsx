@@ -28,9 +28,7 @@ export default function Sdgs({ data }: { data: InfografisSdgs | null }) {
     <div className="mx-auto max-w-6xl px-6 py-10">
       <Head title={`SDGs Desa ${data.tahun}`} />
 
-      <p className="text-center text-sm text-slate-500">SDGs Desa · Tahun {data.tahun}</p>
-
-      <div className="mt-8 max-w-xs">
+      <div className="max-w-xs">
         <KartuAngka
           label="Skor Rata-rata"
           nilai={data.skor_rata_rata.toFixed(2).replace('.', ',')}

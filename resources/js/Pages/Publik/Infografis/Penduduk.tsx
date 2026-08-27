@@ -1,11 +1,6 @@
 import { Head } from '@inertiajs/react'
 import { EmptyState } from '@/Components/EmptyState'
-import {
-  BatangKategori,
-  BatangPerbandingan,
-  GarisTren,
-  KartuAngka,
-} from '@/Components/viz/Grafik'
+import { BatangKategori, GarisTren, KartuAngka, Lingkaran } from '@/Components/viz/Grafik'
 import { bungkusInfografis } from '@/Layouts/LayoutInfografis'
 import type { InfografisPenduduk } from '@/types/api'
 
@@ -27,9 +22,7 @@ export default function Penduduk({ data }: { data: InfografisPenduduk | null }) 
     <div className="mx-auto max-w-6xl px-6 py-10">
       <Head title="Infografis Kependudukan" />
 
-      <p className="text-center text-sm text-slate-500">Data periode {data.periode}</p>
-
-      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KartuAngka label="Total Penduduk" nilai={data.ringkasan.total_penduduk} satuan="jiwa" />
         <KartuAngka label="Kepala Keluarga" nilai={data.ringkasan.total_kk} satuan="KK" />
         <KartuAngka
@@ -50,7 +43,7 @@ export default function Penduduk({ data }: { data: InfografisPenduduk | null }) 
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <BatangPerbandingan
+        <Lingkaran
           judul="Jenis Kelamin"
           data={[
             {
@@ -66,12 +59,15 @@ export default function Penduduk({ data }: { data: InfografisPenduduk | null }) 
           ]}
         />
 
-        <BatangKategori judul="Kelompok Umur" data={data.breakdown.kelompok_umur} />
+        <Lingkaran judul="Kelompok Umur" data={data.breakdown.kelompok_umur} />
+        <Lingkaran judul="Status Perkawinan" data={data.breakdown.perkawinan} />
+        <Lingkaran judul="Agama" data={data.breakdown.agama} />
+
+        {/* Label panjang dan kategori banyak: batang tetap lebih terbaca
+            daripada juring lingkaran. */}
         <BatangKategori judul="Sebaran per Dusun" data={data.breakdown.dusun} />
         <BatangKategori judul="Tingkat Pendidikan" data={data.breakdown.pendidikan} />
         <BatangKategori judul="Jenis Pekerjaan" data={data.breakdown.pekerjaan} />
-        <BatangKategori judul="Status Perkawinan" data={data.breakdown.perkawinan} />
-        <BatangKategori judul="Agama" data={data.breakdown.agama} />
       </div>
 
       {data.riwayat.length > 1 && (

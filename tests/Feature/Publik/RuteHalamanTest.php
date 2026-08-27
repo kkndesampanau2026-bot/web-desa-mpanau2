@@ -57,8 +57,10 @@ class RuteHalamanTest extends TestCase
             'infografis idm' => ['/infografis/idm', 'Publik/Infografis/Idm'],
             'infografis sdgs' => ['/infografis/sdgs', 'Publik/Infografis/Sdgs'],
             'potensi' => ['/potensi', 'Publik/Ekonomi/Potensi'],
-            'wisata' => ['/wisata', 'Publik/Ekonomi/Wisata'],
-            'belanja' => ['/belanja', 'Publik/Ekonomi/Belanja'],
+            // Wisata dan katalog UMKM tidak lagi punya halaman sendiri: keduanya
+            // kategori di dalam /potensi, berikut halaman detailnya.
+            'potensi wisata' => ['/potensi?kategori=Pariwisata', 'Publik/Ekonomi/Potensi'],
+            'potensi ekonomi' => ['/potensi?kategori=Ekonomi', 'Publik/Ekonomi/Potensi'],
             'ppid beranda' => ['/ppid', 'Publik/Ppid/Beranda'],
             'ppid dasar hukum' => ['/ppid/dasar-hukum', 'Publik/Ppid/DasarHukum'],
             'ppid berkala' => ['/ppid/berkala', 'Publik/Ppid/Informasi'],
