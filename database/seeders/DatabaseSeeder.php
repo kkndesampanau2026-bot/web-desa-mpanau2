@@ -14,6 +14,10 @@ class DatabaseSeeder extends Seeder
             RolePermissionSeeder::class,
             VillageSeeder::class,
             AdminUserSeeder::class,
+            // Master RT & dusun untuk layanan Surat Pengantar. Bukan data
+            // contoh: ia dibutuhkan agar formulir warga punya pilihan RT,
+            // sehingga tetap dijalankan di produksi.
+            SuratPengantarSeeder::class,
             // Konten contoh untuk pengembangan; otomatis dilewati di produksi.
             KontenDemoSeeder::class,
             DataTransparansiDemoSeeder::class,

@@ -11,6 +11,9 @@ use App\Http\Controllers\Publik\PengaduanController;
 use App\Http\Controllers\Publik\PetaController;
 use App\Http\Controllers\Publik\PpidController;
 use App\Http\Controllers\Publik\ProfilController;
+use App\Http\Controllers\Publik\SuratPengantarController;
+use App\Http\Controllers\Publik\TelegramWebhookController;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -148,6 +151,22 @@ Route::middleware('catat.kunjungan')->group(function () {
     | Layanan Mandiri — laman pengarah yang mengumpulkan layanan warga.
     */
     Route::get('/layanan-mandiri', LayananMandiriController::class)->name('layanan-mandiri');
+
+    /*
+    | Surat Pengantar RT/Dusun.
+    |
+    | Sepola dengan Pengaduan & PPID: formulir dan pelacakan berdiri sebagai
+    | dua alamat terpisah, sehingga tautan hasil pelacakan dapat dibagikan
+    | tanpa ikut membawa formulir kosong.
+    */
+    Route::get('/layanan-mandiri/surat-pengantar', [SuratPengantarController::class, 'formulir'])
+        ->name('surat.pengantar');
+    // Dibatasi lajunya meski hanya GET: halaman inilah yang membuka data
+    // pemohon bila pasangan tiket + tanggal lahir tepat, sehingga ia adalah
+    // permukaan penebakan — bukan sekadar halaman baca.
+    Route::get('/layanan-mandiri/surat-pengantar/lacak', [SuratPengantarController::class, 'lacak'])
+        ->middleware('throttle:cek-surat')
+        ->name('surat.lacak');
 });
 
 /*
@@ -175,6 +194,44 @@ Route::post('/ppid/permintaan', [PpidController::class, 'ajukanPermohonan'])
 Route::post('/pengaduan', [PengaduanController::class, 'ajukan'])
     ->middleware('throttle:3,1')
     ->name('pengaduan.kirim');
+
+/*
+| Surat Pengantar.
+|
+| Pengajuan dibatasi ketat: setiap kiriman yang berhasil melahirkan satu
+| render PDF dan satu pesan Telegram ke ponsel Ketua RT. Tanpa rem ini,
+| formulir yang sama dapat dipakai membanjiri ponsel pejabat desa.
+*/
+Route::post('/layanan-mandiri/surat-pengantar', [SuratPengantarController::class, 'ajukan'])
+    ->middleware('throttle:kirim-surat')
+    ->name('surat.kirim');
+
+/*
+| Unduh PDF surat.
+|
+| Menuntut tanggal lahir pemohon, bukan nomor tiket saja — lihat catatan pada
+| SuratPengantarController::lacak(). Batas lajunya menahan penebakan pasangan
+| tiket + tanggal lahir secara beruntun.
+*/
+Route::get('/layanan-mandiri/surat-pengantar/{tiket}/unduh', [SuratPengantarController::class, 'unduh'])
+    ->middleware('throttle:cek-surat')
+    ->name('surat.unduh');
+
+/*
+|--------------------------------------------------------------------------
+| Webhook Telegram
+|--------------------------------------------------------------------------
+| Di luar grup mana pun: Telegram tidak membawa cookie sesi, tidak menerima
+| pengalihan, dan tidak boleh dihitung sebagai kunjungan halaman.
+|
+| CSRF dikecualikan karena pengirimnya bukan peramban warga. Sebagai
+| gantinya, keasliannya diperiksa lewat header rahasia dan seluruh wewenang
+| ditegakkan ulang dari chat ID pengirim — lihat TelegramWebhookController.
+*/
+Route::post('/telegram/webhook', TelegramWebhookController::class)
+    ->withoutMiddleware([ValidateCsrfToken::class])
+    ->middleware('throttle:telegram-webhook')
+    ->name('telegram.webhook');
 
 /*
 |--------------------------------------------------------------------------
@@ -227,6 +284,7 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
         ['pengaduan', 'Pengaduan', 'respond-complaint'],
         ['bansos', 'Bansos', 'manage-bansos'],
         ['ppid', 'Ppid', 'manage-ppid-content'],
+        ['surat', 'Surat', 'manage-letter-request'],
         ['pengaturan', 'Pengaturan', 'manage-settings'],
     ];
 

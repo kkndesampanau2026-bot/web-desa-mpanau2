@@ -33,6 +33,63 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->batasiLajuPencarianBansos();
+        $this->batasiLajuCekSurat();
+        $this->batasiLajuSurat();
+    }
+
+    /**
+     * Pembatasan laju pengajuan surat & webhook Telegram.
+     *
+     * Keduanya WAJIB memakai named limiter, bukan `throttle:3,1` di route.
+     * Middleware throttle tanpa nama menyusun kuncinya dari domain + alamat IP
+     * saja — bukan dari rutenya — sehingga SELURUH route ber-`throttle:N,1`
+     * berbagi satu penghitung yang sama. Akibatnya lalu lintas webhook, yang
+     * wajar mencapai puluhan panggilan per menit, ikut memakan jatah formulir
+     * warga yang hanya tiga.
+     *
+     * Named limiter memberi masing-masing awalan kunci sendiri, sehingga
+     * keduanya benar-benar terpisah.
+     */
+    private function batasiLajuSurat(): void
+    {
+        // Setiap pengajuan yang berhasil melahirkan satu render PDF dan satu
+        // pesan ke ponsel Ketua RT, jadi remnya ketat.
+        RateLimiter::for('kirim-surat', fn (Request $request) => Limit::perMinute(3)
+            ->by($request->ip())
+            ->response(fn () => back()->withErrors([
+                'nama' => 'Terlalu banyak pengajuan dari perangkat ini. '
+                    .'Silakan coba lagi beberapa saat lagi.',
+            ])->withInput()));
+
+        // Longgar: pengirimnya Telegram, bukan pengunjung. Batas ini hanya
+        // menahan banjir permintaan palsu ke alamat webhook.
+        RateLimiter::for('telegram-webhook', fn (Request $request) => Limit::perMinute(120)
+            ->by($request->ip()));
+    }
+
+    /**
+     * Pembatasan laju halaman Cek Status Surat & unduh PDF.
+     *
+     * Halaman itu membuka data pemohon (nama, RT, keperluan, dan berkas
+     * suratnya) bila pasangan nomor tiket + tanggal lahir tepat. Nomor tiket
+     * sudah acak 8 karakter, namun tanggal lahir hanya punya belasan ribu
+     * kemungkinan yang masuk akal — cukup sedikit untuk ditelusuri satu per
+     * satu bila tiketnya terlanjur diketahui.
+     *
+     * Rem inilah yang membuat penelusuran semacam itu memakan waktu berhari-
+     * hari alih-alih beberapa menit. Dipatok per alamat IP, sepola dengan
+     * limiter Cek Bansos.
+     */
+    private function batasiLajuCekSurat(): void
+    {
+        RateLimiter::for('cek-surat', function (Request $request) {
+            return Limit::perMinute(10)
+                ->by($request->ip())
+                ->response(fn () => response(
+                    'Terlalu banyak percobaan. Silakan coba lagi beberapa saat lagi.',
+                    429
+                ));
+        });
     }
 
     /**

@@ -19,6 +19,8 @@ class ActivityLog extends Model
         'user_id',
         'user_nama',
         'user_email',
+        'pelaku_tipe',
+        'pelaku_id',
         'aksi',
         'subjek_tipe',
         'subjek_id',

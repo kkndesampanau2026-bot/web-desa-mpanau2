@@ -44,15 +44,19 @@ class ActivityLogger
         ?string $deskripsi = null,
         ?array $dataSebelum = null,
         ?array $dataSesudah = null,
+        ?Model $pelaku = null,
     ): ActivityLog {
         $user = Auth::user();
         $request = request();
 
         return ActivityLog::create([
-            'village_id' => $user->village_id ?? null,
+            'village_id' => $user->village_id ?? $pelaku?->village_id ?? null,
             'user_id' => $user?->id,
-            'user_nama' => $user?->name,
+            'user_nama' => $user?->name ?? $pelaku?->nama,
             'user_email' => $user?->email,
+            // Pelaku non-sesi: lihat logSebagai().
+            'pelaku_tipe' => $pelaku ? $pelaku::class : null,
+            'pelaku_id' => $pelaku?->getKey(),
             'aksi' => $aksi,
             'subjek_tipe' => $subjek ? $subjek::class : null,
             'subjek_id' => $subjek?->getKey(),
@@ -62,6 +66,27 @@ class ActivityLogger
             'ip_hash' => $this->hashIp($request),
             'user_agent' => $request?->userAgent(),
         ]);
+    }
+
+    /**
+     * Mencatat aksi yang pelakunya BUKAN operator bersesi.
+     *
+     * Sampai kini setiap baris audit berasal dari operator yang login di CMS,
+     * sehingga `Auth::user()` selalu cukup. Persetujuan Surat Pengantar
+     * memutus asumsi itu: pelakunya Ketua RT atau Kepala Dusun yang menekan
+     * tombol di Telegram dan memang tidak punya akun CMS.
+     *
+     * Dipisahkan dari log() agar pemanggilannya terbaca jelas — bukan aksi
+     * anonim, melainkan aksi milik pejabat yang identitasnya sudah
+     * diverifikasi lewat chat ID.
+     */
+    public function logSebagai(
+        Model $pelaku,
+        string $aksi,
+        ?Model $subjek = null,
+        ?string $deskripsi = null,
+    ): ActivityLog {
+        return $this->log($aksi, $subjek, $deskripsi, pelaku: $pelaku);
     }
 
     /**

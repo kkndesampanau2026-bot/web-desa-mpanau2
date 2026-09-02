@@ -3,17 +3,19 @@ import { Head, Link } from '@inertiajs/react'
 import {
   ArrowRight,
   FileSearch,
+  FileSignature,
   FileText,
   HandCoins,
   Megaphone,
   Search,
+  TicketCheck,
   type LucideIcon,
 } from 'lucide-react'
 import { IsiHalaman, Kartu, KepalaHalaman } from '@/Components/ui'
 import { LayoutPublik } from '@/Layouts/LayoutPublik'
 
 const DESKRIPSI =
-  'Berbagai layanan warga yang dapat diakses mandiri tanpa perlu datang ke kantor desa: menyampaikan pengaduan, memohon informasi publik, hingga memeriksa status bantuan sosial.'
+  'Berbagai layanan warga yang dapat diakses mandiri tanpa perlu datang ke kantor desa: mengajukan surat pengantar, menyampaikan pengaduan, memohon informasi publik, hingga memeriksa status bantuan sosial.'
 
 interface Layanan {
   ikon: LucideIcon
@@ -24,6 +26,22 @@ interface Layanan {
 }
 
 const LAYANAN: Layanan[] = [
+  {
+    ikon: FileSignature,
+    judul: 'Surat Pengantar RT/Dusun',
+    deskripsi:
+      'Ajukan Surat Pengantar secara daring. Permohonan diteruskan ke Ketua RT dan Kepala Dusun untuk disetujui, tanpa perlu mengisi blangko manual.',
+    ke: '/layanan-mandiri/surat-pengantar',
+    aksi: 'Ajukan surat',
+  },
+  {
+    ikon: TicketCheck,
+    judul: 'Cek Status Surat',
+    deskripsi:
+      'Pantau proses persetujuan surat Anda dan unduh berkasnya menggunakan nomor tiket serta tanggal lahir pemohon.',
+    ke: '/layanan-mandiri/surat-pengantar/lacak',
+    aksi: 'Cek status',
+  },
   {
     ikon: Megaphone,
     judul: 'Pengaduan Masyarakat',

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Head, Link, router } from '@inertiajs/react'
 import {
   Bell,
+  FileSignature,
   FileText,
   Gauge,
   HandCoins,
@@ -49,6 +50,7 @@ const MENU: { ke: string; label: string; izin: string; ikon: LucideIcon; ujung?:
   { ke: '/admin/pengaduan', label: 'Pengaduan', izin: 'respond-complaint', ikon: MessageSquareWarning },
   { ke: '/admin/bansos', label: 'Bantuan Sosial', izin: 'manage-bansos', ikon: HandCoins },
   { ke: '/admin/ppid', label: 'PPID', izin: 'manage-ppid-content', ikon: FileText },
+  { ke: '/admin/surat', label: 'Surat Pengantar', izin: 'manage-letter-request', ikon: FileSignature },
   { ke: '/admin/pengaturan', label: 'Pengaturan Umum', izin: 'manage-settings', ikon: Settings },
 ]
 

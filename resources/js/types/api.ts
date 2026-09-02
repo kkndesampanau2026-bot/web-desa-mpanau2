@@ -414,3 +414,58 @@ export interface StatusPengaduan {
   tanggal_pengaduan: string
   tanggal_tanggapan: string | null
 }
+
+// --- Surat Pengantar RT/Dusun ---
+
+export type StatusSurat =
+  | 'MENUNGGU_APPROVAL_RT'
+  | 'MENUNGGU_APPROVAL_KADUS'
+  | 'DISETUJUI'
+  | 'DITOLAK'
+
+export interface PilihanRt {
+  id: number
+  nomor: string
+  dusun: string | null
+}
+
+export interface TandaTerimaSurat {
+  ticket_number: string
+  nama: string
+  status: StatusSurat
+  tanggal_pengajuan: string
+}
+
+export type AksiRiwayatSurat =
+  | 'diajukan'
+  | 'disetujui_rt'
+  | 'ditolak_rt'
+  | 'disetujui_kadus'
+  | 'ditolak_kadus'
+  | 'surat_terbit'
+
+export interface RiwayatSurat {
+  action: AksiRiwayatSurat
+  waktu: string | null
+}
+
+export interface StatusPengajuanSurat {
+  ticket_number: string
+  nama: string
+  /** Selalu tersamar: 727103********13. NIK utuh hanya ada di PDF. */
+  nik_tersamar: string
+  rt: string | null
+  dusun: string | null
+  jenis_surat: string
+  maksud_keperluan: string
+  status: StatusSurat
+  nomor_surat: string | null
+  tanggal_pengajuan: string
+  disetujui_rt_pada: string | null
+  disetujui_kadus_pada: string | null
+  ditolak_pada: string | null
+  ditolak_oleh: 'RT' | 'KADUS' | null
+  alasan_penolakan: string | null
+  pdf_tersedia: boolean
+  riwayat: RiwayatSurat[]
+}

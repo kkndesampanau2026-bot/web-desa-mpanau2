@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\V1\Admin\PpidController as AdminPpidController;
 use App\Http\Controllers\Api\V1\Admin\ProfileController as AdminProfileController;
 use App\Http\Controllers\Api\V1\Admin\ResidentController;
 use App\Http\Controllers\Api\V1\Admin\SettingController as AdminSettingController;
+use App\Http\Controllers\Api\V1\Admin\SuratPengantarController as AdminSuratController;
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Public\BansosController;
 use App\Http\Controllers\Api\V1\Public\EkonomiController;
@@ -348,6 +349,41 @@ Route::prefix('v1')->group(function () {
                 '/pengaduan/{complaint}/lampiran/{attachment}',
                 [AdminPengaduanController::class, 'unduhLampiran']
             );
+        });
+
+        /*
+        |------------------------------------------------------------------
+        | Surat Pengantar — master & pemantauan
+        |------------------------------------------------------------------
+        | Dua permission terpisah dengan sengaja. `manage-letter-request`
+        | cukup untuk memantau pengajuan dan membuat ulang PDF yang gagal;
+        | `manage-letter-official` memegang chat ID Telegram dan tanda tangan
+        | pejabat — yakni kunci yang menentukan siapa dapat menyetujui surat
+        | atas nama desa. Yang kedua tidak boleh ikut terbawa hanya karena
+        | seseorang diberi tugas memantau antrean surat.
+        */
+        Route::middleware('permission:manage-letter-request')->group(function () {
+            Route::get('/surat/pengajuan', [AdminSuratController::class, 'daftarPengajuan']);
+            Route::get('/surat/pengajuan/{letterRequest}', [AdminSuratController::class, 'lihatPengajuan']);
+            Route::post('/surat/pengajuan/{letterRequest}/pdf', [AdminSuratController::class, 'buatUlangPdf']);
+            Route::get('/surat/pengajuan/{letterRequest}/unduh', [AdminSuratController::class, 'unduhPdf']);
+            Route::get('/surat/dusun', [AdminSuratController::class, 'daftarDusun']);
+            Route::get('/surat/rt', [AdminSuratController::class, 'daftarRt']);
+        });
+
+        Route::middleware('permission:manage-letter-official')->group(function () {
+            Route::post('/surat/rt', [AdminSuratController::class, 'simpanRt']);
+            Route::put('/surat/rt/{rt}', [AdminSuratController::class, 'ubahRt']);
+            Route::delete('/surat/rt/{rt}', [AdminSuratController::class, 'hapusRt']);
+
+            Route::get('/surat/pejabat', [AdminSuratController::class, 'daftarPejabat']);
+            Route::post('/surat/pejabat', [AdminSuratController::class, 'simpanPejabat']);
+            // POST, bukan PUT: unggahan berkas multipart tidak terbaca
+            // Laravel pada permintaan PUT. Layar CMS mengirim _method=PUT
+            // seperti modul lain yang punya unggahan.
+            Route::post('/surat/pejabat/{letterOfficial}', [AdminSuratController::class, 'ubahPejabat']);
+            Route::delete('/surat/pejabat/{letterOfficial}', [AdminSuratController::class, 'hapusPejabat']);
+            Route::get('/surat/pejabat/{letterOfficial}/ttd', [AdminSuratController::class, 'lihatTandaTangan']);
         });
 
         Route::middleware('permission:manage-poi')->group(function () {

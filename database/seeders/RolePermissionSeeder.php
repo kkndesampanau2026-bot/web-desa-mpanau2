@@ -74,6 +74,17 @@ class RolePermissionSeeder extends Seeder
             'respond-ppid-request',     // menanggapi permohonan informasi
         ],
 
+        // --- Layanan surat warga ---
+        // Dipisahkan dari 'pengaduan' karena kewenangannya berbeda: yang
+        // mengelola surat memegang master RT, chat ID Telegram, dan tanda
+        // tangan pejabat — kunci yang menentukan siapa boleh menyetujui surat
+        // atas nama desa. Menggabungkannya dengan hak menanggapi pengaduan
+        // akan memberikan kunci itu kepada setiap Operator Konten.
+        'surat' => [
+            'manage-letter-request',    // pantau pengajuan, buat ulang PDF
+            'manage-letter-official',   // master RT, pejabat, chat ID, tanda tangan
+        ],
+
         // --- Layanan pengaduan warga (PRD 6.15) ---
         // Dipisahkan dari grup PPID: PRD 1.3 menugaskan "kelola pengaduan
         // masuk" kepada Operator Konten, sedangkan Operator PPID hanya
