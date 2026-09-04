@@ -1,6 +1,7 @@
 import type { FormEvent, ReactNode } from 'react'
 import { Head, Link, useForm } from '@inertiajs/react'
 import { LayoutPublik } from '@/Layouts/LayoutPublik'
+import { Pilihan } from '@/Components/ui'
 import { formatTanggal } from '@/lib/format'
 import type { TandaTerimaPengaduan } from '@/types/api'
 import { GAYA_INPUT_PENGADUAN, LABEL_STATUS_PENGADUAN } from './status'
@@ -131,20 +132,13 @@ export default function Kirim({
           nama="kategori_pengaduan"
           galat={errors.kategori_pengaduan}
         >
-          <select
+          <Pilihan
             id="kategori_pengaduan"
-            required
             value={data.kategori_pengaduan}
-            onChange={(e) => setData('kategori_pengaduan', e.target.value)}
-            className={GAYA_INPUT_PENGADUAN}
-          >
-            <option value="">Pilih kategori…</option>
-            {kategori.map((k) => (
-              <option key={k} value={k}>
-                {k}
-              </option>
-            ))}
-          </select>
+            onChange={(v) => setData('kategori_pengaduan', v)}
+            placeholder="Pilih kategori…"
+            options={kategori.map((k) => ({ value: k, label: k }))}
+          />
         </Kolom>
 
         <Kolom

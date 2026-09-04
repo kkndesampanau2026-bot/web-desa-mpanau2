@@ -8,6 +8,7 @@ import {
   KepalaHalaman,
   Kolom,
   Pemberitahuan,
+  Pilihan,
   Tombol,
 } from '@/Components/ui'
 import { LayoutPublik } from '@/Layouts/LayoutPublik'
@@ -194,20 +195,13 @@ export default function Ajukan({ daftar_rt: daftarRt, pilihan, tiket }: Props) {
 
             <div className="grid gap-5 sm:grid-cols-2">
               <Kolom label="Agama" htmlFor="agama" galat={errors.agama} wajib>
-                <select
+                <Pilihan
                   id="agama"
-                  required
                   value={data.agama}
-                  onChange={(e) => setData('agama', e.target.value)}
-                  className={GAYA_INPUT}
-                >
-                  <option value="">Pilih agama…</option>
-                  {pilihan.agama.map((a) => (
-                    <option key={a} value={a}>
-                      {a}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(v) => setData('agama', v)}
+                  placeholder="Pilih agama…"
+                  options={pilihan.agama.map((a) => ({ value: a, label: a }))}
+                />
               </Kolom>
 
               <Kolom
@@ -216,20 +210,13 @@ export default function Ajukan({ daftar_rt: daftarRt, pilihan, tiket }: Props) {
                 galat={errors.status_perkawinan}
                 wajib
               >
-                <select
+                <Pilihan
                   id="status_perkawinan"
-                  required
                   value={data.status_perkawinan}
-                  onChange={(e) => setData('status_perkawinan', e.target.value)}
-                  className={GAYA_INPUT}
-                >
-                  <option value="">Pilih status…</option>
-                  {pilihan.status_perkawinan.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(v) => setData('status_perkawinan', v)}
+                  placeholder="Pilih status…"
+                  options={pilihan.status_perkawinan.map((s) => ({ value: s, label: s }))}
+                />
               </Kolom>
             </div>
 
@@ -239,19 +226,12 @@ export default function Ajukan({ daftar_rt: daftarRt, pilihan, tiket }: Props) {
               galat={errors.warga_negara}
               wajib
             >
-              <select
+              <Pilihan
                 id="warga_negara"
-                required
                 value={data.warga_negara}
-                onChange={(e) => setData('warga_negara', e.target.value)}
-                className={GAYA_INPUT}
-              >
-                {pilihan.warga_negara.map((w) => (
-                  <option key={w} value={w}>
-                    {w}
-                  </option>
-                ))}
-              </select>
+                onChange={(v) => setData('warga_negara', v)}
+                options={pilihan.warga_negara.map((w) => ({ value: w, label: w }))}
+              />
             </Kolom>
 
             <Kolom
@@ -261,21 +241,16 @@ export default function Ajukan({ daftar_rt: daftarRt, pilihan, tiket }: Props) {
               petunjuk="Kepala Dusun yang menyetujui ditentukan otomatis dari RT Anda."
               wajib
             >
-              <select
+              <Pilihan
                 id="rt_id"
-                required
                 value={data.rt_id}
-                onChange={(e) => setData('rt_id', e.target.value)}
-                className={GAYA_INPUT}
-              >
-                <option value="">Pilih RT…</option>
-                {daftarRt.map((rt) => (
-                  <option key={rt.id} value={rt.id}>
-                    RT {rt.nomor}
-                    {rt.dusun ? ` — ${rt.dusun}` : ''}
-                  </option>
-                ))}
-              </select>
+                onChange={(v) => setData('rt_id', v)}
+                placeholder="Pilih RT…"
+                options={daftarRt.map((rt) => ({
+                  value: String(rt.id),
+                  label: `RT ${rt.nomor}${rt.dusun ? ` — ${rt.dusun}` : ''}`,
+                }))}
+              />
 
               {dusunTerpilih && (
                 <p className="mt-1.5 text-sm text-slate-600">

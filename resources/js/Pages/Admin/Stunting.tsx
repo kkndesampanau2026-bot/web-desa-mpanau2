@@ -1,7 +1,7 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiRequestError, type ApiSuccess } from '@/lib/api'
-import { Kartu, Kolom, Input, Pemberitahuan, TextArea, Tombol } from '@/Components/Admin/Form'
+import { Kartu, Kolom, Input, Pemberitahuan, Pilihan, TextArea, Tombol } from '@/Components/Admin/Form'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 
 interface CatatanStunting {
@@ -128,19 +128,15 @@ export default function StuntingAdminPage() {
                 petunjuk="Kosongkan untuk angka tingkat desa."
                 galat={galat?.fieldError('dusun_id')}
               >
-                <select
+                <Pilihan
                   id="dusun_id"
                   value={form.dusun_id}
-                  onChange={(e) => setForm({ ...form, dusun_id: e.target.value })}
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
-                >
-                  <option value="">Seluruh desa</option>
-                  {dusuns?.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.nama}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(v) => setForm({ ...form, dusun_id: v })}
+                  options={[
+                    { value: '', label: 'Seluruh desa' },
+                    ...(dusuns ?? []).map((d) => ({ value: String(d.id), label: d.nama })),
+                  ]}
+                />
               </Kolom>
 
               <Kolom

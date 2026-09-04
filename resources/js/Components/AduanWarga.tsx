@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useForm } from '@inertiajs/react'
 import { Megaphone, X } from 'lucide-react'
-import { GAYA_INPUT } from '@/Components/ui'
+import { GAYA_INPUT, Pilihan } from '@/Components/ui'
 import { useHalaman } from '@/types/inertia'
 
 /**
@@ -131,20 +131,13 @@ export function AduanWarga() {
                 htmlFor="aduan_kategori"
                 galat={errors.kategori_pengaduan}
               >
-                <select
+                <Pilihan
                   id="aduan_kategori"
-                  required
                   value={data.kategori_pengaduan}
-                  onChange={(e) => setData('kategori_pengaduan', e.target.value)}
-                  className={GAYA_INPUT}
-                >
-                  <option value="">Pilih kategori…</option>
-                  {kategori.map((k) => (
-                    <option key={k} value={k}>
-                      {k}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(v) => setData('kategori_pengaduan', v)}
+                  placeholder="Pilih kategori…"
+                  options={kategori.map((k) => ({ value: k, label: k }))}
+                />
               </Kolom>
 
               <Kolom

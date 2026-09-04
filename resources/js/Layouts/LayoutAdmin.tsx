@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Head, Link, router } from '@inertiajs/react'
 import {
   Bell,
@@ -69,6 +69,35 @@ export function LayoutAdmin({
 }) {
   const { props, url } = useHalaman()
   const pengguna = props.auth.user
+  const notifikasi = props.notifikasi_pengaduan
+  const jumlahPengaduanBaru = notifikasi?.jumlah ?? 0
+
+  const [notifikasiTerbuka, setNotifikasiTerbuka] = useState(false)
+  const notifikasiRef = useRef<HTMLDivElement>(null)
+
+  // Menutup dropdown saat mengklik di luar panel atau menekan Escape — pola
+  // standar untuk menu mengambang yang tidak punya overlay sendiri.
+  useEffect(() => {
+    if (!notifikasiTerbuka) return
+
+    function tutupJikaDiLuar(e: MouseEvent) {
+      if (notifikasiRef.current && !notifikasiRef.current.contains(e.target as Node)) {
+        setNotifikasiTerbuka(false)
+      }
+    }
+
+    function tutupJikaEscape(e: KeyboardEvent) {
+      if (e.key === 'Escape') setNotifikasiTerbuka(false)
+    }
+
+    document.addEventListener('mousedown', tutupJikaDiLuar)
+    document.addEventListener('keydown', tutupJikaEscape)
+
+    return () => {
+      document.removeEventListener('mousedown', tutupJikaDiLuar)
+      document.removeEventListener('keydown', tutupJikaEscape)
+    }
+  }, [notifikasiTerbuka])
 
   const menuTampil = MENU.filter((m) => punyaIzin(pengguna, m.izin))
   const jalur = url.split('?')[0]
@@ -133,12 +162,85 @@ export function LayoutAdmin({
             </div>
 
             <div className="flex shrink-0 items-center gap-3">
-              <span
-                aria-hidden="true"
-                className="hidden rounded-full p-2 text-slate-500 hover:bg-slate-100 sm:inline-flex"
-              >
-                <Bell className="size-5" />
-              </span>
+              <div ref={notifikasiRef} className="relative hidden sm:block">
+                <button
+                  type="button"
+                  onClick={() => setNotifikasiTerbuka((t) => !t)}
+                  aria-expanded={notifikasiTerbuka}
+                  aria-haspopup="true"
+                  className="relative inline-flex rounded-full p-2 text-slate-500 hover:bg-slate-100"
+                  aria-label={
+                    jumlahPengaduanBaru > 0
+                      ? `${jumlahPengaduanBaru} pengaduan baru belum ditanggapi`
+                      : 'Tidak ada pengaduan baru'
+                  }
+                >
+                  <Bell className="size-5" />
+                  {jumlahPengaduanBaru > 0 && (
+                    <span
+                      aria-hidden="true"
+                      className="absolute top-0.5 right-0.5 grid h-4.5 min-w-4.5 place-items-center rounded-full bg-rose-600 px-1 text-[10px] leading-none font-semibold text-white"
+                    >
+                      {jumlahPengaduanBaru > 99 ? '99+' : jumlahPengaduanBaru}
+                    </span>
+                  )}
+                </button>
+
+                {notifikasiTerbuka && (
+                  <div
+                    role="menu"
+                    aria-label="Notifikasi pengaduan"
+                    className="absolute top-full right-0 z-20 mt-2 w-80 rounded-xl border border-slate-200 bg-white py-2 shadow-lg"
+                  >
+                    <div className="flex items-center justify-between px-4 py-1.5">
+                      <p className="text-sm font-semibold text-slate-900">Pengaduan Baru</p>
+                      {jumlahPengaduanBaru > 0 && (
+                        <span className="text-xs text-slate-500">
+                          {jumlahPengaduanBaru} belum ditanggapi
+                        </span>
+                      )}
+                    </div>
+
+                    {!notifikasi || notifikasi.daftar.length === 0 ? (
+                      <p className="px-4 py-6 text-center text-sm text-slate-500">
+                        Tidak ada pengaduan baru.
+                      </p>
+                    ) : (
+                      <ul className="max-h-80 overflow-y-auto">
+                        {notifikasi.daftar.map((p) => (
+                          <li key={p.id} className="border-t border-slate-100 first:border-t-0">
+                            <Link
+                              href={`/admin/pengaduan?buka=${p.id}`}
+                              onClick={() => setNotifikasiTerbuka(false)}
+                              className="block px-4 py-2.5 hover:bg-slate-50"
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="truncate text-sm font-medium text-slate-900">
+                                  {p.nama}
+                                </p>
+                                <span className="shrink-0 text-xs text-slate-400">{p.dibuat}</span>
+                              </div>
+                              <p className="truncate text-xs text-slate-500">
+                                {p.kategori_pengaduan} · {p.isi_ringkas}
+                              </p>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+
+                    <div className="border-t border-slate-100 px-4 pt-2">
+                      <Link
+                        href="/admin/pengaduan"
+                        onClick={() => setNotifikasiTerbuka(false)}
+                        className="block py-1.5 text-center text-sm font-medium text-teal-700 hover:underline"
+                      >
+                        Lihat semua pengaduan
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
 
               <div className="hidden text-right sm:block">
                 <p className="text-sm font-medium text-slate-900">{pengguna?.nama}</p>

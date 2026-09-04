@@ -1,6 +1,7 @@
 import { useId } from 'react'
 import { Head, router } from '@inertiajs/react'
 import { EmptyState } from '@/Components/EmptyState'
+import { Pilihan } from '@/Components/ui'
 import { GarisTren, KartuAngka, Lingkaran } from '@/Components/viz/Grafik'
 import { bungkusInfografis } from '@/Layouts/LayoutInfografis'
 import { formatRupiah, formatRupiahRingkas } from '@/lib/format'
@@ -33,7 +34,7 @@ export default function Apbdes({ data }: { data: InfografisApbdes | null }) {
   const komposisiBelanja = juringKelompok('Belanja')
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-10">
+    <div className="mx-auto max-w-situs px-6 py-10">
       <Head title={`APBDes ${data.tahun}`} />
 
       <PemilihTahun tahun={data.tahun} tersedia={data.tahun_tersedia} />
@@ -159,24 +160,19 @@ function PemilihTahun({ tahun, tersedia }: { tahun: number; tersedia: number[] }
         Tahun Anggaran
       </label>
 
-      <select
+      <Pilihan
         id={id}
-        value={tahun}
-        onChange={(e) =>
+        value={String(tahun)}
+        onChange={(v) =>
           router.get(
             '/infografis/apbdes',
-            { tahun: e.target.value },
+            { tahun: v },
             { preserveScroll: true, replace: true },
           )
         }
-        className="rounded-full border-2 border-navy/20 bg-white px-4 py-1.5 text-sm font-semibold text-navy transition outline-none hover:border-navy/40 focus:border-navy"
-      >
-        {tersedia.map((t) => (
-          <option key={t} value={t}>
-            {t}
-          </option>
-        ))}
-      </select>
+        className="flex items-center gap-2 rounded-full border-2 border-navy/20 bg-white px-4 py-1.5 text-sm font-semibold text-navy transition outline-none hover:border-navy/40 focus:border-navy"
+        options={tersedia.map((t) => ({ value: String(t), label: String(t) }))}
+      />
     </div>
   )
 }

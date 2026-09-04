@@ -34,6 +34,23 @@ export interface PenggunaAuth {
   permissions: string[]
 }
 
+/** Satu baris pratinjau pada dropdown lonceng notifikasi. */
+export interface NotifikasiPengaduanItem {
+  id: number
+  nomor_tiket: string
+  nama: string
+  kategori_pengaduan: string
+  isi_ringkas: string
+  /** Sudah berbentuk teks relatif ("5 menit yang lalu"), bukan tanggal mentah. */
+  dibuat: string
+}
+
+export interface NotifikasiPengaduan {
+  jumlah: number
+  /** 5 pengaduan "baru" teratas — pratinjau, bukan daftar lengkap. */
+  daftar: NotifikasiPengaduanItem[]
+}
+
 export interface PropsBersama {
   auth: { user: PenggunaAuth | null }
   /** Null pada halaman dashboard: kerangka CMS tidak memakai header situs. */
@@ -44,6 +61,11 @@ export interface PropsBersama {
    * tombol mengambang di halaman mana pun. Null pada dashboard CMS.
    */
   kategori_pengaduan: string[] | null
+  /**
+   * Untuk lonceng notifikasi di `LayoutAdmin`. Null di luar dashboard CMS
+   * atau bila operator tidak berwenang menanggapi pengaduan.
+   */
+  notifikasi_pengaduan: NotifikasiPengaduan | null
   flash: { sukses: string | null; galat: string | null }
   errors: Record<string, string>
   [key: string]: unknown

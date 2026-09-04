@@ -2,7 +2,7 @@ import { Fragment, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiRequestError, urlBerkas, type ApiSuccess } from '@/lib/api'
 import { keFormData } from '@/lib/berkas'
-import { Kartu, Kolom, Input, Pemberitahuan, TextArea, Tombol } from '@/Components/Admin/Form'
+import { Kartu, Kolom, Input, Pemberitahuan, Pilihan, TextArea, Tombol } from '@/Components/Admin/Form'
 import { InputBerkas } from '@/Components/Admin/Berkas'
 import { PengelolaFoto, type Foto } from '@/Components/Admin/PengelolaFoto'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
@@ -224,18 +224,12 @@ function PanelPotensi() {
                 htmlFor="kategori-potensi"
                 petunjuk="Menjadi penyaring di halaman publik /potensi"
               >
-                <select
+                <Pilihan
                   id="kategori-potensi"
                   value={form.kategori}
-                  onChange={(e) => setForm({ ...form, kategori: e.target.value })}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-900"
-                >
-                  {KATEGORI_POTENSI.map((k) => (
-                    <option key={k} value={k}>
-                      {k}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(v) => setForm({ ...form, kategori: v })}
+                  options={KATEGORI_POTENSI.map((k) => ({ value: k, label: k }))}
+                />
               </Kolom>
 
               <Kolom label="Judul" htmlFor="judul-potensi" galat={galat?.fieldError('judul')}>

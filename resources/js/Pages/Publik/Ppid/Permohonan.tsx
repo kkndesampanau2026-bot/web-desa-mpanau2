@@ -7,6 +7,7 @@ import {
   Kartu,
   KepalaHalaman,
   Kolom,
+  Pilihan,
   Tombol,
 } from '@/Components/ui'
 import { bungkusPpid } from '@/Layouts/LayoutPpid'
@@ -197,16 +198,16 @@ export default function Permohonan({ bukti }: { bukti: PermohonanPpid | null }) 
               htmlFor="cara_memperoleh"
               galat={errors.cara_memperoleh}
             >
-              <select
+              <Pilihan
                 id="cara_memperoleh"
                 value={data.cara_memperoleh}
-                onChange={(e) => setData('cara_memperoleh', e.target.value)}
-                className={GAYA_INPUT}
-              >
-                <option value="langsung">Mengambil langsung di kantor desa</option>
-                <option value="email">Dikirim melalui email</option>
-                <option value="pos">Dikirim melalui pos</option>
-              </select>
+                onChange={(v) => setData('cara_memperoleh', v)}
+                options={[
+                  { value: 'langsung', label: 'Mengambil langsung di kantor desa' },
+                  { value: 'email', label: 'Dikirim melalui email' },
+                  { value: 'pos', label: 'Dikirim melalui pos' },
+                ]}
+              />
             </Kolom>
 
             <div className="flex flex-wrap items-center justify-between gap-4 border-t border-navy/5 pt-6">

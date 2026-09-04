@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiRequestError, urlBerkas, type ApiSuccess } from '@/lib/api'
 import { keFormData } from '@/lib/berkas'
-import { Kartu, Kolom, Input, Pemberitahuan, Tombol } from '@/Components/Admin/Form'
+import { Kartu, Kolom, Input, Pemberitahuan, Pilihan, Tombol } from '@/Components/Admin/Form'
 import { InputBerkas } from '@/Components/Admin/Berkas'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 import type { ReactNode } from 'react'
@@ -142,16 +142,12 @@ function DaftarAnggota({ jenis }: { jenis: 'officials' | 'bpd-members' }) {
 
               <Kolom label="Jabatan" htmlFor="jabatan" galat={galat?.fieldError('jabatan')}>
                 {bpd ? (
-                  <select
+                  <Pilihan
                     id="jabatan"
                     value={form.jabatan}
-                    onChange={(e) => setForm({ ...form, jabatan: e.target.value })}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-900"
-                  >
-                    {JABATAN_BPD.map((j) => (
-                      <option key={j} value={j}>{j}</option>
-                    ))}
-                  </select>
+                    onChange={(v) => setForm({ ...form, jabatan: v })}
+                    options={JABATAN_BPD.map((j) => ({ value: j, label: j }))}
+                  />
                 ) : (
                   <Input
                     id="jabatan"

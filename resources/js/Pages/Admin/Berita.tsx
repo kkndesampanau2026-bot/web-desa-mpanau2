@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiRequestError, urlBerkas, type ApiSuccess } from '@/lib/api'
 import { keFormData } from '@/lib/berkas'
-import { Kartu, Kolom, Input, Pemberitahuan, TextArea, Tombol } from '@/Components/Admin/Form'
+import { Kartu, Kolom, Input, Pemberitahuan, Pilihan, TextArea, Tombol } from '@/Components/Admin/Form'
 import { InputBerkas } from '@/Components/Admin/Berkas'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 import type { ReactNode } from 'react'
@@ -258,20 +258,12 @@ function FormBerita({
 
             <div className="grid gap-4 sm:grid-cols-2">
               <Kolom label="Status" htmlFor="status">
-                <select
+                <Pilihan
                   id="status"
                   value={form.status}
-                  onChange={(e) =>
-                    setForm({ ...form, status: e.target.value as Berita['status'] })
-                  }
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-900"
-                >
-                  {STATUS.map((s) => (
-                    <option key={s} value={s}>
-                      {LABEL_STATUS[s]}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(v) => setForm({ ...form, status: v as Berita['status'] })}
+                  options={STATUS.map((s) => ({ value: s, label: LABEL_STATUS[s] }))}
+                />
               </Kolom>
 
               <Kolom

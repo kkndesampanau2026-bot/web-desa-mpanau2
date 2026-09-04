@@ -99,8 +99,11 @@ export default function PpidBeranda() {
           </Link>
 
           {/* Ajakan bertindak: kartu navy dengan aksen emas, kontras terkuat
-              di halaman ini agar jalur "ajukan permohonan" mudah ditemukan. */}
-          <Kartu className="border-none bg-navy p-8 lg:col-span-2">
+              di halaman ini agar jalur "ajukan permohonan" mudah ditemukan.
+              `bg-navy!` (bukan `bg-navy` biasa): urutan `.bg-white` bawaan
+              `Kartu` pada CSS hasil build kebetulan jatuh SETELAH `.bg-navy`,
+              sehingga tanpa `!` warna putih itu yang menang. */}
+          <Kartu className="border-none bg-navy! p-8 lg:col-span-2">
             <div className="flex flex-wrap items-center justify-between gap-6">
               <div className="max-w-md">
                 <h2 className="font-heading text-xl font-bold text-white">

@@ -27,7 +27,7 @@ export function LayoutInfografis({ children }: { children: ReactNode }) {
 
   return (
     <div>
-      <div className="mx-auto max-w-6xl px-6 pt-14">
+      <div className="mx-auto max-w-situs px-6 pt-14">
         <header className="text-center">
           <p className="text-sm font-semibold tracking-[0.14em] text-gold-dark uppercase">
             Data Terbuka

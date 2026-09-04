@@ -19,7 +19,7 @@ export default function Penduduk({ data }: { data: InfografisPenduduk | null }) 
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-10">
+    <div className="mx-auto max-w-situs px-6 py-10">
       <Head title="Infografis Kependudukan" />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

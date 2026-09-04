@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiRequestError, type ApiSuccess } from '@/lib/api'
 import { keFormData } from '@/lib/berkas'
-import { Kartu, Kolom, Input, Pemberitahuan, TextArea, Tombol } from '@/Components/Admin/Form'
+import { Kartu, Kolom, Input, Pemberitahuan, Pilihan, TextArea, Tombol } from '@/Components/Admin/Form'
 import { InputBerkas, TautanBerkas } from '@/Components/Admin/Berkas'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 import type { ReactNode } from 'react'
@@ -265,18 +265,12 @@ function FormTanggapan({
         anak={
           <div className="space-y-4">
             <Kolom label="Status" htmlFor="status">
-              <select
+              <Pilihan
                 id="status"
                 value={status}
-                onChange={(e) => setStatus(e.target.value as Permohonan['status'])}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-900"
-              >
-                {STATUS.map((s) => (
-                  <option key={s} value={s}>
-                    {LABEL_STATUS[s]}
-                  </option>
-                ))}
-              </select>
+                onChange={(v) => setStatus(v as Permohonan['status'])}
+                options={STATUS.map((s) => ({ value: s, label: LABEL_STATUS[s] }))}
+              />
             </Kolom>
 
             <Kolom
@@ -385,18 +379,12 @@ function DaftarInformasi() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <Kolom label="Jenis Informasi" htmlFor="jenis">
-                <select
+                <Pilihan
                   id="jenis"
                   value={form.jenis}
-                  onChange={(e) => setForm({ ...form, jenis: e.target.value })}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-900"
-                >
-                  {JENIS_INFORMASI.map(([nilai, label]) => (
-                    <option key={nilai} value={nilai}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(v) => setForm({ ...form, jenis: v })}
+                  options={JENIS_INFORMASI.map(([nilai, label]) => ({ value: nilai, label }))}
+                />
               </Kolom>
 
               <Kolom label="Judul Dokumen" htmlFor="judul" galat={galat?.fieldError('judul')}>

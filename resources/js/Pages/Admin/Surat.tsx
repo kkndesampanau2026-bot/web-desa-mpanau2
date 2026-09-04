@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { FileSignature, Inbox, MapPinned, RefreshCw, Send, Signature } from 'lucide-react'
 import { api, ApiRequestError, type ApiSuccess } from '@/lib/api'
 import { keFormData } from '@/lib/berkas'
-import { Input, Kartu, Kolom, Pemberitahuan, Tombol } from '@/Components/Admin/Form'
+import { Input, Kartu, Kolom, Pemberitahuan, Pilihan, Tombol } from '@/Components/Admin/Form'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 
 // ---------------------------------------------------------------------------
@@ -156,19 +156,17 @@ function TabPengajuan() {
             <label htmlFor="filter-status" className="text-sm text-slate-600">
               Status
             </label>
-            <select
-              id="filter-status"
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
-            >
-              <option value="">Semua</option>
-              {Object.entries(LABEL_STATUS).map(([k, v]) => (
-                <option key={k} value={k}>
-                  {v}
-                </option>
-              ))}
-            </select>
+            <div className="w-48">
+              <Pilihan
+                id="filter-status"
+                value={status}
+                onChange={setStatus}
+                options={[
+                  { value: '', label: 'Semua' },
+                  ...Object.entries(LABEL_STATUS).map(([k, v]) => ({ value: k, label: v })),
+                ]}
+              />
+            </div>
           </div>
 
           {isPending && <p className="text-sm text-slate-500">Memuat…</p>}
@@ -371,52 +369,45 @@ function TabPejabat() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <Kolom label="Jabatan" htmlFor="role" galat={galat?.fieldError('role')}>
-                <select
+                <Pilihan
                   id="role"
                   value={form.role}
-                  onChange={(e) =>
-                    setForm({ ...form, role: e.target.value as Pejabat['role'] })
-                  }
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm"
-                >
-                  <option value="KETUA_RT">Ketua RT</option>
-                  <option value="KEPALA_DUSUN">Kepala Dusun</option>
-                </select>
+                  onChange={(v) => setForm({ ...form, role: v as Pejabat['role'] })}
+                  galat={galat?.fieldError('role')}
+                  options={[
+                    { value: 'KETUA_RT', label: 'Ketua RT' },
+                    { value: 'KEPALA_DUSUN', label: 'Kepala Dusun' },
+                  ]}
+                />
               </Kolom>
 
               {perluRt ? (
                 <Kolom label="RT" htmlFor="rt_id" galat={galat?.fieldError('rt_id')}>
-                  <select
+                  <Pilihan
                     id="rt_id"
-                    required
                     value={form.rt_id}
-                    onChange={(e) => setForm({ ...form, rt_id: e.target.value })}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm"
-                  >
-                    <option value="">Pilih RT…</option>
-                    {daftarRt?.map((rt) => (
-                      <option key={rt.id} value={rt.id}>
-                        RT {rt.nomor} {rt.dusun ? `— ${rt.dusun}` : ''}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(v) => setForm({ ...form, rt_id: v })}
+                    placeholder="Pilih RT…"
+                    galat={galat?.fieldError('rt_id')}
+                    options={(daftarRt ?? []).map((rt) => ({
+                      value: String(rt.id),
+                      label: `RT ${rt.nomor} ${rt.dusun ? `— ${rt.dusun}` : ''}`,
+                    }))}
+                  />
                 </Kolom>
               ) : (
                 <Kolom label="Dusun" htmlFor="dusun_id" galat={galat?.fieldError('dusun_id')}>
-                  <select
+                  <Pilihan
                     id="dusun_id"
-                    required
                     value={form.dusun_id}
-                    onChange={(e) => setForm({ ...form, dusun_id: e.target.value })}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm"
-                  >
-                    <option value="">Pilih dusun…</option>
-                    {daftarDusun?.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.nama}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(v) => setForm({ ...form, dusun_id: v })}
+                    placeholder="Pilih dusun…"
+                    galat={galat?.fieldError('dusun_id')}
+                    options={(daftarDusun ?? []).map((d) => ({
+                      value: String(d.id),
+                      label: d.nama,
+                    }))}
+                  />
                 </Kolom>
               )}
             </div>
@@ -706,19 +697,16 @@ function TabRt() {
               </Kolom>
 
               <Kolom label="Dusun" htmlFor="dusun" galat={galat?.fieldError('dusun_id')}>
-                <select
+                <Pilihan
                   id="dusun"
                   value={form.dusun_id}
-                  onChange={(e) => setForm({ ...form, dusun_id: e.target.value })}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm"
-                >
-                  <option value="">— belum ditentukan —</option>
-                  {daftarDusun?.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.nama}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(v) => setForm({ ...form, dusun_id: v })}
+                  galat={galat?.fieldError('dusun_id')}
+                  options={[
+                    { value: '', label: '— belum ditentukan —' },
+                    ...(daftarDusun ?? []).map((d) => ({ value: String(d.id), label: d.nama })),
+                  ]}
+                />
               </Kolom>
 
               <Kolom label="Urutan" htmlFor="urutan_tampil">
@@ -766,21 +754,19 @@ function TabRt() {
                       <tr key={rt.id}>
                         <td className="py-2.5 pr-3 font-medium">RT {rt.nomor}</td>
                         <td className="py-2.5 pr-3">
-                          <select
-                            aria-label={`Dusun untuk RT ${rt.nomor}`}
-                            value={rt.dusun_id ?? ''}
-                            onChange={(e) =>
-                              ubahDusun.mutate({ rt, dusunId: e.target.value })
-                            }
-                            className="rounded-lg border border-slate-200 px-2 py-1.5 text-sm"
-                          >
-                            <option value="">— belum ditentukan —</option>
-                            {daftarDusun?.map((d) => (
-                              <option key={d.id} value={d.id}>
-                                {d.nama}
-                              </option>
-                            ))}
-                          </select>
+                          <Pilihan
+                            id={`dusun-rt-${rt.id}`}
+                            ariaLabel={`Dusun untuk RT ${rt.nomor}`}
+                            value={rt.dusun_id !== null ? String(rt.dusun_id) : ''}
+                            onChange={(v) => ubahDusun.mutate({ rt, dusunId: v })}
+                            options={[
+                              { value: '', label: '— belum ditentukan —' },
+                              ...(daftarDusun ?? []).map((d) => ({
+                                value: String(d.id),
+                                label: d.nama,
+                              })),
+                            ]}
+                          />
                         </td>
                         <td className="py-2.5">
                           <button

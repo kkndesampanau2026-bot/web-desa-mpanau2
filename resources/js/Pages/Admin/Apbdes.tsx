@@ -1,7 +1,7 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiRequestError, type ApiSuccess } from '@/lib/api'
-import { Kartu, Kolom, Input, Pemberitahuan, TextArea, Tombol } from '@/Components/Admin/Form'
+import { Kartu, Kolom, Input, Pemberitahuan, Pilihan, TextArea, Tombol } from '@/Components/Admin/Form'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 import { formatRupiah } from '@/lib/format'
 
@@ -182,14 +182,15 @@ function TabTahun() {
                         {formatRupiah(t.total_anggaran ?? 0)}
                       </td>
                       <td className="py-2.5 pr-4">
-                        <select
+                        <Pilihan
+                          id={`status-tahun-${t.id}`}
                           value={t.status}
-                          onChange={(e) => ubah.mutate({ id: t.id, status: e.target.value })}
-                          className="rounded-lg border border-slate-200 px-2 py-1 text-sm outline-none focus:border-teal-600"
-                        >
-                          <option value="berjalan">Berjalan</option>
-                          <option value="ditutup">Ditutup</option>
-                        </select>
+                          onChange={(v) => ubah.mutate({ id: t.id, status: v })}
+                          options={[
+                            { value: 'berjalan', label: 'Berjalan' },
+                            { value: 'ditutup', label: 'Ditutup' },
+                          ]}
+                        />
                       </td>
                       <td className="py-2.5">
                         <label className="flex items-center gap-2 text-sm text-slate-700">
@@ -265,18 +266,13 @@ function TabKategori() {
             {galat && !galat.errors && <Pemberitahuan jenis="galat" pesan={galat.message} />}
             <div className="grid gap-4 sm:grid-cols-4">
               <Kolom label="Kelompok" htmlFor="kelompok" galat={galat?.fieldError('kelompok')}>
-                <select
+                <Pilihan
                   id="kelompok"
                   value={form.kelompok}
-                  onChange={(e) => setForm({ ...form, kelompok: e.target.value })}
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
-                >
-                  {KELOMPOK.map((k) => (
-                    <option key={k} value={k}>
-                      {k}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(v) => setForm({ ...form, kelompok: v })}
+                  galat={galat?.fieldError('kelompok')}
+                  options={KELOMPOK.map((k) => ({ value: k, label: k }))}
+                />
               </Kolom>
 
               <div className="sm:col-span-2">
@@ -452,21 +448,15 @@ function TabItem() {
     <div className="space-y-6">
       <div className="max-w-xs">
         <Kolom label="Tahun Anggaran" htmlFor="pilih-tahun">
-          <select
+          <Pilihan
             id="pilih-tahun"
             value={tahunTerpilih}
-            onChange={(e) => {
-              setTahunId(e.target.value)
+            onChange={(v) => {
+              setTahunId(v)
               reset()
             }}
-            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
-          >
-            {tahun.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.tahun}
-              </option>
-            ))}
-          </select>
+            options={tahun.map((t) => ({ value: String(t.id), label: String(t.tahun) }))}
+          />
         </Kolom>
       </div>
 
@@ -489,20 +479,17 @@ function TabItem() {
                     htmlFor="budget_category_id"
                     galat={galat?.fieldError('budget_category_id')}
                   >
-                    <select
+                    <Pilihan
                       id="budget_category_id"
-                      required
                       value={form.budget_category_id}
-                      onChange={(e) => setForm({ ...form, budget_category_id: e.target.value })}
-                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
-                    >
-                      <option value="">Pilih kategori…</option>
-                      {kategori.map((k) => (
-                        <option key={k.id} value={k.id}>
-                          {k.kelompok} — {k.nama}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(v) => setForm({ ...form, budget_category_id: v })}
+                      placeholder="Pilih kategori…"
+                      galat={galat?.fieldError('budget_category_id')}
+                      options={kategori.map((k) => ({
+                        value: String(k.id),
+                        label: `${k.kelompok} — ${k.nama}`,
+                      }))}
+                    />
                   </Kolom>
 
                   <Kolom

@@ -27,7 +27,7 @@ export function LayoutPpid({ children }: { children: ReactNode }) {
       <div className="sticky top-17 z-30 border-b border-navy/10 bg-white/95 backdrop-blur">
         <nav
           aria-label="Sub-navigasi PPID"
-          className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-6"
+          className="mx-auto flex max-w-situs gap-1 overflow-x-auto px-6"
         >
           {TAB.map((tab) => {
             // "Beranda" harus cocok persis; tanpa itu ia menyala di seluruh

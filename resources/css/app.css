@@ -49,6 +49,28 @@
   /* --- Permukaan --- */
   --color-cream: #faf7f0;
 
+  /*
+   * Satu garis lebar untuk seluruh situs publik — 90rem = 1440px, lewat
+   * utilitas `max-w-situs`.
+   *
+   * Dipakai bersama oleh KERANGKA (bilah atas, navigasi, footer pada
+   * `LayoutPublik`) dan ISI halaman lebar (`IsiHalaman lebar="lebar"`,
+   * `KepalaHalaman`, bilah tab infografis & PPID, halaman infografis, dan
+   * listing peta). Karena keduanya memakai angka yang sama, logo pada
+   * navigasi, judul halaman, dan tepi kiri kartu jatuh pada garis vertikal
+   * yang sama — inilah yang membuat halaman terbaca rapi.
+   *
+   * 1440px adalah jalan tengah yang dipilih secara sadar: 1536px membuat
+   * kartu terlalu melar (3 kartu sebaris menjadi ~480px dan isinya renggang),
+   * sedangkan 1280px menyisakan margin kiri-kanan yang terlalu tebal pada
+   * monitor lebar.
+   *
+   * Halaman baca panjang (artikel berita) dan formulir TIDAK memakainya —
+   * keduanya tetap sempit lewat `IsiHalaman lebar="sempit"` supaya baris
+   * teksnya tidak terlalu panjang.
+   */
+  --container-situs: 90rem;
+
   /* --- Huruf --- */
   --font-sans: 'Manrope', system-ui, 'Segoe UI', Roboto, sans-serif;
   --font-heading: 'Fraunces', Georgia, 'Times New Roman', serif;
@@ -122,6 +144,26 @@ h3 {
 
 .kontras-tinggi main a {
   text-decoration: underline;
+}
+
+/*
+ * Peta Leaflet — mengurung z-index internalnya.
+ *
+ * Leaflet menomori lapisannya sendiri cukup tinggi: pane 200–700, kontrol
+ * zoom 800, dan `.leaflet-top/.leaflet-bottom` sampai 1000. Angka-angka itu
+ * jauh di atas header sticky situs (`z-40`) dan tombol mengambang, sehingga
+ * peta menimpa navigasi begitu halaman digulir.
+ *
+ * Menaikkan z-index header bukan jawabannya — angkanya harus dikejar ulang
+ * setiap kali Leaflet atau elemen mengambang baru bertambah. Sebagai
+ * gantinya kontainer peta dijadikan konteks penumpukan sendiri: seluruh
+ * lapisan Leaflet tetap tersusun benar DI DALAM peta, tetapi sebagai satu
+ * kesatuan ia duduk di z-index 0 — di bawah seluruh kerangka situs.
+ */
+.leaflet-container {
+  position: relative;
+  z-index: 0;
+  isolation: isolate;
 }
 
 /*

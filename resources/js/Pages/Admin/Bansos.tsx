@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiRequestError, type ApiSuccess } from '@/lib/api'
-import { Kartu, Kolom, Input, Pemberitahuan, Tombol } from '@/Components/Admin/Form'
+import { Kartu, Kolom, Input, Pemberitahuan, Pilihan, Tombol } from '@/Components/Admin/Form'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 import type { ReactNode } from 'react'
 
@@ -249,20 +249,14 @@ function FormPenerima({ onSelesai }: { onSelesai: () => void }) {
               htmlFor="bansos_type_id"
               galat={galat?.fieldError('bansos_type_id')}
             >
-              <select
+              <Pilihan
                 id="bansos_type_id"
-                required
                 value={form.bansos_type_id}
-                onChange={(e) => setForm({ ...form, bansos_type_id: e.target.value })}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-900"
-              >
-                <option value="">Pilih jenis bantuan…</option>
-                {jenis?.map((j) => (
-                  <option key={j.id} value={j.id}>
-                    {j.nama}
-                  </option>
-                ))}
-              </select>
+                onChange={(v) => setForm({ ...form, bansos_type_id: v })}
+                placeholder="Pilih jenis bantuan…"
+                galat={galat?.fieldError('bansos_type_id')}
+                options={(jenis ?? []).map((j) => ({ value: String(j.id), label: j.nama }))}
+              />
             </Kolom>
 
             <Kolom label="Nama Penerima" htmlFor="nama" galat={galat?.fieldError('nama')}>

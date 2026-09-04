@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiRequestError, type ApiSuccess } from '@/lib/api'
-import { Kartu, Kolom, Input, Pemberitahuan, TextArea, Tombol } from '@/Components/Admin/Form'
+import { Kartu, Kolom, Input, Pemberitahuan, Pilihan, TextArea, Tombol } from '@/Components/Admin/Form'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 
 const STATUS_IDM = ['Sangat Tertinggal', 'Tertinggal', 'Berkembang', 'Maju', 'Mandiri'] as const
@@ -275,35 +275,28 @@ export default function IdmAdminPage() {
                 </Kolom>
 
                 <Kolom label="Status IDM" htmlFor="status_idm" galat={galat?.fieldError('status_idm')}>
-                  <select
+                  <Pilihan
                     id="status_idm"
                     value={skor.status_idm}
-                    onChange={(e) => setSkor({ ...skor, status_idm: e.target.value })}
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
-                  >
-                    <option value="">—</option>
-                    {STATUS_IDM.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(v) => setSkor({ ...skor, status_idm: v })}
+                    galat={galat?.fieldError('status_idm')}
+                    options={[
+                      { value: '', label: '—' },
+                      ...STATUS_IDM.map((s) => ({ value: s, label: s })),
+                    ]}
+                  />
                 </Kolom>
 
                 <Kolom label="Target Status" htmlFor="target_status">
-                  <select
+                  <Pilihan
                     id="target_status"
                     value={skor.target_status}
-                    onChange={(e) => setSkor({ ...skor, target_status: e.target.value })}
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
-                  >
-                    <option value="">—</option>
-                    {STATUS_IDM.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(v) => setSkor({ ...skor, target_status: v })}
+                    options={[
+                      { value: '', label: '—' },
+                      ...STATUS_IDM.map((s) => ({ value: s, label: s })),
+                    ]}
+                  />
                 </Kolom>
 
                 <Kolom label="Skor Minimal Target" htmlFor="skor_minimal_target">

@@ -103,7 +103,7 @@ export function LayoutPublik({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-40 shadow-lg">
         {/* Bilah atas: identitas resmi & penghitung pengunjung. */}
         <div className="bg-navy-dark">
-          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-1 px-6 py-1.5">
+          <div className="mx-auto flex max-w-situs flex-wrap items-center justify-between gap-x-6 gap-y-1 px-6 py-1.5">
             <p className="text-xs text-white/70">
               Pemerintah {namaDesa}
               {wilayah && ` • ${wilayah}`}
@@ -123,7 +123,7 @@ export function LayoutPublik({ children }: { children: ReactNode }) {
 
         {/* Bilah navigasi utama. */}
         <div className="bg-navy">
-          <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-3">
+          <div className="mx-auto flex max-w-situs items-center justify-between gap-4 px-6 py-3">
             <Link href="/" className="flex items-center gap-3">
               {pengaturan?.logo ? (
                 <img src={pengaturan.logo} alt="" className="size-11 rounded-full object-cover" />
@@ -175,7 +175,7 @@ export function LayoutPublik({ children }: { children: ReactNode }) {
               aria-label="Navigasi utama"
               className="border-t border-white/10 lg:hidden"
             >
-              <div className="mx-auto max-w-6xl px-4 py-2">
+              <div className="mx-auto max-w-situs px-4 py-2">
                 {MENU_UTAMA.map((menu) => {
                   const aktif = sedangAktif(url, menu)
 
@@ -203,7 +203,7 @@ export function LayoutPublik({ children }: { children: ReactNode }) {
       </main>
 
       <footer className="bg-navy-dark text-white/75">
-        <div className="mx-auto max-w-6xl px-6 py-12">
+        <div className="mx-auto max-w-situs px-6 py-12">
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {/* Identitas & deskripsi singkat. */}
             <div>

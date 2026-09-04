@@ -25,7 +25,7 @@ export default function Sdgs({ data }: { data: InfografisSdgs | null }) {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-10">
+    <div className="mx-auto max-w-situs px-6 py-10">
       <Head title={`SDGs Desa ${data.tahun}`} />
 
       <div className="max-w-xs">

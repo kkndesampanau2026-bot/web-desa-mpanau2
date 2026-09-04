@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, router } from '@inertiajs/react'
 import { TombolHubungi } from '@/Components/TombolHubungi'
+import { Pilihan } from '@/Components/ui'
 import { formatRupiah } from '@/lib/format'
 import { useJelajahPotensi, type Jelajah } from '@/lib/tautan'
 import type { Berhalaman } from '@/types/inertia'
@@ -89,19 +90,20 @@ export function KatalogUmkm({ produk, cari: cariTersimpan, jenisProduk, jenisAkt
             <label htmlFor="jenis-produk" className="block text-sm font-medium text-slate-700">
               Kategori Produk
             </label>
-            <select
-              id="jenis-produk"
-              value={jenisAktif ?? ''}
-              onChange={(e) => telusuri({ jenis: e.target.value || undefined, page: undefined })}
-              className="mt-1 w-full rounded-lg border border-navy/20 bg-white px-3 py-2 text-sm outline-none focus:border-navy"
-            >
-              <option value="">Semua kategori</option>
-              {jenisProduk.map((j) => (
-                <option key={j.kategori} value={j.kategori}>
-                  {j.kategori} ({j.jumlah})
-                </option>
-              ))}
-            </select>
+            <div className="mt-1">
+              <Pilihan
+                id="jenis-produk"
+                value={jenisAktif ?? ''}
+                onChange={(v) => telusuri({ jenis: v || undefined, page: undefined })}
+                options={[
+                  { value: '', label: 'Semua kategori' },
+                  ...jenisProduk.map((j) => ({
+                    value: j.kategori,
+                    label: `${j.kategori} (${j.jumlah})`,
+                  })),
+                ]}
+              />
+            </div>
           </div>
         )}
       </div>

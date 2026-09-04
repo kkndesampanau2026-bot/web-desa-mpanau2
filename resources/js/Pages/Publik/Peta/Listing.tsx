@@ -80,7 +80,7 @@ export default function Listing({
   ]
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-10">
+    <div className="mx-auto max-w-situs px-6 py-10">
       <Head title="Peta Desa & Titik Lokasi" />
 
       <h1 className="font-heading text-2xl font-bold text-navy">Peta Desa &amp; Titik Lokasi</h1>
