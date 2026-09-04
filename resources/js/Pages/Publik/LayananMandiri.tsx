@@ -5,9 +5,6 @@ import {
   FileSearch,
   FileSignature,
   FileText,
-  HandCoins,
-  Megaphone,
-  Search,
   TicketCheck,
   type LucideIcon,
 } from 'lucide-react'
@@ -15,7 +12,7 @@ import { IsiHalaman, Kartu, KepalaHalaman } from '@/Components/ui'
 import { LayoutPublik } from '@/Layouts/LayoutPublik'
 
 const DESKRIPSI =
-  'Berbagai layanan warga yang dapat diakses mandiri tanpa perlu datang ke kantor desa: mengajukan surat pengantar, menyampaikan pengaduan, memohon informasi publik, hingga memeriksa status bantuan sosial.'
+  'Berbagai layanan warga yang dapat diakses mandiri tanpa perlu datang ke kantor desa: mengajukan surat pengantar, memantau proses persetujuannya, hingga memohon informasi publik kepada PPID Desa.'
 
 interface Layanan {
   ikon: LucideIcon
@@ -25,6 +22,15 @@ interface Layanan {
   aksi: string
 }
 
+/*
+ * Daftar layanan.
+ *
+ * Isinya sengaja hanya alur yang benar-benar dilayani mandiri oleh warga:
+ * surat pengantar dan permohonan informasi PPID, masing-masing berpasangan
+ * dengan halaman pelacakannya. Kartu yang mengarah ke alur di luar itu tidak
+ * ditaruh di sini — halaman ini pintu masuk, jadi tautan yang tidak berujung
+ * pada layanan aktif hanya membuat warga berputar.
+ */
 const LAYANAN: Layanan[] = [
   {
     ikon: FileSignature,
@@ -43,22 +49,6 @@ const LAYANAN: Layanan[] = [
     aksi: 'Cek status',
   },
   {
-    ikon: Megaphone,
-    judul: 'Pengaduan Masyarakat',
-    deskripsi:
-      'Sampaikan keluhan atau aspirasi kepada Pemerintah Desa dan terima nomor tiket untuk memantau tindak lanjutnya.',
-    ke: '/pengaduan',
-    aksi: 'Kirim pengaduan',
-  },
-  {
-    ikon: Search,
-    judul: 'Lacak Pengaduan',
-    deskripsi:
-      'Sudah pernah mengadu? Masukkan nomor tiket Anda untuk melihat status dan tanggapan dari petugas desa.',
-    ke: '/pengaduan/lacak',
-    aksi: 'Lacak status',
-  },
-  {
     ikon: FileText,
     judul: 'Permohonan Informasi Publik',
     deskripsi:
@@ -74,14 +64,6 @@ const LAYANAN: Layanan[] = [
     ke: '/ppid/permintaan/lacak',
     aksi: 'Lacak permohonan',
   },
-  {
-    ikon: HandCoins,
-    judul: 'Cek Penerima Bansos',
-    deskripsi:
-      'Periksa apakah nama Anda terdaftar sebagai penerima bantuan sosial pada program yang sedang berjalan.',
-    ke: '/infografis/bansos',
-    aksi: 'Cek penerima',
-  },
 ]
 
 /** Layanan Mandiri — pusat layanan warga (hub). */
@@ -92,19 +74,22 @@ export default function LayananMandiri() {
 
       <KepalaHalaman eyebrow="Pusat Layanan Warga" judul="Layanan Mandiri" deskripsi={DESKRIPSI} />
 
+      {/*
+        Empat kolom hanya mulai xl. Di bawah itu dua kolom: dengan empat
+        layanan, kisi tiga kolom menyisakan satu kolom menganga pada baris
+        kedua, sedangkan satu baris berisi empat kartu baru muat tanpa kartunya
+        menjadi terlalu sempit ketika kerangka sudah selebar 1280px.
+      */}
       <IsiHalaman lebar="lebar">
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-4">
           {LAYANAN.map((layanan) => (
             <Link key={layanan.ke} href={layanan.ke} className="group">
-              <Kartu interaktif className="flex h-full flex-col p-6">
-                <span
-                  aria-hidden="true"
-                  className="grid size-12 place-items-center rounded-xl bg-navy/5 text-navy transition group-hover:bg-gold/15 group-hover:text-gold-dark"
-                >
-                  <layanan.ikon className="size-6" />
-                </span>
+              <Kartu interaktif className="flex h-full flex-col p-5 sm:p-6">
+                <layanan.ikon className="size-5 shrink-0 text-gold-dark" aria-hidden="true" />
 
-                <h2 className="font-heading mt-4 text-lg font-bold text-navy">{layanan.judul}</h2>
+                <h2 className="font-heading mt-3.5 text-base font-bold text-navy transition group-hover:text-gold-dark sm:text-lg">
+                  {layanan.judul}
+                </h2>
                 <p className="mt-2 flex-1 text-sm leading-relaxed text-slate-600">
                   {layanan.deskripsi}
                 </p>

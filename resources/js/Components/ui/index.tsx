@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from '@inertiajs/react'
-import { Check, ChevronDown } from 'lucide-react'
+import { Check, ChevronDown, type LucideIcon } from 'lucide-react'
+import { useHalaman } from '@/types/inertia'
 
 /**
  * Komponen UI bersama — satu sumber kebenaran bagi bahasa desain situs.
@@ -17,78 +18,255 @@ import { Check, ChevronDown } from 'lucide-react'
 // ---------------------------------------------------------------------------
 
 /**
+ * Gutter kiri-kanan — SATU nilai untuk seluruh situs.
+ *
+ * Dulu setiap pembungkus menulis `px-6` apa pun ukuran layarnya: pada ponsel
+ * 24px memakan lebar yang sudah sempit, sedangkan pada monitor lebar isi
+ * halaman berhenti tepat di tepi kotak tanpa napas. Nilainya kini menanjak
+ * mengikuti layar, dan karena dipakai bersama header, isi, serta footer,
+ * ketiganya berbagi garis tepi yang sama.
+ *
+ * Angka terbesarnya (88px mulai 1536px) diturunkan dari situs desa yang
+ * dijadikan acuan pemilik produk: pada monitor 1902px, isinya bermula di 90px
+ * dari tepi kiri — sekitar 4,7% lebar layar.
+ */
+const GUTTER = 'px-5 sm:px-6 lg:px-10 xl:px-16 2xl:px-22'
+
+/**
+ * Pembungkus kerangka: lebar situs + gutter.
+ *
+ * Dipakai langsung (sebagai kelas) oleh bagian yang bukan komponen React
+ * tersendiri — bilah atas, navigasi, dan footer pada `LayoutPublik`.
+ *
+ * Perhatikan `max-w-situs` bernilai 120rem/1920px, bukan lebar "nyaman baca":
+ * halaman sengaja MENGIKUTI lebar layar dengan margin tepi tipis, bukan
+ * berhenti di 1280px lalu memusat — pada monitor 1920px, cara lama menyisakan
+ * 320px kosong di kiri dan kanan. Batas 1920px tetap ada supaya pada layar
+ * ultrawide barisan kartu tidak melar tanpa henti.
+ */
+export const GAYA_WADAH = `mx-auto w-full max-w-situs ${GUTTER}`
+
+/**
+ * Ketiga lebar kolom yang boleh dipakai halaman publik.
+ *
+ * Kolom yang lebih sempit dari kerangka DIPUSATKAN (`mx-auto` pada pemakainya).
+ * Sempat dicoba rata kiri agar tepinya segaris dengan logo, tetapi pada monitor
+ * lebar hasilnya justru timpang: formulir selebar 736px menempel ke kiri dan
+ * menyisakan ±1000px kosong di kanan.
+ *
+ * Yang membuat pemusatan ini tetap rapi — dan inilah bagian yang mudah
+ * terlewat — `KepalaHalaman` menerima lebar yang SAMA dengan `IsiHalaman` di
+ * bawahnya. Tanpa itu, judul tetap menempel ke kiri sementara isinya di tengah,
+ * dan setiap halaman punya dua tepi kiri yang berbeda.
+ */
+const LEBAR = {
+  /** Teks panjang & formulir — panjang baris tetap nyaman dibaca. */
+  sempit: 'max-w-baca',
+  /** Daftar pendek yang akan terlihat melar bila dibiarkan selebar situs. */
+  sedang: 'max-w-sedang',
+  /** Kartu, tabel, grafik — selebar kerangka. */
+  lebar: 'max-w-full',
+} as const
+
+/**
  * Kepala halaman bergaya institusional: latar navy dengan garis emas.
  *
- * Dipakai di puncak tiap halaman agar pengunjung selalu tahu ia berada di
- * bagian mana, tanpa harus membaca navigasi.
+ * Dipakai di puncak SETIAP halaman publik, tanpa kecuali. Sebelumnya sebagian
+ * halaman memakai bilah ini sementara yang lain menaruh judul terpusat di
+ * dalam isi, dan sisanya cuma `<h1>` polos — tiga pola berbeda yang membuat
+ * pengunjung kehilangan pegangan tiap kali berpindah halaman. Judulnya rata
+ * kiri pada garis yang sama dengan logo di navigasi.
  */
 export function KepalaHalaman({
   eyebrow,
   judul,
   deskripsi,
   aksi,
+  kembali,
+  meta,
+  lebar = 'lebar',
 }: {
   eyebrow?: string
   judul: string
   deskripsi?: string
   aksi?: ReactNode
+  /** Tautan kembali ke daftar induk — dipakai halaman detail. */
+  kembali?: { ke: string; label: string }
+  /** Baris keterangan di bawah judul (tanggal, penulis, jumlah dibaca). */
+  meta?: ReactNode
+  /**
+   * WAJIB sama dengan `lebar` pada `IsiHalaman` halaman ini. Bilah navy tetap
+   * membentang penuh; yang mengikuti lebar kolom hanyalah teks di dalamnya,
+   * supaya judul dan isi berbagi satu tepi kiri.
+   */
+  lebar?: keyof typeof LEBAR
 }) {
   return (
     <header className="border-b-4 border-gold bg-navy">
-      <div className="mx-auto max-w-situs px-6 py-12 sm:py-14">
-        {eyebrow && (
-          <p className="mb-3 text-xs font-semibold tracking-widest text-gold uppercase sm:text-sm">
-            {eyebrow}
-          </p>
-        )}
+      <div className={`${GAYA_WADAH} py-8 sm:py-10 lg:py-12`}>
+        <div className={`mx-auto ${LEBAR[lebar]}`}>
+          {kembali && (
+            <Link
+              href={kembali.ke}
+              className="mb-5 inline-flex items-center gap-1.5 text-sm font-semibold text-white/60 transition hover:text-gold"
+            >
+              <span aria-hidden="true">&larr;</span>
+              {kembali.label}
+            </Link>
+          )}
 
-        <div className="flex flex-wrap items-end justify-between gap-6">
-          <div className="max-w-3xl">
-            <h1 className="font-heading text-3xl leading-tight font-bold text-white sm:text-4xl">
-              {judul}
-            </h1>
-            {deskripsi && (
-              <p className="mt-3 leading-relaxed text-white/80">{deskripsi}</p>
-            )}
+          {eyebrow && (
+            <p className="mb-2 text-xs font-semibold tracking-[0.12em] text-gold uppercase">
+              {eyebrow}
+            </p>
+          )}
+
+          <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
+            <div className="max-w-2xl">
+              <h1 className="font-heading text-2xl leading-tight font-bold text-white sm:text-3xl lg:text-4xl">
+                {judul}
+              </h1>
+              {deskripsi && (
+                <p className="mt-2.5 text-sm leading-relaxed text-white/75 sm:text-base">
+                  {deskripsi}
+                </p>
+              )}
+              {meta && (
+                <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-white/55">
+                  {meta}
+                </div>
+              )}
+            </div>
+            {aksi}
           </div>
-          {aksi}
         </div>
       </div>
     </header>
   )
 }
 
-/** Pembungkus isi halaman dengan lebar & jarak yang konsisten. */
+/**
+ * Pembungkus isi halaman.
+ *
+ * Jarak atas-bawahnya menanjak mengikuti layar dan menjadi SATU-SATUNYA jarak
+ * vertikal di ujung halaman — footer tidak menambah marginnya sendiri, supaya
+ * ruang di antara keduanya tidak terhitung dua kali.
+ */
 export function IsiHalaman({
   children,
   lebar = 'sedang',
 }: {
   children: ReactNode
-  lebar?: 'sempit' | 'sedang' | 'lebar'
+  lebar?: keyof typeof LEBAR
 }) {
-  const maks = {
-    sempit: 'max-w-3xl',
-    sedang: 'max-w-5xl',
-    lebar: 'max-w-situs',
-  }[lebar]
+  return (
+    <div className={`${GAYA_WADAH} py-10 sm:py-12 lg:py-14`}>
+      <div className={`mx-auto ${LEBAR[lebar]}`}>{children}</div>
+    </div>
+  )
+}
 
-  return <div className={`mx-auto ${maks} px-6 py-12 sm:py-14`}>{children}</div>
+export interface ItemTab {
+  ke: string
+  label: string
+  ikon?: LucideIcon
+  /** Cocok persis saja — dipakai item "Beranda" yang kalau tidak akan menyala di seluruh sub-halaman. */
+  ujung?: boolean
+  /** Jalur lain yang ikut menyalakan tab ini (mis. tiga jenis informasi PPID di balik satu tab). */
+  jalurLain?: string[]
+}
+
+/**
+ * Sub-navigasi modul — dipakai Infografis dan PPID.
+ *
+ * Dulu keduanya menggambar bilahnya sendiri dengan bentuk yang berbeda: satu
+ * memakai pil bulat terpusat, satunya tab bergaris bawah rata kiri. Pengunjung
+ * yang berpindah dari Infografis ke PPID karena itu menghadapi dua bahasa
+ * navigasi di situs yang sama. Bentuknya kini satu.
+ *
+ * Deretan pil ini BAGIAN DARI ISI HALAMAN, bukan bilah tersendiri yang
+ * menempel di bawah header. Sempat dibuat lengket — dan hasilnya dua batang
+ * navigasi bertumpuk begitu halaman digulir: navigasi situs di atas, bilah
+ * modul berlatar sendiri tepat di bawahnya. Dua batang itu memakan tinggi
+ * layar ponsel dan membuat pengunjung ragu mana navigasi yang utama. Kini ia
+ * menggulir bersama isinya, tanpa latar dan garis pemisah sendiri, sehingga
+ * yang menetap di layar hanya satu navigasi.
+ */
+export function BilahTab({ items, label }: { items: ItemTab[]; label: string }) {
+  const jalur = useHalaman().url.split('?')[0]
+
+  return (
+    <div className={`${GAYA_WADAH} pt-8 sm:pt-10`}>
+      {/*
+        Pil bulat berbingkai, terisi navy saat aktif, terpusat — bentuk asli
+        pemilih dimensi Infografis, kini dipakai PPID juga.
+
+        Gulir mendatar tetap dipertahankan: enam pil berlabel penuh tidak muat
+        sebaris pada ponsel, dan membiarkannya membungkus ke baris kedua
+        membuat tinggi baris ini berubah-ubah antar halaman.
+
+        Pemusatannya lewat `w-max mx-auto` pada lapisan dalam, BUKAN
+        `justify-center` pada kotak yang menggulir. Margin auto hanya membagi
+        ruang yang berlebih, sehingga ia menjadi nol begitu deretan pil lebih
+        lebar dari layar; `justify-center` justru mendorong luapan ke kedua
+        sisi dan membuat pil pertama tidak bisa dicapai betapapun digulir.
+      */}
+      <nav aria-label={label} className="gulir-mendatar -mx-1 overflow-x-auto px-1 py-1">
+        <div className="mx-auto flex w-max gap-2 sm:gap-3">
+          {items.map((tab) => {
+            const aktif = tab.ujung
+              ? jalur === tab.ke
+              : jalur === tab.ke ||
+                jalur.startsWith(`${tab.ke}/`) ||
+                (tab.jalurLain?.includes(jalur) ?? false)
+
+            return (
+              <Link
+                key={tab.ke}
+                href={tab.ke}
+                aria-current={aktif ? 'page' : undefined}
+                className={`inline-flex shrink-0 items-center gap-2 rounded-full border-2 px-4 py-2 text-sm font-semibold whitespace-nowrap transition sm:px-5 sm:py-2.5 ${
+                  aktif
+                    ? 'border-navy bg-navy text-white'
+                    : 'border-navy/20 bg-white text-navy hover:border-navy/40'
+                }`}
+              >
+                {tab.ikon && <tab.ikon className="size-4 shrink-0" aria-hidden="true" />}
+                {tab.label}
+              </Link>
+            )
+          })}
+        </div>
+      </nav>
+    </div>
+  )
 }
 
 /** Judul seksi dengan garis aksen emas. */
 export function JudulSeksi({
   children,
   keterangan,
+  aksi,
+  id,
 }: {
   children: ReactNode
   keterangan?: string
+  /** Tautan pendamping di ujung kanan, mis. "Lihat semua". */
+  aksi?: ReactNode
+  id?: string
 }) {
   return (
-    <div className="mb-6">
-      <h2 className="font-heading border-l-4 border-gold pl-3 text-xl font-bold text-navy sm:text-2xl">
-        {children}
-      </h2>
-      {keterangan && <p className="mt-2 text-sm text-slate-600">{keterangan}</p>}
+    <div className="mb-6 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
+      <div>
+        <h2
+          id={id}
+          className="font-heading border-l-[3px] border-gold pl-3 text-lg font-bold text-navy sm:text-xl lg:text-2xl"
+        >
+          {children}
+        </h2>
+        {keterangan && <p className="mt-2 max-w-2xl pl-3 text-sm text-slate-600">{keterangan}</p>}
+      </div>
+      {aksi}
     </div>
   )
 }
@@ -97,7 +275,16 @@ export function JudulSeksi({
 // Permukaan
 // ---------------------------------------------------------------------------
 
-/** Kartu putih — permukaan dasar seluruh konten. */
+/**
+ * Kartu putih — permukaan dasar seluruh konten.
+ *
+ * Sudutnya `rounded-xl` dan bayangannya tipis. Sebelumnya `rounded-2xl` +
+ * `hover:shadow-lg`: pada halaman berisi dua belas kartu, sudut selebar itu
+ * dan bayangan yang mengembang saat disentuh membuat daftar terasa seperti
+ * tumpukan kartu permainan, bukan dokumen resmi. Perubahan keadaannya kini
+ * lewat garis tepi — lebih tenang, dan tetap jelas terbaca sebagai "dapat
+ * ditekan".
+ */
 export function Kartu({
   children,
   className = '',
@@ -109,8 +296,8 @@ export function Kartu({
 }) {
   return (
     <div
-      className={`rounded-2xl border border-black/5 bg-white shadow-sm ${
-        interaktif ? 'transition hover:shadow-lg' : ''
+      className={`rounded-xl border border-navy/10 bg-white shadow-sm ${
+        interaktif ? 'transition duration-200 hover:border-navy/25 hover:shadow-md' : ''
       } ${className}`}
     >
       {children}
@@ -124,13 +311,11 @@ export function Kartu({
 
 const GAYA_TOMBOL = {
   // Aksi utama: pil emas dengan teks navy — kontras tinggi, mudah ditemukan.
-  utama:
-    'bg-gold text-navy hover:bg-gold-light font-heading font-bold rounded-full',
+  utama: 'bg-gold text-navy hover:bg-gold-light font-heading font-bold rounded-full',
   // Aksi sekunder pada latar terang.
   navy: 'bg-navy text-white hover:bg-navy-light font-semibold rounded-lg',
   // Aksi tersier / batal.
-  garis:
-    'border-2 border-navy/20 bg-white text-navy hover:border-navy/40 font-semibold rounded-lg',
+  garis: 'border-2 border-navy/20 bg-white text-navy hover:border-navy/40 font-semibold rounded-lg',
 } as const
 
 type GayaTombol = keyof typeof GAYA_TOMBOL
@@ -496,7 +681,11 @@ export function Pilihan({
             id={`${id}-listbox`}
             role="listbox"
             aria-labelledby={id}
-            style={{ top: posisi.top + 6, left: posisi.left, width: posisi.width }}
+            style={{
+              top: posisi.top + 6,
+              left: posisi.left,
+              width: posisi.width,
+            }}
             className="fixed z-50 max-h-64 overflow-y-auto rounded-xl border border-navy/10 bg-white py-1.5 shadow-lg"
           >
             {options.map((opsi, i) => {

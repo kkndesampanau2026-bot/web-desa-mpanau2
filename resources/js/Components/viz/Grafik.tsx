@@ -110,7 +110,7 @@ export function BatangKategori({
   const tinggi = Math.max(180, data.length * 38)
 
   return (
-    <figure className="viz-root m-0 rounded-2xl border border-black/5 bg-white p-6 shadow-md">
+    <figure className="viz-root m-0 rounded-xl border border-navy/10 bg-white p-6 shadow-sm">
       <figcaption className="mb-3 font-heading text-lg font-bold text-navy">{judul}</figcaption>
 
       <div aria-hidden="true">
@@ -176,7 +176,7 @@ export function GarisTren({
   if (data.length === 0) return null
 
   return (
-    <figure className="viz-root m-0 rounded-2xl border border-black/5 bg-white p-6 shadow-md">
+    <figure className="viz-root m-0 rounded-xl border border-navy/10 bg-white p-6 shadow-sm">
       <figcaption className="mb-3 font-heading text-lg font-bold text-navy">{judul}</figcaption>
 
       {data.length === 1 && (
@@ -256,7 +256,7 @@ export function BatangPerbandingan({
   if (total === 0) return null
 
   return (
-    <figure className="viz-root m-0 rounded-2xl border border-black/5 bg-white p-6 shadow-md">
+    <figure className="viz-root m-0 rounded-xl border border-navy/10 bg-white p-6 shadow-sm">
       <figcaption className="mb-3 font-heading text-lg font-bold text-navy">{judul}</figcaption>
 
       <div aria-hidden="true">
@@ -305,20 +305,22 @@ export function BatangPerbandingan({
 /**
  * Palet kualitatif untuk juring diagram lingkaran.
  *
- * Tiga slot pertama memakai token deret yang sudah tervalidasi; sisanya warna
- * pelengkap agar juring yang bersebelahan tetap terbedakan saat kategori lebih
- * dari tiga. Karena diagram lingkaran menyandingkan legenda berisi nilai dan
+ * Tiga slot pertama memakai token deret situs; lima sisanya warna pelengkap
+ * yang dipilih senada — nada tanah yang hangat, bukan warna neon — agar juring
+ * yang bersebelahan tetap terbedakan saat kategori lebih dari tiga tanpa
+ * halaman berubah menjadi pelangi. Seluruhnya berkontras ≥ 3:1 terhadap kartu
+ * putih, dan karena diagram lingkaran menyandingkan legenda berisi nilai serta
  * persentase, warna bukan satu-satunya pembawa makna di sini.
  */
 const PALET_LINGKARAN = [
   'var(--viz-series-1)',
   'var(--viz-series-2)',
   'var(--viz-series-3)',
-  '#8b5cf6',
-  '#e0b021',
-  '#d6608f',
-  '#0f9c9c',
-  '#6b7280',
+  '#7a5ea8', /* ungu */
+  '#c2603c', /* terakota */
+  '#b3456b', /* merah jambu tua */
+  '#5f8a5a', /* hijau daun */
+  '#6b7280', /* abu netral — penutup daftar */
 ]
 
 /**
@@ -350,7 +352,7 @@ export function Lingkaran({
   if (total === 0) return null
 
   return (
-    <figure className="viz-root m-0 rounded-2xl border border-black/5 bg-white p-6 shadow-md">
+    <figure className="viz-root m-0 rounded-xl border border-navy/10 bg-white p-6 shadow-sm">
       <figcaption className="mb-3 font-heading text-lg font-bold text-navy">{judul}</figcaption>
 
       <div className="flex flex-col items-center gap-5 sm:flex-row">
@@ -426,7 +428,7 @@ export function KartuAngka({
   keterangan?: string
 }) {
   return (
-    <div className="rounded-2xl bg-navy p-5 text-center shadow-md">
+    <div className="rounded-xl bg-navy p-5 text-center shadow-sm">
       <p className="text-xs font-medium tracking-wide text-gold uppercase">{label}</p>
       <p className="font-heading mt-1 text-2xl font-bold text-white">
         {typeof nilai === 'number' ? formatAngka(nilai) : nilai}

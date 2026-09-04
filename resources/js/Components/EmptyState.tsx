@@ -1,5 +1,5 @@
 import { FileQuestion } from 'lucide-react'
-import { KepalaHalaman, IsiHalaman, Kartu } from './ui'
+import { KepalaHalaman, IsiHalaman } from './ui'
 
 /**
  * Pola empty-state informatif — PRD 3.2.
@@ -22,24 +22,21 @@ export function EmptyState({
 }) {
   return (
     <>
-      <KepalaHalaman eyebrow={eyebrow} judul={judul} deskripsi={deskripsi} />
+      <KepalaHalaman eyebrow={eyebrow} judul={judul} deskripsi={deskripsi} lebar="sedang" />
 
       <IsiHalaman>
-        <Kartu className="flex flex-col items-center gap-4 px-6 py-16 text-center">
-          <span
-            aria-hidden="true"
-            className="grid size-14 place-items-center rounded-full bg-navy/5 text-navy/40"
-          >
-            <FileQuestion className="size-7" />
-          </span>
-
-          <div>
-            <p className="font-heading text-lg font-bold text-navy">{pesan}</p>
-            <p className="mx-auto mt-1 max-w-sm text-sm text-slate-500">
-              Data untuk bagian ini belum dipublikasikan oleh admin desa.
-            </p>
-          </div>
-        </Kartu>
+        {/*
+          Kotak bergaris putus-putus, bukan kartu penuh berisi lingkaran ikon
+          besar: keadaan kosong sebaiknya terbaca sebagai tempat yang MENUNGGU
+          diisi, bukan sebagai kartu yang isinya memang begitu.
+        */}
+        <div className="rounded-xl border border-dashed border-navy/25 bg-white px-6 py-12 text-center sm:py-16">
+          <FileQuestion className="mx-auto size-7 text-navy/30" aria-hidden="true" />
+          <p className="font-heading mt-4 text-lg font-bold text-navy">{pesan}</p>
+          <p className="mx-auto mt-1.5 max-w-sm text-sm leading-relaxed text-slate-500">
+            Data untuk bagian ini belum dipublikasikan oleh admin desa.
+          </p>
+        </div>
       </IsiHalaman>
     </>
   )

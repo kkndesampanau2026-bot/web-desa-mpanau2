@@ -2,7 +2,15 @@ import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiRequestError, urlBerkas, type ApiSuccess } from '@/lib/api'
 import { keFormData } from '@/lib/berkas'
-import { Kartu, Kolom, Input, Pemberitahuan, TextArea, Tombol } from '@/Components/Admin/Form'
+import {
+  AksiBaris,
+  Kartu,
+  Kolom,
+  Input,
+  Pemberitahuan,
+  TextArea,
+  Tombol,
+} from '@/Components/Admin/Form'
 import { InputBerkas } from '@/Components/Admin/Berkas'
 import { PengelolaFoto, type Foto } from '@/Components/Admin/PengelolaFoto'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
@@ -33,6 +41,7 @@ const KUNCI = ['admin', 'galeri']
 export default function GaleriPage() {
   const queryClient = useQueryClient()
   const [dibuka, setDibuka] = useState<number | null>(null)
+  const [sunting, setSunting] = useState<Album | null>(null)
 
   const { data, isPending } = useQuery({
     queryKey: KUNCI,
@@ -57,7 +66,7 @@ export default function GaleriPage() {
         </p>
       </div>
 
-      <FormAlbum />
+      <FormAlbum album={sunting} onSelesai={() => setSunting(null)} />
 
       <Kartu
         anak={
@@ -98,29 +107,28 @@ export default function GaleriPage() {
                       </p>
                     </div>
 
-                    <div className="flex shrink-0 items-center gap-3 text-sm">
+                    <div className="flex shrink-0 items-center gap-2 text-sm">
                       <button
                         onClick={() => setDibuka(dibuka === a.id ? null : a.id)}
                         aria-expanded={dibuka === a.id}
-                        className="text-slate-700 hover:underline"
+                        className="rounded-md px-2 py-1 text-slate-700 hover:bg-slate-100"
                       >
                         {dibuka === a.id ? 'Tutup Foto' : 'Kelola Foto'}
                       </button>
-                      <button
-                        onClick={() => {
-                          if (
-                            confirm(
-                              `Hapus album "${a.nama_album}" beserta ${a.photos_count} fotonya? ` +
-                                'Berkas foto ikut terhapus dari server dan tidak dapat dipulihkan.',
-                            )
-                          ) {
-                            hapus.mutate(a.id)
-                          }
+
+                      <AksiBaris
+                        nama={
+                          a.photos_count > 0
+                            ? `album “${a.nama_album}” beserta ${a.photos_count} fotonya (berkas ikut terhapus dari server dan tidak dapat dipulihkan)`
+                            : `album “${a.nama_album}”`
+                        }
+                        onSunting={() => {
+                          setSunting(a)
+                          window.scrollTo({ top: 0, behavior: 'smooth' })
                         }}
-                        className="text-red-600 hover:underline"
-                      >
-                        Hapus
-                      </button>
+                        onHapus={() => hapus.mutate(a.id)}
+                        sedangProses={hapus.isPending}
+                      />
                     </div>
                   </div>
 
@@ -162,6 +170,7 @@ function PanelFotoAlbum({ album }: { album: Album }) {
         <PengelolaFoto
           urlUnggah={`/admin/galeri/${album.id}/foto`}
           urlHapus={(idFoto) => `/admin/galeri/${album.id}/foto/${idFoto}`}
+          urlUbah={(idFoto) => `/admin/galeri/${album.id}/foto/${idFoto}`}
           foto={data?.photos ?? []}
           onBerubah={() => {
             void queryClient.invalidateQueries({ queryKey: kunciDetail })
@@ -176,27 +185,52 @@ function PanelFotoAlbum({ album }: { album: Album }) {
   )
 }
 
-function FormAlbum() {
+function FormAlbum({ album, onSelesai }: { album: Album | null; onSelesai: () => void }) {
   const queryClient = useQueryClient()
-  const [form, setForm] = useState({ nama_album: '', tanggal_kegiatan: '', deskripsi: '' })
+  const kosong = { nama_album: '', tanggal_kegiatan: '', deskripsi: '' }
+  const [form, setForm] = useState(kosong)
   const [sampul, setSampul] = useState<File | null>(null)
   const [galat, setGalat] = useState<ApiRequestError | null>(null)
 
-  const tambah = useMutation({
-    mutationFn: () =>
-      api.post(
-        '/admin/galeri',
-        keFormData({
-          ...form,
-          // Tanggal kosong dikirim null; string kosong ditolak aturan `date`.
-          tanggal_kegiatan: form.tanggal_kegiatan || null,
-          cover_image: sampul,
-        }),
-      ),
+  // Formulir mengikuti album yang dipilih di daftar. `album?.id` sebagai kunci
+  // pembanding, bukan objeknya: react-query mengembalikan objek baru pada tiap
+  // pengambilan, sehingga membandingkan objek akan menyetel ulang formulir
+  // setiap kali daftar disegarkan — termasuk saat operator sedang mengetik.
+  const [idTerpasang, setIdTerpasang] = useState<number | null>(null)
+
+  if ((album?.id ?? null) !== idTerpasang) {
+    setIdTerpasang(album?.id ?? null)
+    setForm(
+      album
+        ? {
+            nama_album: album.nama_album,
+            tanggal_kegiatan: album.tanggal_kegiatan?.slice(0, 10) ?? '',
+            deskripsi: album.deskripsi ?? '',
+          }
+        : kosong,
+    )
+    setSampul(null)
+    setGalat(null)
+  }
+
+  const simpan = useMutation({
+    mutationFn: () => {
+      const isi = {
+        ...form,
+        // Tanggal kosong dikirim null; string kosong ditolak aturan `date`.
+        tanggal_kegiatan: form.tanggal_kegiatan || null,
+        cover_image: sampul,
+      }
+
+      return album
+        ? api.post(`/admin/galeri/${album.id}`, keFormData(isi, { method: 'PUT' }))
+        : api.post('/admin/galeri', keFormData(isi))
+    },
     onSuccess: () => {
-      setForm({ nama_album: '', tanggal_kegiatan: '', deskripsi: '' })
+      setForm(kosong)
       setSampul(null)
       setGalat(null)
+      onSelesai()
       void queryClient.invalidateQueries({ queryKey: KUNCI })
     },
     onError: (e) =>
@@ -205,12 +239,12 @@ function FormAlbum() {
 
   return (
     <Kartu
-      judul="Buat Album"
+      judul={album ? `Ubah Album: ${album.nama_album}` : 'Buat Album'}
       anak={
         <form
           onSubmit={(e: FormEvent) => {
             e.preventDefault()
-            tambah.mutate()
+            simpan.mutate()
           }}
           className="space-y-4"
         >
@@ -263,13 +297,26 @@ function FormAlbum() {
             jenis="gambar"
             berkas={sampul}
             onPilih={setSampul}
-            petunjuk="Opsional — bila dikosongkan, foto pertama yang diunggah dipakai sebagai sampul."
+            pathTersimpan={album?.cover_image ?? undefined}
+            petunjuk={
+              album
+                ? 'Biarkan kosong bila sampul tidak diganti.'
+                : 'Opsional — bila dikosongkan, foto pertama yang diunggah dipakai sebagai sampul.'
+            }
             galat={galat?.fieldError('cover_image')}
           />
 
-          <Tombol type="submit" disabled={tambah.isPending}>
-            {tambah.isPending ? 'Menyimpan…' : 'Buat Album'}
-          </Tombol>
+          <div className="flex flex-wrap gap-2">
+            <Tombol type="submit" disabled={simpan.isPending}>
+              {simpan.isPending ? 'Menyimpan…' : album ? 'Simpan Perubahan' : 'Buat Album'}
+            </Tombol>
+
+            {album && (
+              <Tombol type="button" variasi="sekunder" onClick={onSelesai}>
+                Batal
+              </Tombol>
+            )}
+          </div>
         </form>
       }
     />

@@ -96,6 +96,8 @@ export interface Pengaturan {
   nama_desa: string | null
   kode_wilayah: string | null
   logo: string | null
+  /** Banner beranda. Null berarti Beranda memakai berkas bawaannya sendiri. */
+  banner: string | null
   wilayah: {
     kelurahan: string | null
     kecamatan: string | null

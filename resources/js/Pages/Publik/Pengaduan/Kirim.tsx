@@ -35,10 +35,10 @@ export default function Kirim({
 
   if (tiket) {
     return (
-      <div className="mx-auto max-w-2xl px-6 py-12">
+      <div className="mx-auto w-full max-w-baca px-5 py-10 sm:px-6 sm:py-12">
         <Head title="Pengaduan Terkirim" />
 
-        <div className="rounded-2xl border border-black/5 bg-navy/3 p-6 text-center">
+        <div className="rounded-xl border border-navy/10 bg-navy/3 p-6 text-center">
           <h1 className="text-xl font-bold text-navy">Pengaduan Terkirim</h1>
           <p className="mt-2 text-sm text-slate-600">
             Simpan nomor tiket berikut untuk memantau tindak lanjut pengaduan Anda.
@@ -78,7 +78,7 @@ export default function Kirim({
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-6 py-10">
+    <div className="mx-auto w-full max-w-baca px-5 py-10 sm:px-6 sm:py-12">
       <Head title="Pengaduan Masyarakat" />
 
       <h1 className="font-heading text-2xl font-bold text-navy">Pengaduan Masyarakat</h1>

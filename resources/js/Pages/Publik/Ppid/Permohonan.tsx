@@ -1,4 +1,4 @@
-import type { FormEvent } from 'react'
+import type { FormEvent, ReactNode } from 'react'
 import { Head, Link, useForm } from '@inertiajs/react'
 import { CheckCircle2, Search, Send, ShieldCheck } from 'lucide-react'
 import {
@@ -10,7 +10,7 @@ import {
   Pilihan,
   Tombol,
 } from '@/Components/ui'
-import { bungkusPpid } from '@/Layouts/LayoutPpid'
+import { LayoutPublik } from '@/Layouts/LayoutPublik'
 import { formatTanggal } from '@/lib/format'
 import type { PermohonanPpid } from '@/types/api'
 import { LABEL_STATUS_PPID } from './status'
@@ -34,7 +34,8 @@ export default function Permohonan({ bukti }: { bukti: PermohonanPpid | null }) 
       <>
         <Head title="Permohonan Terkirim" />
 
-        <KepalaHalaman eyebrow="PPID" judul="Permohonan Terkirim" />
+        <KepalaHalaman eyebrow="PPID" judul="Permohonan Terkirim" lebar="sempit" />
+
 
         <IsiHalaman lebar="sempit">
           <Kartu className="p-8 text-center sm:p-10">
@@ -92,10 +93,12 @@ export default function Permohonan({ bukti }: { bukti: PermohonanPpid | null }) 
       <Head title="Permohonan Informasi Publik" />
 
       <KepalaHalaman
+        lebar="sempit"
         eyebrow="PPID"
         judul="Permohonan Informasi Publik"
         deskripsi="Ajukan permohonan informasi kepada PPID Desa. Anda akan menerima nomor registrasi untuk melacak statusnya tanpa perlu membuat akun."
       />
+
 
       <IsiHalaman lebar="sempit">
         <form
@@ -231,4 +234,4 @@ export default function Permohonan({ bukti }: { bukti: PermohonanPpid | null }) 
   )
 }
 
-Permohonan.layout = bungkusPpid
+Permohonan.layout = (page: ReactNode) => <LayoutPublik>{page}</LayoutPublik>

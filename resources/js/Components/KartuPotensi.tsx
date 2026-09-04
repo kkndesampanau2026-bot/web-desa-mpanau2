@@ -9,17 +9,17 @@ export function KartuPotensi({ potensi }: { potensi: PotensiItem }) {
   const jelajah = useJelajahPotensi()
 
   return (
-    <li className="group overflow-hidden rounded-2xl border border-black/5 bg-white shadow-sm transition hover:shadow-lg">
+    <li className="group overflow-hidden rounded-xl border border-navy/10 bg-white shadow-sm transition hover:shadow-md">
       <Link href={jelajah.detail(potensi.slug)} className="flex h-full flex-col">
         {potensi.foto ? (
           <img
             src={potensi.foto}
             alt=""
             loading="lazy"
-            className="h-44 w-full object-cover transition group-hover:scale-105"
+            className="aspect-[16/10] w-full object-cover transition duration-300 group-hover:scale-[1.03]"
           />
         ) : (
-          <div aria-hidden="true" className="h-44 w-full bg-navy/5" />
+          <div aria-hidden="true" className="aspect-[16/10] w-full bg-navy/5" />
         )}
 
         <div className="flex flex-1 flex-col p-5">
@@ -47,5 +47,7 @@ export function KartuPotensi({ potensi }: { potensi: PotensiItem }) {
 
 /** Susunan kisi baku untuk sekumpulan KartuPotensi. */
 export function KisiPotensi({ children }: { children: ReactNode }) {
-  return <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">{children}</ul>
+  return (
+    <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:gap-6 2xl:grid-cols-4">{children}</ul>
+  )
 }

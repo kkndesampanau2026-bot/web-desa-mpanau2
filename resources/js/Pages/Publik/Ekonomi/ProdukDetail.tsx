@@ -15,7 +15,7 @@ export default function ProdukDetail({
   kembali?: string
 }) {
   return (
-    <div className="mx-auto max-w-3xl px-6 py-10">
+    <div className="mx-auto w-full max-w-baca px-5 py-10 sm:px-6 sm:py-12">
       <Head title={produk.nama_produk} />
 
       <Link href={kembali} className="text-sm text-slate-500 hover:text-navy">
@@ -54,7 +54,7 @@ export default function ProdukDetail({
 
       {produk.deskripsi && <p className="mt-6 text-slate-700">{produk.deskripsi}</p>}
 
-      <section className="mt-8 rounded-2xl border border-black/5 bg-navy/3 p-5">
+      <section className="mt-8 rounded-xl border border-navy/10 bg-navy/3 p-5">
         <h2 className="font-semibold text-navy">Penjual</h2>
         <p className="mt-1 text-slate-700">{produk.penjual.nama}</p>
         {produk.alamat_penjual && (

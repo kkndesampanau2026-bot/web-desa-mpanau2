@@ -43,6 +43,7 @@ export default function PengaturanPage() {
   const [nomor, setNomor] = useState<NomorPenting[]>([])
   const [sosmed, setSosmed] = useState<SosialMedia[]>([])
   const [logo, setLogo] = useState<File | null>(null)
+  const [banner, setBanner] = useState<File | null>(null)
   const [galat, setGalat] = useState<ApiRequestError | null>(null)
   const [sukses, setSukses] = useState(false)
 
@@ -83,6 +84,7 @@ export default function PengaturanPage() {
             nomor_telepon_penting: nomor.filter((n) => n.nama_layanan && n.nomor),
             sosial_media: sosmed.filter((s) => s.platform && s.url),
             logo,
+            banner,
           },
           { method: 'PUT' },
         ),
@@ -93,6 +95,7 @@ export default function PengaturanPage() {
       // Berkas dilepas setelah terkirim; bila tidak, menyimpan ulang akan
       // mengunggah logo yang sama untuk kedua kalinya.
       setLogo(null)
+      setBanner(null)
       void queryClient.invalidateQueries({ queryKey: ['admin', 'settings'] })
     },
     onError: (e) => {
@@ -167,6 +170,21 @@ export default function PengaturanPage() {
                 pathTersimpan={data?.setting?.logo}
                 petunjuk="Tampil pada kepala situs publik dan dokumen resmi."
                 galat={galat?.fieldError('logo')}
+              />
+            </div>
+
+            <div className="sm:col-span-2">
+              <InputBerkas
+                label="Banner Beranda"
+                jenis="gambar"
+                berkas={banner}
+                onPilih={(b) => {
+                  setBanner(b)
+                  setSukses(false)
+                }}
+                pathTersimpan={data?.setting?.banner}
+                petunjuk="Foto latar pada bagian atas beranda. Pilih foto MENDATAR beresolusi tinggi (minimal 1600×900); bagian tengahnya yang paling terlihat, dan sebuah lapisan gelap dipasang di atasnya agar teks tetap terbaca. Kosongkan untuk memakai foto bawaan."
+                galat={galat?.fieldError('banner')}
               />
             </div>
           </div>

@@ -4,6 +4,7 @@ import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { EmptyState } from '@/Components/EmptyState'
+import { IsiHalaman, KepalaHalaman } from '@/Components/ui'
 import { ChipFilter } from '@/Components/ui'
 import { LayoutPublik } from '@/Layouts/LayoutPublik'
 import type { DataPeta, TitikLokasi } from '@/types/api'
@@ -80,113 +81,123 @@ export default function Listing({
   ]
 
   return (
-    <div className="mx-auto max-w-situs px-6 py-10">
+    <>
       <Head title="Peta Desa & Titik Lokasi" />
 
-      <h1 className="font-heading text-2xl font-bold text-navy">Peta Desa &amp; Titik Lokasi</h1>
-      <p className="mt-2 text-slate-600">{DESKRIPSI}</p>
+      <KepalaHalaman
+        eyebrow="Peta Desa"
+        judul="Peta Desa & Titik Lokasi"
+        deskripsi={DESKRIPSI}
+      />
 
-      {data && data.kategori_tersedia.length > 0 && (
-        <nav aria-label="Filter kategori" className="mt-6 flex flex-wrap gap-2">
-          <ChipFilter aktif={!filter.kategori} onClick={() => gantiKategori()}>
-            Semua
-          </ChipFilter>
-          {data.kategori_tersedia.map((k) => (
-            <ChipFilter key={k} aktif={filter.kategori === k} onClick={() => gantiKategori(k)}>
-              <span
-                aria-hidden="true"
-                className="mr-1.5 inline-block size-2.5 rounded-full align-middle"
-                style={{ backgroundColor: WARNA_KATEGORI[k] ?? WARNA_LAINNYA }}
-              />
-              {k}
+      <IsiHalaman lebar="lebar">
+        {data && data.kategori_tersedia.length > 0 && (
+          <nav aria-label="Filter kategori" className="mb-8 flex flex-wrap gap-2">
+            <ChipFilter aktif={!filter.kategori} onClick={() => gantiKategori()}>
+              Semua
             </ChipFilter>
-          ))}
-        </nav>
-      )}
+            {data.kategori_tersedia.map((k) => (
+              <ChipFilter key={k} aktif={filter.kategori === k} onClick={() => gantiKategori(k)}>
+                <span
+                  aria-hidden="true"
+                  className="mr-1.5 inline-block size-2.5 rounded-full align-middle"
+                  style={{ backgroundColor: WARNA_KATEGORI[k] ?? WARNA_LAINNYA }}
+                />
+                {k}
+              </ChipFilter>
+            ))}
+          </nav>
+        )}
 
-      {!data?.titik.length ? (
-        <p className="mt-10 rounded-lg border border-dashed border-navy/20 bg-navy/3 px-6 py-10 text-center text-slate-600">
-          Belum ada titik lokasi pada kategori ini.
-        </p>
-      ) : (
-        <div className="mt-8 grid gap-6 lg:grid-cols-[2fr_1fr]">
-          <div className="overflow-hidden rounded-2xl border border-black/5 bg-white shadow-sm">
-            <MapContainer
-              center={pusat}
-              zoom={15}
-              scrollWheelZoom={false}
-              style={{ height: 480, width: '100%' }}
-            >
-              {/* OpenStreetMap: gratis dan tanpa kunci API (PRD 6.9).
-                  Atribusi WAJIB ditampilkan sesuai syarat penggunaannya. */}
-              <TileLayer
-                attribution='&copy; Kontributor <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
+        {!data?.titik.length ? (
+          <p className="rounded-xl border border-dashed border-navy/25 bg-white px-6 py-12 text-center text-slate-600">
+            Belum ada titik lokasi pada kategori ini.
+          </p>
+        ) : (
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+            <div className="overflow-hidden rounded-xl border border-navy/10 bg-white shadow-sm">
+              {/*
+                Tinggi peta mengikuti layar, bukan 480px di mana pun: pada
+                ponsel setinggi 640px, peta setinggi itu menyisakan hampir
+                tidak ada ruang bagi daftar lokasi di bawahnya.
+              */}
+              <MapContainer
+                center={pusat}
+                zoom={15}
+                scrollWheelZoom={false}
+                className="h-[22rem] w-full sm:h-[26rem] lg:h-[30rem]"
+              >
+                {/* OpenStreetMap: gratis dan tanpa kunci API (PRD 6.9).
+                    Atribusi WAJIB ditampilkan sesuai syarat penggunaannya. */}
+                <TileLayer
+                  attribution='&copy; Kontributor <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
 
-              {data.titik.map((t) => (
-                <Marker
-                  key={t.id}
-                  position={[t.latitude, t.longitude]}
-                  icon={ikonUntuk(t.kategori)}
-                  eventHandlers={{ click: () => setDipilih(t.id) }}
-                >
-                  <Popup>
-                    <IsiPopup titik={t} />
-                  </Popup>
-                </Marker>
-              ))}
-            </MapContainer>
-          </div>
+                {data.titik.map((t) => (
+                  <Marker
+                    key={t.id}
+                    position={[t.latitude, t.longitude]}
+                    icon={ikonUntuk(t.kategori)}
+                    eventHandlers={{ click: () => setDipilih(t.id) }}
+                  >
+                    <Popup>
+                      <IsiPopup titik={t} />
+                    </Popup>
+                  </Marker>
+                ))}
+              </MapContainer>
+            </div>
 
-          {/*
-            Daftar teks di samping peta bukan sekadar pelengkap: peta berbasis
-            kanvas tidak terbaca pembaca layar dan sulit dipakai lewat
-            keyboard, sehingga daftar inilah yang membuat informasi lokasi
-            tetap terjangkau semua pengunjung (PRD 12.4).
-          */}
-          <div>
-            <h2 className="text-sm font-medium text-slate-700">
-              Daftar Lokasi ({data.titik.length})
-            </h2>
+            {/*
+              Daftar teks di samping peta bukan sekadar pelengkap: peta berbasis
+              kanvas tidak terbaca pembaca layar dan sulit dipakai lewat
+              keyboard, sehingga daftar inilah yang membuat informasi lokasi
+              tetap terjangkau semua pengunjung (PRD 12.4).
+            */}
+            <div>
+              <h2 className="text-sm font-medium text-slate-700">
+                Daftar Lokasi ({data.titik.length})
+              </h2>
 
-            <ul className="mt-3 max-h-[440px] space-y-2 overflow-y-auto pr-1">
-              {data.titik.map((t) => (
-                <li
-                  key={t.id}
-                  className={`rounded-lg border p-3 transition ${
-                    dipilih === t.id
-                      ? 'border-navy bg-navy/3'
-                      : 'border-navy/10 hover:border-navy/40'
-                  }`}
-                >
-                  <div className="flex items-start gap-2">
-                    <span
-                      aria-hidden="true"
-                      className="mt-1.5 inline-block size-2.5 shrink-0 rounded-full"
-                      style={{ backgroundColor: WARNA_KATEGORI[t.kategori] ?? WARNA_LAINNYA }}
-                    />
-                    <div className="min-w-0">
-                      <p className="font-semibold text-navy">{t.nama}</p>
-                      <p className="text-xs text-slate-500">{t.kategori}</p>
-                      {t.alamat && <p className="mt-1 text-xs text-slate-600">{t.alamat}</p>}
-                      {t.tautan && (
-                        <Link
-                          href={t.tautan}
-                          className="mt-1 inline-block text-xs text-slate-700 underline hover:text-navy"
-                        >
-                          Lihat halaman
-                        </Link>
-                      )}
+              <ul className="mt-3 space-y-2 lg:max-h-[26rem] lg:overflow-y-auto lg:pr-1">
+                {data.titik.map((t) => (
+                  <li
+                    key={t.id}
+                    className={`rounded-lg border p-3 transition ${
+                      dipilih === t.id
+                        ? 'border-navy bg-navy/3'
+                        : 'border-navy/10 hover:border-navy/40'
+                    }`}
+                  >
+                    <div className="flex items-start gap-2">
+                      <span
+                        aria-hidden="true"
+                        className="mt-1.5 inline-block size-2.5 shrink-0 rounded-full"
+                        style={{ backgroundColor: WARNA_KATEGORI[t.kategori] ?? WARNA_LAINNYA }}
+                      />
+                      <div className="min-w-0">
+                        <p className="font-semibold text-navy">{t.nama}</p>
+                        <p className="text-xs text-slate-500">{t.kategori}</p>
+                        {t.alamat && <p className="mt-1 text-xs text-slate-600">{t.alamat}</p>}
+                        {t.tautan && (
+                          <Link
+                            href={t.tautan}
+                            className="mt-1 inline-block text-xs text-slate-700 underline hover:text-navy"
+                          >
+                            Lihat halaman
+                          </Link>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </IsiHalaman>
+    </>
   )
 }
 

@@ -191,6 +191,7 @@ Route::prefix('v1')->group(function () {
 
         // Data Penduduk — modul paling sensitif (PRD 12.2).
         Route::middleware('permission:manage-population-data')->group(function () {
+            Route::get('/residents/opsi', [ResidentController::class, 'opsi']);
             Route::get('/residents', [ResidentController::class, 'index']);
             Route::post('/residents', [ResidentController::class, 'store']);
             Route::put('/residents/{resident}', [ResidentController::class, 'update']);
@@ -209,8 +210,11 @@ Route::prefix('v1')->group(function () {
             Route::get('/apbdes/tahun', [BudgetController::class, 'tahun']);
             Route::post('/apbdes/tahun', [BudgetController::class, 'simpanTahun']);
             Route::put('/apbdes/tahun/{budgetYear}', [BudgetController::class, 'ubahTahun']);
+            Route::delete('/apbdes/tahun/{budgetYear}', [BudgetController::class, 'hapusTahun']);
             Route::get('/apbdes/kategori', [BudgetController::class, 'kategori']);
             Route::post('/apbdes/kategori', [BudgetController::class, 'simpanKategori']);
+            Route::put('/apbdes/kategori/{budgetCategory}', [BudgetController::class, 'ubahKategori']);
+            Route::delete('/apbdes/kategori/{budgetCategory}', [BudgetController::class, 'hapusKategori']);
             Route::get('/apbdes/items', [BudgetController::class, 'items']);
             Route::post('/apbdes/items', [BudgetController::class, 'simpanItem']);
             Route::put('/apbdes/items/{budgetItem}', [BudgetController::class, 'ubahItem']);
@@ -230,12 +234,15 @@ Route::prefix('v1')->group(function () {
             Route::get('/idm', [IndeksDesaController::class, 'idmIndex']);
             Route::post('/idm', [IndeksDesaController::class, 'idmSimpan']);
             Route::put('/idm/{idmScore}/indikator', [IndeksDesaController::class, 'idmIndikatorSimpan']);
+            Route::delete('/idm/{idmScore}', [IndeksDesaController::class, 'idmHapus']);
         });
 
         // SDGs Desa
         Route::middleware('permission:manage-sdgs')->group(function () {
             Route::get('/sdgs', [IndeksDesaController::class, 'sdgsIndex']);
             Route::post('/sdgs', [IndeksDesaController::class, 'sdgsSimpan']);
+            Route::delete('/sdgs/{tahun}', [IndeksDesaController::class, 'sdgsHapus'])
+                ->whereNumber('tahun');
         });
 
         /*
@@ -248,6 +255,7 @@ Route::prefix('v1')->group(function () {
         Route::middleware('permission:manage-bansos')->group(function () {
             Route::get('/bansos/jenis', [AdminBansosController::class, 'jenisIndex']);
             Route::post('/bansos/jenis', [AdminBansosController::class, 'jenisSimpan']);
+            Route::put('/bansos/jenis/{bansosType}', [AdminBansosController::class, 'jenisUbah']);
             Route::delete('/bansos/jenis/{bansosType}', [AdminBansosController::class, 'jenisHapus']);
 
             Route::get('/bansos/penerima', [AdminBansosController::class, 'penerimaIndex']);
@@ -266,10 +274,16 @@ Route::prefix('v1')->group(function () {
         Route::middleware('permission:manage-ppid-content')->group(function () {
             Route::get('/ppid/dasar-hukum', [AdminPpidController::class, 'dasarHukumIndex']);
             Route::post('/ppid/dasar-hukum', [AdminPpidController::class, 'dasarHukumSimpan']);
+            // Didaftarkan sebagai PUT seperti modul lain. Klien mengirimnya
+            // sebagai POST + `_method=PUT` karena PDF dikirim multipart —
+            // Laravel memulihkan method aslinya sebelum routing, sehingga
+            // route PUT inilah yang tercocokkan.
+            Route::put('/ppid/dasar-hukum/{ppidLegalBasis}', [AdminPpidController::class, 'dasarHukumUbah']);
             Route::delete('/ppid/dasar-hukum/{ppidLegalBasis}', [AdminPpidController::class, 'dasarHukumHapus']);
 
             Route::get('/ppid/informasi', [AdminPpidController::class, 'informasiIndex']);
             Route::post('/ppid/informasi', [AdminPpidController::class, 'informasiSimpan']);
+            Route::put('/ppid/informasi/{ppidInformationItem}', [AdminPpidController::class, 'informasiUbah']);
             Route::delete('/ppid/informasi/{ppidInformationItem}', [AdminPpidController::class, 'informasiHapus']);
         });
 

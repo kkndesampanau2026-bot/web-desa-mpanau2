@@ -78,6 +78,36 @@ class BudgetController extends Controller
         return ApiResponse::success($budgetYear, 'Tahun anggaran berhasil diperbarui.');
     }
 
+    /**
+     * Menghapus tahun anggaran.
+     *
+     * Ditolak selama masih ada rincian di dalamnya. Menghapus berantai akan
+     * melenyapkan seluruh angka APBDes satu tahun hanya karena satu ketukan
+     * keliru — dan angka itulah yang menjadi rujukan publik pada halaman
+     * transparansi.
+     */
+    public function hapusTahun(BudgetYear $budgetYear): JsonResponse
+    {
+        $this->pastikanMilikDesaIni($budgetYear->village_id);
+
+        $jumlahItem = BudgetItem::where('budget_year_id', $budgetYear->id)->count();
+
+        if ($jumlahItem > 0) {
+            return ApiResponse::error(
+                "Tahun anggaran ini masih memuat {$jumlahItem} rincian. Hapus rinciannya lebih dahulu.",
+                422
+            );
+        }
+
+        $tahun = $budgetYear->tahun;
+        $budgetYear->delete();
+        $this->bersihkanCache();
+
+        $this->logger->log('deleted', $budgetYear, "Menghapus tahun anggaran {$tahun}");
+
+        return ApiResponse::success(message: 'Tahun anggaran berhasil dihapus.');
+    }
+
     /** Master kategori (Pendapatan/Belanja/Pembiayaan). */
     public function kategori(): JsonResponse
     {
@@ -105,6 +135,52 @@ class BudgetController extends Controller
         $this->logger->log('created', $kategori, "Menambah kategori APBDes: {$kategori->nama}");
 
         return ApiResponse::success($kategori, 'Kategori berhasil ditambahkan.', 201);
+    }
+
+    public function ubahKategori(Request $request, BudgetCategory $budgetCategory): JsonResponse
+    {
+        $this->pastikanMilikDesaIni($budgetCategory->village_id);
+
+        $data = $request->validate([
+            'kelompok' => ['required', Rule::in(BudgetCategory::KELOMPOK)],
+            'nama' => ['required', 'string', 'max:255'],
+            'kode' => ['nullable', 'string', 'max:20'],
+            'urutan_tampil' => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        $sebelum = $budgetCategory->getOriginal();
+        $budgetCategory->update($data);
+        $this->bersihkanCache();
+
+        $this->logger->log(
+            'updated', $budgetCategory, "Memperbarui kategori APBDes: {$budgetCategory->nama}",
+            $sebelum, $budgetCategory->getAttributes()
+        );
+
+        return ApiResponse::success($budgetCategory, 'Kategori berhasil diperbarui.');
+    }
+
+    /** Ditolak selama masih dipakai rincian mana pun — lihat `hapusTahun()`. */
+    public function hapusKategori(BudgetCategory $budgetCategory): JsonResponse
+    {
+        $this->pastikanMilikDesaIni($budgetCategory->village_id);
+
+        $jumlahItem = BudgetItem::where('budget_category_id', $budgetCategory->id)->count();
+
+        if ($jumlahItem > 0) {
+            return ApiResponse::error(
+                "Kategori ini masih dipakai {$jumlahItem} rincian anggaran. Pindahkan atau hapus rinciannya lebih dahulu.",
+                422
+            );
+        }
+
+        $nama = $budgetCategory->nama;
+        $budgetCategory->delete();
+        $this->bersihkanCache();
+
+        $this->logger->log('deleted', $budgetCategory, "Menghapus kategori APBDes: {$nama}");
+
+        return ApiResponse::success(message: 'Kategori berhasil dihapus.');
     }
 
     /** Rincian item per tahun anggaran. */

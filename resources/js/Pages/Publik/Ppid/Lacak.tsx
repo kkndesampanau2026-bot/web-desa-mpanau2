@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type FormEvent, type ReactNode } from 'react'
 import { Head, router } from '@inertiajs/react'
 import { ClipboardCheck, Download, Search } from 'lucide-react'
 import {
@@ -11,7 +11,7 @@ import {
   Pemberitahuan,
   Tombol,
 } from '@/Components/ui'
-import { bungkusPpid } from '@/Layouts/LayoutPpid'
+import { LayoutPublik } from '@/Layouts/LayoutPublik'
 import { formatTanggal } from '@/lib/format'
 import type { StatusPermohonanPpid } from '@/types/api'
 import { GAYA_STATUS_PPID, LABEL_STATUS_PPID } from './status'
@@ -48,10 +48,12 @@ export default function Lacak({
       <Head title="Lacak Permohonan Informasi" />
 
       <KepalaHalaman
+        lebar="sempit"
         eyebrow="PPID"
         judul="Lacak Permohonan Informasi"
         deskripsi="Masukkan nomor registrasi yang Anda terima saat mengajukan permohonan."
       />
+
 
       <IsiHalaman lebar="sempit">
         <Kartu className="p-6 sm:p-8">
@@ -156,4 +158,4 @@ function Baris({
   )
 }
 
-Lacak.layout = bungkusPpid
+Lacak.layout = (page: ReactNode) => <LayoutPublik>{page}</LayoutPublik>

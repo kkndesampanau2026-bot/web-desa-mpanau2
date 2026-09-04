@@ -1,22 +1,24 @@
 import { useState, type ReactNode } from 'react'
-import { Head, Link } from '@inertiajs/react'
-import { CalendarClock, ChevronDown, Clock, Download, FileText, Siren } from 'lucide-react'
+import { Head } from '@inertiajs/react'
+import { ChevronDown, Download, FileText } from 'lucide-react'
+import { IsiHalaman, KepalaHalaman } from '@/Components/ui'
 import { LayoutPublik } from '@/Layouts/LayoutPublik'
 import { formatTanggal } from '@/lib/format'
-import { useHalaman } from '@/types/inertia'
 import type { InformasiPpid, JenisInformasiPpid } from '@/types/api'
 
 /**
  * Ketiga jenis informasi PPID dilayani satu komponen — pembedanya jenis dari
- * URL. Tata letak mengikuti Figma: kepala halaman terpusat, tiga "pil" untuk
- * berpindah jenis, lalu akordeon yang mengelompokkan dokumen menurut kategori.
- * Tiap dokumen dapat diunduh (PDF) oleh publik.
+ * URL, dan nama jenis itulah yang menjadi judul halaman (H1) di bilah navy.
+ *
+ * Pemilihan jenis dilakukan dari kartu kategori di halaman /ppid, bukan dari
+ * halaman ini; bilah tab PPID menandai bahwa pengunjung sedang berada di
+ * "Informasi Publik".
  */
-const PIL: { jenis: JenisInformasiPpid; ke: string; label: string; ikon: typeof Clock }[] = [
-  { jenis: 'berkala', ke: '/ppid/berkala', label: 'Informasi Secara Berkala', ikon: CalendarClock },
-  { jenis: 'serta-merta', ke: '/ppid/serta-merta', label: 'Informasi Serta Merta', ikon: Siren },
-  { jenis: 'setiap-saat', ke: '/ppid/setiap-saat', label: 'Informasi Setiap Saat', ikon: Clock },
-]
+const JENIS: Record<JenisInformasiPpid, string> = {
+  berkala: 'Informasi Secara Berkala',
+  'serta-merta': 'Informasi Serta Merta',
+  'setiap-saat': 'Informasi Setiap Saat',
+}
 
 export default function Informasi({
   jenis,
@@ -25,65 +27,40 @@ export default function Informasi({
   jenis: JenisInformasiPpid
   informasi: InformasiPpid[]
 }) {
-  const namaDesa = useHalaman().props.pengaturan?.nama_desa ?? 'Desa Mpanau'
-  const judul = PIL.find((p) => p.jenis === jenis)?.label ?? 'Informasi Publik'
+  const judul = JENIS[jenis]
   const grup = kelompokKategori(informasi)
 
   return (
     <>
       <Head title={judul} />
 
-      <div className="mx-auto max-w-4xl px-6 py-14">
-        {/* Kepala halaman terpusat. */}
-        <header className="text-center">
-          <p className="text-sm font-semibold tracking-[0.14em] text-gold-dark uppercase">
-            Keterbukaan Informasi Publik
-          </p>
-          <h1 className="font-heading mt-2 text-3xl font-bold text-navy sm:text-4xl">
-            PPID {namaDesa}
-          </h1>
-          <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-slate-500">
-            Pejabat Pengelola Informasi dan Dokumentasi (PPID) {namaDesa} menyediakan informasi
-            publik sesuai UU Keterbukaan Informasi Publik.
-          </p>
-        </header>
+      <KepalaHalaman
+        lebar="sedang"
+        eyebrow="Keterbukaan Informasi Publik"
+        judul={judul}
+        deskripsi="Dokumen yang disediakan PPID Desa sesuai UU Nomor 14 Tahun 2008 tentang Keterbukaan Informasi Publik. Tekan sebuah kategori untuk melihat berkasnya."
+      />
 
-        {/* Pil pemilih jenis informasi. */}
-        <nav aria-label="Jenis informasi" className="mt-10 flex flex-wrap justify-center gap-3">
-          {PIL.map((pil) => {
-            const aktif = pil.jenis === jenis
 
-            return (
-              <Link
-                key={pil.jenis}
-                href={pil.ke}
-                aria-current={aktif ? 'page' : undefined}
-                className={`inline-flex items-center gap-2 rounded-full border-2 px-5 py-2.5 text-sm font-semibold transition ${
-                  aktif
-                    ? 'border-navy bg-navy text-white'
-                    : 'border-navy/20 bg-white text-navy hover:border-navy/40'
-                }`}
-              >
-                <pil.ikon className="size-4 shrink-0" aria-hidden="true" />
-                {pil.label}
-              </Link>
-            )
-          })}
-        </nav>
-
+      <IsiHalaman lebar="sedang">
         {/* Daftar dokumen dikelompokkan per kategori. */}
-        <div className="mt-10 space-y-3">
+        <div className="space-y-3">
           {grup.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-navy/20 bg-white/60 px-6 py-12 text-center text-slate-500">
+            <p className="rounded-xl border border-dashed border-navy/20 bg-white px-6 py-12 text-center text-slate-500">
               Belum ada dokumen pada kategori informasi ini.
             </p>
           ) : (
             grup.map((g, i) => (
-              <Akordeon key={g.kategori} kategori={g.kategori} dokumen={g.dokumen} awalBuka={i === 0} />
+              <Akordeon
+                key={g.kategori}
+                kategori={g.kategori}
+                dokumen={g.dokumen}
+                awalBuka={i === 0}
+              />
             ))
           )}
         </div>
-      </div>
+      </IsiHalaman>
     </>
   )
 }

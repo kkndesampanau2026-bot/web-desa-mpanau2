@@ -1,7 +1,16 @@
 import { useState, type FormEvent } from 'react'
+import { Plus } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiRequestError, type ApiSuccess } from '@/lib/api'
-import { Kartu, Kolom, Input, Pemberitahuan, Pilihan, Tombol } from '@/Components/Admin/Form'
+import {
+  AksiBaris,
+  Kartu,
+  Kolom,
+  Input,
+  Pemberitahuan,
+  Pilihan,
+  Tombol,
+} from '@/Components/Admin/Form'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 import type { ReactNode } from 'react'
 
@@ -17,6 +26,7 @@ interface Penerima {
   id: number
   nik: string
   nama: string
+  bansos_type_id: number | null
   jenis_bantuan: string | null
   dusun: string | null
   tahun_anggaran: number
@@ -92,6 +102,7 @@ function DaftarPenerima() {
   const queryClient = useQueryClient()
   const [cari, setCari] = useState('')
   const [formTerbuka, setFormTerbuka] = useState(false)
+  const [sunting, setSunting] = useState<Penerima | null>(null)
 
   const { data, isPending } = useQuery({
     queryKey: ['admin', 'bansos', 'penerima', cari],
@@ -112,8 +123,10 @@ function DaftarPenerima() {
   if (formTerbuka) {
     return (
       <FormPenerima
+        penerima={sunting}
         onSelesai={() => {
           setFormTerbuka(false)
+          setSunting(null)
           void queryClient.invalidateQueries({ queryKey: ['admin', 'bansos', 'penerima'] })
         }}
       />
@@ -133,7 +146,15 @@ function DaftarPenerima() {
             />
           </Kolom>
         </div>
-        <Tombol onClick={() => setFormTerbuka(true)}>+ Tambah Penerima</Tombol>
+        <Tombol
+          onClick={() => {
+            setSunting(null)
+            setFormTerbuka(true)
+          }}
+        >
+          <Plus className="size-4" aria-hidden="true" />
+          Tambah Penerima
+        </Tombol>
       </div>
 
       <Kartu
@@ -173,15 +194,16 @@ function DaftarPenerima() {
                           <span className="ml-1 text-xs text-slate-400">(privat)</span>
                         )}
                       </td>
-                      <td className="py-2.5 text-right">
-                        <button
-                          onClick={() => {
-                            if (confirm(`Hapus data penerima "${p.nama}"?`)) hapus.mutate(p.id)
+                      <td className="py-2.5">
+                        <AksiBaris
+                          nama={`data penerima “${p.nama}”`}
+                          onSunting={() => {
+                            setSunting(p)
+                            setFormTerbuka(true)
                           }}
-                          className="text-red-600 hover:underline"
-                        >
-                          Hapus
-                        </button>
+                          onHapus={() => hapus.mutate(p.id)}
+                          sedangProses={hapus.isPending}
+                        />
                       </td>
                     </tr>
                   ))}
@@ -195,14 +217,22 @@ function DaftarPenerima() {
   )
 }
 
-function FormPenerima({ onSelesai }: { onSelesai: () => void }) {
+function FormPenerima({
+  penerima,
+  onSelesai,
+}: {
+  penerima: Penerima | null
+  onSelesai: () => void
+}) {
   const [form, setForm] = useState({
-    bansos_type_id: '',
-    nama: '',
+    bansos_type_id: penerima?.bansos_type_id ? String(penerima.bansos_type_id) : '',
+    nama: penerima?.nama ?? '',
+    // NIK tidak pernah dikirim ke daftar dalam bentuk utuh, jadi kolomnya
+    // dikosongkan saat menyunting: diisi hanya bila NIK-nya memang diperbaiki.
     nik: '',
-    tahun_anggaran: String(new Date().getFullYear()),
-    nominal: '',
-    nominal_publik: false,
+    tahun_anggaran: String(penerima?.tahun_anggaran ?? new Date().getFullYear()),
+    nominal: penerima?.nominal != null ? String(penerima.nominal) : '',
+    nominal_publik: penerima?.nominal_publik ?? false,
   })
   const [galat, setGalat] = useState<ApiRequestError | null>(null)
 
@@ -215,11 +245,18 @@ function FormPenerima({ onSelesai }: { onSelesai: () => void }) {
   })
 
   const simpan = useMutation({
-    mutationFn: () =>
-      api.post('/admin/bansos/penerima', {
+    mutationFn: () => {
+      const isi = {
         ...form,
         nominal: form.nominal || null,
-      }),
+        // NIK kosong saat menyunting berarti "biarkan seperti semula".
+        ...(penerima && !form.nik ? { nik: undefined } : {}),
+      }
+
+      return penerima
+        ? api.put(`/admin/bansos/penerima/${penerima.id}`, isi)
+        : api.post('/admin/bansos/penerima', isi)
+    },
     onSuccess: onSelesai,
     onError: (e) =>
       setGalat(e instanceof ApiRequestError ? e : new ApiRequestError('Gagal menyimpan.', 0)),
@@ -233,7 +270,9 @@ function FormPenerima({ onSelesai }: { onSelesai: () => void }) {
   return (
     <form onSubmit={kirim} className="space-y-6">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="font-semibold text-slate-900">Tambah Penerima Bantuan</h2>
+        <h2 className="font-semibold text-slate-900">
+          {penerima ? `Ubah Penerima: ${penerima.nama}` : 'Tambah Penerima Bantuan'}
+        </h2>
         <Tombol type="button" variasi="sekunder" onClick={onSelesai}>
           Batal
         </Tombol>
@@ -338,8 +377,10 @@ function FormPenerima({ onSelesai }: { onSelesai: () => void }) {
 
 function DaftarJenis() {
   const queryClient = useQueryClient()
-  const [form, setForm] = useState({ nama: '', deskripsi: '', sumber_dana: '' })
+  const kosong = { nama: '', deskripsi: '', sumber_dana: '' }
+  const [form, setForm] = useState(kosong)
   const [galat, setGalat] = useState<ApiRequestError | null>(null)
+  const [sunting, setSunting] = useState<JenisBantuan | null>(null)
 
   const { data, isPending } = useQuery({
     queryKey: ['admin', 'bansos', 'jenis'],
@@ -349,10 +390,14 @@ function DaftarJenis() {
     },
   })
 
-  const tambah = useMutation({
-    mutationFn: () => api.post('/admin/bansos/jenis', form),
+  const simpan = useMutation({
+    mutationFn: () =>
+      sunting
+        ? api.put(`/admin/bansos/jenis/${sunting.id}`, form)
+        : api.post('/admin/bansos/jenis', form),
     onSuccess: () => {
-      setForm({ nama: '', deskripsi: '', sumber_dana: '' })
+      setForm(kosong)
+      setSunting(null)
       setGalat(null)
       void queryClient.invalidateQueries({ queryKey: ['admin', 'bansos', 'jenis'] })
     },
@@ -370,12 +415,12 @@ function DaftarJenis() {
   return (
     <div className="space-y-6">
       <Kartu
-        judul="Tambah Jenis Bantuan"
+        judul={sunting ? `Ubah Jenis: ${sunting.nama}` : 'Tambah Jenis Bantuan'}
         anak={
           <form
             onSubmit={(e) => {
               e.preventDefault()
-              tambah.mutate()
+              simpan.mutate()
             }}
             className="space-y-4"
           >
@@ -411,9 +456,25 @@ function DaftarJenis() {
               </Kolom>
             </div>
 
-            <Tombol type="submit" disabled={tambah.isPending}>
-              {tambah.isPending ? 'Menyimpan…' : 'Tambah'}
-            </Tombol>
+            <div className="flex flex-wrap gap-2">
+              <Tombol type="submit" disabled={simpan.isPending}>
+                {simpan.isPending ? 'Menyimpan…' : sunting ? 'Simpan Perubahan' : 'Tambah'}
+              </Tombol>
+
+              {sunting && (
+                <Tombol
+                  type="button"
+                  variasi="sekunder"
+                  onClick={() => {
+                    setSunting(null)
+                    setForm(kosong)
+                    setGalat(null)
+                  }}
+                >
+                  Batal
+                </Tombol>
+              )}
+            </div>
           </form>
         }
       />
@@ -436,14 +497,25 @@ function DaftarJenis() {
                         .join(' · ')}
                     </p>
                   </div>
-                  <button
-                    onClick={() => {
-                      if (confirm(`Hapus jenis bantuan "${j.nama}"?`)) hapus.mutate(j.id)
+                  <AksiBaris
+                    nama={
+                      j.recipients_count > 0
+                        ? `jenis bantuan “${j.nama}” beserta ${j.recipients_count} penerimanya`
+                        : `jenis bantuan “${j.nama}”`
+                    }
+                    onSunting={() => {
+                      setSunting(j)
+                      setForm({
+                        nama: j.nama,
+                        deskripsi: j.deskripsi ?? '',
+                        sumber_dana: j.sumber_dana ?? '',
+                      })
+                      setGalat(null)
+                      window.scrollTo({ top: 0, behavior: 'smooth' })
                     }}
-                    className="shrink-0 text-sm text-red-600 hover:underline"
-                  >
-                    Hapus
-                  </button>
+                    onHapus={() => hapus.mutate(j.id)}
+                    sedangProses={hapus.isPending}
+                  />
                 </li>
               ))}
             </ul>
@@ -478,8 +550,9 @@ function PanelPantau() {
         anak={
           <div>
             <p className="text-sm text-slate-600">
-              Ringkasan {data?.periode}. Fitur Cek Penerima terbuka untuk publik, sehingga
-              lonjakan pencarian dari satu sumber perlu diperhatikan.
+              Ringkasan {data?.periode}. Formulir Cek Penerima sudah ditarik dari situs, jadi
+              angka di bawah hanya terisi bila endpoint lama masih dipanggil dari luar —
+              lonjakan dari satu sumber justru perlu diperhatikan.
             </p>
 
             <p className="mt-4 text-2xl font-semibold text-slate-900">

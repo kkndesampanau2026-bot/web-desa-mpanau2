@@ -11,6 +11,7 @@ class Setting extends Model
     protected $fillable = [
         'village_id',
         'logo',
+        'banner',
         'nama_desa',
         'kode_wilayah',
         'kelurahan',

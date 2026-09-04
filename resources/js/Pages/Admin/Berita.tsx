@@ -1,8 +1,18 @@
 import { useState, type FormEvent } from 'react'
+import { Plus } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiRequestError, urlBerkas, type ApiSuccess } from '@/lib/api'
 import { keFormData } from '@/lib/berkas'
-import { Kartu, Kolom, Input, Pemberitahuan, Pilihan, TextArea, Tombol } from '@/Components/Admin/Form'
+import {
+  AksiBaris,
+  Kartu,
+  Kolom,
+  Input,
+  Pemberitahuan,
+  Pilihan,
+  TextArea,
+  Tombol,
+} from '@/Components/Admin/Form'
 import { InputBerkas } from '@/Components/Admin/Berkas'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 import type { ReactNode } from 'react'
@@ -66,7 +76,10 @@ export default function BeritaPage() {
             Kelola artikel berita yang tampil di situs publik.
           </p>
         </div>
-        <Tombol onClick={() => setFormTerbuka(true)}>+ Tulis Berita</Tombol>
+        <Tombol onClick={() => setFormTerbuka(true)}>
+          <Plus className="size-4" aria-hidden="true" />
+          Tulis Berita
+        </Tombol>
       </div>
 
       <Kartu
@@ -119,24 +132,16 @@ export default function BeritaPage() {
                       <td className="py-2.5 pr-4 tabular-nums text-slate-600">
                         {b.jumlah_dilihat.toLocaleString('id-ID')}
                       </td>
-                      <td className="py-2.5 text-right whitespace-nowrap">
-                        <button
-                          onClick={() => {
+                      <td className="py-2.5">
+                        <AksiBaris
+                          nama={`berita “${b.judul}”`}
+                          onSunting={() => {
                             setSedangSunting(b)
                             setFormTerbuka(true)
                           }}
-                          className="mr-3 text-slate-700 hover:underline"
-                        >
-                          Sunting
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (confirm(`Hapus berita “${b.judul}”?`)) hapus.mutate(b.id)
-                          }}
-                          className="text-red-600 hover:underline"
-                        >
-                          Hapus
-                        </button>
+                          onHapus={() => hapus.mutate(b.id)}
+                          sedangProses={hapus.isPending}
+                        />
                       </td>
                     </tr>
                   ))}

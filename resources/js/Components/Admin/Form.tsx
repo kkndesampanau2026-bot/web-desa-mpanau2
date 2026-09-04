@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from 'react'
 import { createPortal } from 'react-dom'
-import { Check, ChevronDown, type LucideIcon } from 'lucide-react'
+import { Check, ChevronDown, Pencil, Trash2, type LucideIcon } from 'lucide-react'
 
 /**
  * Elemen formulir bersama untuk seluruh halaman CMS.
@@ -307,6 +307,66 @@ export function Tombol({
       {...(props as object)}
       className={`inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition disabled:opacity-60 ${gaya}`}
     />
+  )
+}
+
+/**
+ * Aksi pada satu baris daftar: sunting & hapus.
+ *
+ * Sebelumnya tiap layar menulis sendiri dua tautan teks ("Sunting", "Hapus")
+ * dengan gaya yang berbeda-beda — dan sebagian layar tidak punya keduanya
+ * sama sekali. Satu komponen membuat letak, warna, dan ikonnya sama di seluruh
+ * dashboard, sekaligus memastikan hal yang paling mudah terlupa pada tombol
+ * berisi ikon saja: NAMA yang terbaca pembaca layar. `aria-label`-nya memuat
+ * nama barisnya, sehingga "Hapus" tidak terdengar sebagai perintah tanpa objek.
+ */
+export function AksiBaris({
+  nama,
+  onSunting,
+  onHapus,
+  sedangProses = false,
+}: {
+  /** Nama baris — dipakai pada label aksesibilitas & konfirmasi hapus. */
+  nama: string
+  onSunting?: () => void
+  onHapus?: () => void
+  sedangProses?: boolean
+}) {
+  const gaya =
+    'rounded-md p-1.5 transition disabled:opacity-50 disabled:cursor-not-allowed'
+
+  return (
+    <div className="flex items-center justify-end gap-1">
+      {onSunting && (
+        <button
+          type="button"
+          onClick={onSunting}
+          disabled={sedangProses}
+          title="Sunting"
+          aria-label={`Sunting ${nama}`}
+          className={`${gaya} text-slate-500 hover:bg-slate-100 hover:text-teal-700`}
+        >
+          <Pencil className="size-4" aria-hidden="true" />
+        </button>
+      )}
+
+      {onHapus && (
+        <button
+          type="button"
+          onClick={() => {
+            // Konfirmasi dipasang di sini, bukan di tiap pemanggil: penghapusan
+            // pada dashboard ini tidak punya pembatalan.
+            if (confirm(`Hapus ${nama}?`)) onHapus()
+          }}
+          disabled={sedangProses}
+          title="Hapus"
+          aria-label={`Hapus ${nama}`}
+          className={`${gaya} text-slate-500 hover:bg-red-50 hover:text-red-600`}
+        >
+          <Trash2 className="size-4" aria-hidden="true" />
+        </button>
+      )}
+    </div>
   )
 }
 

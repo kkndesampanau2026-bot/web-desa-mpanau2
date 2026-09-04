@@ -1,7 +1,16 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiRequestError, type ApiSuccess } from '@/lib/api'
-import { Kartu, Kolom, Input, Pemberitahuan, Pilihan, TextArea, Tombol } from '@/Components/Admin/Form'
+import {
+  AksiBaris,
+  Kartu,
+  Kolom,
+  Input,
+  Pemberitahuan,
+  Pilihan,
+  TextArea,
+  Tombol,
+} from '@/Components/Admin/Form'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 
 interface CatatanStunting {
@@ -81,6 +90,28 @@ export default function StuntingAdminPage() {
     mutationFn: (id: number) => api.delete(`/admin/stunting/${id}`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'stunting'] }),
   })
+
+  /**
+   * Memuat satu baris kembali ke formulir.
+   *
+   * Tidak ada endpoint ubah tersendiri, dan itu memang disengaja: server
+   * menyimpan dengan `updateOrCreate` atas pasangan (periode, dusun), sehingga
+   * menyimpan ulang pasangan yang sama akan memperbarui barisnya. Tombol
+   * sunting di sini hanya mengisikan nilainya supaya operator tidak perlu
+   * mengetik ulang seluruh baris demi mengoreksi satu angka.
+   */
+  function mulaiSunting(c: CatatanStunting) {
+    setForm({
+      periode: c.periode,
+      dusun_id: c.dusun_id ? String(c.dusun_id) : '',
+      jumlah_balita_diukur: String(c.jumlah_balita_diukur),
+      jumlah_kasus_stunting: String(c.jumlah_kasus_stunting),
+      keterangan: c.keterangan ?? '',
+    })
+    setGalat(null)
+    setSukses(null)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   function kirim(e: FormEvent) {
     e.preventDefault()
@@ -228,16 +259,13 @@ export default function StuntingAdminPage() {
                           ? '—'
                           : `${c.persentase_prevalensi.toFixed(1)}%`}
                       </td>
-                      <td className="py-2.5 text-right">
-                        <button
-                          onClick={() => {
-                            if (confirm(`Hapus data stunting periode ${c.periode}?`))
-                              hapus.mutate(c.id)
-                          }}
-                          className="text-red-600 hover:underline"
-                        >
-                          Hapus
-                        </button>
+                      <td className="py-2.5">
+                        <AksiBaris
+                          nama={`data stunting periode ${c.periode}`}
+                          onSunting={() => mulaiSunting(c)}
+                          onHapus={() => hapus.mutate(c.id)}
+                          sedangProses={hapus.isPending}
+                        />
                       </td>
                     </tr>
                   ))}

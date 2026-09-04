@@ -41,6 +41,9 @@ class PengaturanSitus
                 'nama_desa' => $setting?->nama_desa ?: $village->nama,
                 'kode_wilayah' => $setting?->kode_wilayah ?: $village->kode_wilayah,
                 'logo' => $setting?->logo ? asset('storage/'.$setting->logo) : null,
+                // Null berarti "pakai banner bawaan" — Beranda menyediakan
+                // berkas statisnya sendiri, lengkap dengan varian ukurannya.
+                'banner' => $setting?->banner ? asset('storage/'.$setting->banner) : null,
                 'wilayah' => [
                     'kelurahan' => $setting?->kelurahan,
                     'kecamatan' => $setting?->kecamatan,

@@ -76,11 +76,11 @@ export default function BeritaIndex({ berita, kategori, filter }: Props) {
         )}
 
         {berita.items.length === 0 ? (
-          <Kartu className="px-6 py-14 text-center">
+          <Kartu className="px-6 py-16 text-center">
             <p className="text-slate-600">Belum ada berita pada kategori ini.</p>
           </Kartu>
         ) : (
-          <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:gap-6 2xl:grid-cols-4">
             {berita.items.map((item) => (
               <li key={item.id}>
                 <Link href={`/berita/${item.slug}`} className="group block h-full">
@@ -90,12 +90,12 @@ export default function BeritaIndex({ berita, kategori, filter }: Props) {
                         src={item.gambar_utama}
                         alt=""
                         loading="lazy"
-                        className="h-44 w-full object-cover"
+                        className="aspect-[16/10] w-full object-cover"
                       />
                     ) : (
                       <div
                         aria-hidden="true"
-                        className="grid h-44 w-full place-items-center bg-navy/5 text-navy/20"
+                        className="grid aspect-[16/10] w-full place-items-center bg-navy/5 text-navy/20"
                       >
                         <Newspaper className="size-9" />
                       </div>

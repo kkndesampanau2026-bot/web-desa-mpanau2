@@ -66,6 +66,15 @@ class MediaService
     private const LEBAR_MAKS = 1600;
 
     /**
+     * Lebar maksimum untuk gambar yang tampil selebar layar (banner beranda).
+     *
+     * 1600px sudah pas untuk foto di dalam kartu, tetapi banner membentang
+     * sampai tepi jendela: pada monitor 1920px ia akan diregangkan dan
+     * terlihat buram justru pada elemen yang pertama dilihat pengunjung.
+     */
+    public const LEBAR_MAKS_BANNER = 1920;
+
+    /**
      * Menyimpan gambar: dikecilkan, dikonversi ke WebP, lalu disimpan.
      *
      * @param  string|null  $pathLama  berkas yang digantikan, akan dihapus
@@ -74,9 +83,10 @@ class MediaService
         UploadedFile $berkas,
         string $folder,
         ?string $pathLama = null,
+        ?int $lebarMaks = null,
     ): string {
         $path = $this->simpanMentah($berkas, $folder, self::MIME_GAMBAR);
-        $path = $this->prosesGambar($path);
+        $path = $this->prosesGambar($path, $lebarMaks ?? self::LEBAR_MAKS);
 
         $this->hapus($pathLama);
 
@@ -137,7 +147,7 @@ class MediaService
      * masih jauh lebih baik daripada unggahan yang gagal total dan membuat
      * admin desa mengira sistemnya rusak.
      */
-    private function prosesGambar(string $path): string
+    private function prosesGambar(string $path, int $lebarMaks = self::LEBAR_MAKS): string
     {
         $absolut = Storage::disk(self::DISK)->path($path);
         $pathWebp = preg_replace('/\.\w+$/', '.webp', $path);
@@ -154,8 +164,8 @@ class MediaService
             // HANYA mengecilkan. Tanpa pemeriksaan ini, logo 400px akan
             // dibesarkan menjadi 1600px — berkasnya membengkak sementara
             // gambarnya justru menjadi buram.
-            if ($gambar->getWidth() > self::LEBAR_MAKS) {
-                $gambar->width(self::LEBAR_MAKS);
+            if ($gambar->getWidth() > $lebarMaks) {
+                $gambar->width($lebarMaks);
             }
 
             $gambar->optimize()->save($absolutWebp);

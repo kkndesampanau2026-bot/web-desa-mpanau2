@@ -2,7 +2,15 @@ import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiRequestError, urlBerkas, type ApiSuccess } from '@/lib/api'
 import { keFormData } from '@/lib/berkas'
-import { Kartu, Kolom, Input, Pemberitahuan, Pilihan, Tombol } from '@/Components/Admin/Form'
+import {
+  AksiBaris,
+  Kartu,
+  Kolom,
+  Input,
+  Pemberitahuan,
+  Pilihan,
+  Tombol,
+} from '@/Components/Admin/Form'
 import { InputBerkas } from '@/Components/Admin/Berkas'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 import type { ReactNode } from 'react'
@@ -14,6 +22,8 @@ interface Anggota {
   dapil?: string | null
   foto?: string | null
   urutan_tampil: number
+  /** Hanya pada aparat desa; menyusun tingkatan bagan struktur. */
+  tingkat?: number | null
   status_aktif: boolean
 }
 
@@ -72,14 +82,13 @@ function DaftarAnggota({ jenis }: { jenis: 'officials' | 'bpd-members' }) {
   const kunciQuery = ['admin', jenis]
   const bpd = jenis === 'bpd-members'
 
-  const [form, setForm] = useState({
-    nama: '',
-    jabatan: bpd ? 'Anggota' : '',
-    urutan_tampil: '',
-    tingkat: '',
-  })
+  const kosong = { nama: '', jabatan: bpd ? 'Anggota' : '', urutan_tampil: '', tingkat: '' }
+
+  const [form, setForm] = useState(kosong)
   const [foto, setFoto] = useState<File | null>(null)
   const [galat, setGalat] = useState<ApiRequestError | null>(null)
+  // Baris yang sedang disunting; null berarti formulir sedang menambah baru.
+  const [sunting, setSunting] = useState<Anggota | null>(null)
 
   const { data, isPending } = useQuery({
     queryKey: kunciQuery,
@@ -89,22 +98,24 @@ function DaftarAnggota({ jenis }: { jenis: 'officials' | 'bpd-members' }) {
     },
   })
 
-  const tambah = useMutation({
-    mutationFn: (nilai: typeof form) =>
-      api.post(
-        `/admin/${jenis}`,
-        keFormData({
-          ...nilai,
-          urutan_tampil: nilai.urutan_tampil || 0,
-          // Tingkat hanya berlaku untuk bagan aparat; BPD mengabaikannya.
-          ...(bpd ? {} : { tingkat: nilai.tingkat || 0 }),
-          foto,
-        }),
-      ),
+  const simpan = useMutation({
+    mutationFn: (nilai: typeof form) => {
+      const isi = {
+        ...nilai,
+        urutan_tampil: nilai.urutan_tampil || 0,
+        // Tingkat hanya berlaku untuk bagan aparat; BPD mengabaikannya.
+        ...(bpd ? {} : { tingkat: nilai.tingkat || 0 }),
+        foto,
+      }
+
+      // Pembaruan dikirim POST + `_method=PUT`: foto dikirim multipart, dan
+      // PHP tidak mengurai body multipart pada request PUT.
+      return sunting
+        ? api.post(`/admin/${jenis}/${sunting.id}`, keFormData(isi, { method: 'PUT' }))
+        : api.post(`/admin/${jenis}`, keFormData(isi))
+    },
     onSuccess: () => {
-      setForm({ nama: '', jabatan: bpd ? 'Anggota' : '', urutan_tampil: '', tingkat: '' })
-      setFoto(null)
-      setGalat(null)
+      batalSunting()
       void queryClient.invalidateQueries({ queryKey: kunciQuery })
     },
     onError: (e) =>
@@ -116,15 +127,43 @@ function DaftarAnggota({ jenis }: { jenis: 'officials' | 'bpd-members' }) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: kunciQuery }),
   })
 
+  function mulaiSunting(a: Anggota) {
+    setSunting(a)
+    setForm({
+      nama: a.nama,
+      jabatan: a.jabatan,
+      urutan_tampil: String(a.urutan_tampil ?? ''),
+      tingkat: String(a.tingkat ?? ''),
+    })
+    // Foto dikosongkan, bukan diisi berkas lama: memilih berkas baru berarti
+    // mengganti, membiarkannya kosong berarti mempertahankan yang tersimpan.
+    setFoto(null)
+    setGalat(null)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  function batalSunting() {
+    setSunting(null)
+    setForm(kosong)
+    setFoto(null)
+    setGalat(null)
+  }
+
   function kirim(e: FormEvent) {
     e.preventDefault()
-    tambah.mutate(form)
+    simpan.mutate(form)
   }
 
   return (
     <div className="space-y-6">
       <Kartu
-        judul={bpd ? 'Tambah Anggota BPD' : 'Tambah Aparat Desa'}
+        judul={
+          sunting
+            ? `Ubah ${sunting.nama}`
+            : bpd
+              ? 'Tambah Anggota BPD'
+              : 'Tambah Aparat Desa'
+        }
         anak={
           <form onSubmit={kirim} className="space-y-4">
             {galat && !galat.errors && <Pemberitahuan jenis="galat" pesan={galat.message} />}
@@ -197,13 +236,26 @@ function DaftarAnggota({ jenis }: { jenis: 'officials' | 'bpd-members' }) {
               jenis="gambar"
               berkas={foto}
               onPilih={setFoto}
-              petunjuk="Pas foto tampak depan."
+              pathTersimpan={sunting?.foto ?? undefined}
+              petunjuk={
+                sunting
+                  ? 'Biarkan kosong bila foto tidak diganti.'
+                  : 'Pas foto tampak depan.'
+              }
               galat={galat?.fieldError('foto')}
             />
 
-            <Tombol type="submit" disabled={tambah.isPending}>
-              {tambah.isPending ? 'Menyimpan…' : 'Tambah'}
-            </Tombol>
+            <div className="flex flex-wrap gap-2">
+              <Tombol type="submit" disabled={simpan.isPending}>
+                {simpan.isPending ? 'Menyimpan…' : sunting ? 'Simpan Perubahan' : 'Tambah'}
+              </Tombol>
+
+              {sunting && (
+                <Tombol type="button" variasi="sekunder" onClick={batalSunting}>
+                  Batal
+                </Tombol>
+              )}
+            </div>
           </form>
         }
       />
@@ -238,14 +290,12 @@ function DaftarAnggota({ jenis }: { jenis: 'officials' | 'bpd-members' }) {
                       {!a.status_aktif && ' · nonaktif'}
                     </p>
                   </div>
-                  <button
-                    onClick={() => {
-                      if (confirm(`Hapus ${a.nama}?`)) hapus.mutate(a.id)
-                    }}
-                    className="shrink-0 text-sm text-red-600 hover:underline"
-                  >
-                    Hapus
-                  </button>
+                  <AksiBaris
+                    nama={a.nama}
+                    onSunting={() => mulaiSunting(a)}
+                    onHapus={() => hapus.mutate(a.id)}
+                    sedangProses={hapus.isPending}
+                  />
                 </li>
               ))}
             </ul>

@@ -1,5 +1,6 @@
 import { Head } from '@inertiajs/react'
 import { EmptyState } from '@/Components/EmptyState'
+import { IsiHalaman } from '@/Components/ui'
 import { BatangKategori, KartuAngka } from '@/Components/viz/Grafik'
 import { bungkusInfografis } from '@/Layouts/LayoutInfografis'
 import type { InfografisIdm } from '@/types/api'
@@ -27,7 +28,7 @@ export default function Idm({ data }: { data: InfografisIdm | null }) {
   ]
 
   return (
-    <div className="mx-auto max-w-situs px-6 py-10">
+    <IsiHalaman lebar="lebar">
       <Head title={`Indeks Desa Membangun ${data.tahun}`} />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -99,7 +100,7 @@ export default function Idm({ data }: { data: InfografisIdm | null }) {
           </div>
         </section>
       )}
-    </div>
+    </IsiHalaman>
   )
 }
 

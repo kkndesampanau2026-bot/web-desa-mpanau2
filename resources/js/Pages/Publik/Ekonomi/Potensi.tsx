@@ -75,7 +75,7 @@ export default function Potensi({ kategori, filter, data, wisata, produk, jenisP
         deskripsi={(aktif && DESKRIPSI_KATEGORI[aktif]) || DESKRIPSI_UMUM}
       />
 
-      <IsiHalaman>
+      <IsiHalaman lebar="lebar">
         <nav aria-label="Filter kategori" className="flex flex-wrap gap-2">
           <ChipFilter aktif={!aktif} onClick={() => gantiKategori()}>
             Semua
@@ -152,7 +152,7 @@ function Isi({
 
 function PesanKosong({ children }: { children: ReactNode }) {
   return (
-    <p className="rounded-2xl border border-dashed border-navy/20 bg-navy/3 px-6 py-10 text-center text-slate-600">
+    <p className="rounded-xl border border-dashed border-navy/20 bg-navy/3 px-6 py-10 text-center text-slate-600">
       {children}
     </p>
   )

@@ -176,13 +176,6 @@ Route::middleware('catat.kunjungan')->group(function () {
 | Tidak ikut middleware `catat.kunjungan` karena bukan kunjungan halaman.
 */
 
-// Cek Penerima Bansos — 10 permintaan/menit per IP, sesuai PRD 6.6.
-// Batas ini yang menahan fitur pencarian dari dipakai mengenumerasi
-// daftar penerima bantuan warga sedesa.
-Route::post('/infografis/bansos/cek', [InfografisController::class, 'cekPenerima'])
-    ->middleware('throttle:cek-bansos')
-    ->name('infografis.bansos.cek');
-
 // Pengajuan permohonan informasi — dibatasi agar formulir publik tidak
 // dipakai membanjiri meja PPID desa.
 Route::post('/ppid/permintaan', [PpidController::class, 'ajukanPermohonan'])

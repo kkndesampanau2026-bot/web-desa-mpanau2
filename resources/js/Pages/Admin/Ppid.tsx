@@ -2,7 +2,16 @@ import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiRequestError, type ApiSuccess } from '@/lib/api'
 import { keFormData } from '@/lib/berkas'
-import { Kartu, Kolom, Input, Pemberitahuan, Pilihan, TextArea, Tombol } from '@/Components/Admin/Form'
+import {
+  AksiBaris,
+  Kartu,
+  Kolom,
+  Input,
+  Pemberitahuan,
+  Pilihan,
+  TextArea,
+  Tombol,
+} from '@/Components/Admin/Form'
 import { InputBerkas, TautanBerkas } from '@/Components/Admin/Berkas'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 import type { ReactNode } from 'react'
@@ -329,14 +338,11 @@ function FormTanggapan({
 
 function DaftarInformasi() {
   const queryClient = useQueryClient()
-  const [form, setForm] = useState({
-    jenis: 'berkala',
-    judul: '',
-    kategori: '',
-    periode: '',
-  })
+  const kosong = { jenis: 'berkala', judul: '', kategori: '', periode: '' }
+  const [form, setForm] = useState(kosong)
   const [berkas, setBerkas] = useState<File | null>(null)
   const [galat, setGalat] = useState<ApiRequestError | null>(null)
+  const [sunting, setSunting] = useState<Informasi | null>(null)
 
   const { data, isPending } = useQuery({
     queryKey: ['admin', 'ppid', 'informasi'],
@@ -346,12 +352,21 @@ function DaftarInformasi() {
     },
   })
 
-  const tambah = useMutation({
-    mutationFn: () => api.post('/admin/ppid/informasi', keFormData({ ...form, file: berkas })),
+  const simpan = useMutation({
+    mutationFn: () => {
+      const isi = keFormData({ ...form, file: berkas }, sunting ? { method: 'PUT' } : {})
+
+      return sunting
+        ? api.post(`/admin/ppid/informasi/${sunting.id}`, isi)
+        : api.post('/admin/ppid/informasi', isi)
+    },
     onSuccess: () => {
-      setForm({ jenis: form.jenis, judul: '', kategori: '', periode: '' })
+      // Jenis dipertahankan saat menambah beruntun: operator lazim mengunggah
+      // beberapa dokumen sejenis sekaligus.
+      setForm({ ...kosong, jenis: sunting ? 'berkala' : form.jenis })
       setBerkas(null)
       setGalat(null)
+      setSunting(null)
       void queryClient.invalidateQueries({ queryKey: ['admin', 'ppid', 'informasi'] })
     },
     onError: (e) =>
@@ -366,12 +381,12 @@ function DaftarInformasi() {
   return (
     <div className="space-y-6">
       <Kartu
-        judul="Tambah Dokumen Informasi"
+        judul={sunting ? `Ubah Dokumen: ${sunting.judul}` : 'Tambah Dokumen Informasi'}
         anak={
           <form
             onSubmit={(e) => {
               e.preventDefault()
-              tambah.mutate()
+              simpan.mutate()
             }}
             className="space-y-4"
           >
@@ -425,9 +440,26 @@ function DaftarInformasi() {
               galat={galat?.fieldError('file')}
             />
 
-            <Tombol type="submit" disabled={tambah.isPending}>
-              {tambah.isPending ? 'Menyimpan…' : 'Tambah Dokumen'}
-            </Tombol>
+            <div className="flex flex-wrap gap-2">
+              <Tombol type="submit" disabled={simpan.isPending}>
+                {simpan.isPending ? 'Menyimpan…' : sunting ? 'Simpan Perubahan' : 'Tambah Dokumen'}
+              </Tombol>
+
+              {sunting && (
+                <Tombol
+                  type="button"
+                  variasi="sekunder"
+                  onClick={() => {
+                    setSunting(null)
+                    setForm(kosong)
+                    setBerkas(null)
+                    setGalat(null)
+                  }}
+                >
+                  Batal
+                </Tombol>
+              )}
+            </div>
           </form>
         }
       />
@@ -451,14 +483,23 @@ function DaftarInformasi() {
                     </p>
                     <TautanBerkas path={i.file} />
                   </div>
-                  <button
-                    onClick={() => {
-                      if (confirm(`Hapus dokumen "${i.judul}"?`)) hapus.mutate(i.id)
+                  <AksiBaris
+                    nama={`dokumen “${i.judul}”`}
+                    onSunting={() => {
+                      setSunting(i)
+                      setForm({
+                        jenis: i.jenis,
+                        judul: i.judul,
+                        kategori: i.kategori ?? '',
+                        periode: i.periode ?? '',
+                      })
+                      setBerkas(null)
+                      setGalat(null)
+                      window.scrollTo({ top: 0, behavior: 'smooth' })
                     }}
-                    className="shrink-0 text-sm text-red-600 hover:underline"
-                  >
-                    Hapus
-                  </button>
+                    onHapus={() => hapus.mutate(i.id)}
+                    sedangProses={hapus.isPending}
+                  />
                 </li>
               ))}
             </ul>
@@ -479,9 +520,11 @@ function DaftarDasarHukum() {
   const queryClient = useQueryClient()
   const kunciQuery = ['admin', 'ppid', 'dasar-hukum']
 
-  const [form, setForm] = useState({ judul_regulasi: '', nomor_regulasi: '', tahun: '' })
+  const kosong = { judul_regulasi: '', nomor_regulasi: '', tahun: '' }
+  const [form, setForm] = useState(kosong)
   const [berkas, setBerkas] = useState<File | null>(null)
   const [galat, setGalat] = useState<ApiRequestError | null>(null)
+  const [sunting, setSunting] = useState<DasarHukum | null>(null)
 
   const { data, isPending } = useQuery({
     queryKey: kunciQuery,
@@ -491,21 +534,27 @@ function DaftarDasarHukum() {
     },
   })
 
-  const tambah = useMutation({
-    mutationFn: () =>
-      api.post(
-        '/admin/ppid/dasar-hukum',
-        keFormData({
+  const simpan = useMutation({
+    mutationFn: () => {
+      const isi = keFormData(
+        {
           ...form,
           // Tahun kosong dikirim null; string kosong ditolak aturan `integer`.
           tahun: form.tahun || null,
           file_pdf: berkas,
-        }),
-      ),
+        },
+        sunting ? { method: 'PUT' } : {},
+      )
+
+      return sunting
+        ? api.post(`/admin/ppid/dasar-hukum/${sunting.id}`, isi)
+        : api.post('/admin/ppid/dasar-hukum', isi)
+    },
     onSuccess: () => {
-      setForm({ judul_regulasi: '', nomor_regulasi: '', tahun: '' })
+      setForm(kosong)
       setBerkas(null)
       setGalat(null)
+      setSunting(null)
       void queryClient.invalidateQueries({ queryKey: kunciQuery })
     },
     onError: (e) =>
@@ -520,12 +569,12 @@ function DaftarDasarHukum() {
   return (
     <div className="space-y-6">
       <Kartu
-        judul="Tambah Dasar Hukum"
+        judul={sunting ? `Ubah: ${sunting.judul_regulasi}` : 'Tambah Dasar Hukum'}
         anak={
           <form
             onSubmit={(e: FormEvent) => {
               e.preventDefault()
-              tambah.mutate()
+              simpan.mutate()
             }}
             className="space-y-4"
           >
@@ -580,9 +629,30 @@ function DaftarDasarHukum() {
               galat={galat?.fieldError('file_pdf')}
             />
 
-            <Tombol type="submit" disabled={tambah.isPending}>
-              {tambah.isPending ? 'Menyimpan…' : 'Tambah Dasar Hukum'}
-            </Tombol>
+            <div className="flex flex-wrap gap-2">
+              <Tombol type="submit" disabled={simpan.isPending}>
+                {simpan.isPending
+                  ? 'Menyimpan…'
+                  : sunting
+                    ? 'Simpan Perubahan'
+                    : 'Tambah Dasar Hukum'}
+              </Tombol>
+
+              {sunting && (
+                <Tombol
+                  type="button"
+                  variasi="sekunder"
+                  onClick={() => {
+                    setSunting(null)
+                    setForm(kosong)
+                    setBerkas(null)
+                    setGalat(null)
+                  }}
+                >
+                  Batal
+                </Tombol>
+              )}
+            </div>
           </form>
         }
       />
@@ -604,14 +674,22 @@ function DaftarDasarHukum() {
                     </p>
                     <TautanBerkas path={d.file_pdf} />
                   </div>
-                  <button
-                    onClick={() => {
-                      if (confirm(`Hapus dasar hukum "${d.judul_regulasi}"?`)) hapus.mutate(d.id)
+                  <AksiBaris
+                    nama={`dasar hukum “${d.judul_regulasi}”`}
+                    onSunting={() => {
+                      setSunting(d)
+                      setForm({
+                        judul_regulasi: d.judul_regulasi,
+                        nomor_regulasi: d.nomor_regulasi ?? '',
+                        tahun: d.tahun ? String(d.tahun) : '',
+                      })
+                      setBerkas(null)
+                      setGalat(null)
+                      window.scrollTo({ top: 0, behavior: 'smooth' })
                     }}
-                    className="shrink-0 text-sm text-red-600 hover:underline"
-                  >
-                    Hapus
-                  </button>
+                    onHapus={() => hapus.mutate(d.id)}
+                    sedangProses={hapus.isPending}
+                  />
                 </li>
               ))}
             </ul>

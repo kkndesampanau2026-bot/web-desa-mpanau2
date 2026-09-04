@@ -87,6 +87,7 @@ export default function Ajukan({ daftar_rt: daftarRt, pilihan, tiket }: Props) {
       <Head title="Surat Pengantar" />
 
       <KepalaHalaman
+        lebar="sempit"
         eyebrow="Layanan Mandiri"
         judul="Pengajuan Surat Pengantar"
         deskripsi="Isi data Anda seperti tertera pada KTP. Pengajuan akan diteruskan kepada Ketua RT, lalu Kepala Dusun, untuk disetujui."
@@ -344,6 +345,7 @@ function TandaTerima({ tiket }: { tiket: TandaTerimaSurat }) {
       <Head title="Pengajuan Berhasil" />
 
       <KepalaHalaman
+        lebar="sempit"
         eyebrow="Layanan Mandiri"
         judul="Pengajuan Berhasil"
         deskripsi="Pengajuan Surat Pengantar Anda telah diteruskan kepada Ketua RT."

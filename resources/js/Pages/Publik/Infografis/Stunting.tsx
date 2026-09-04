@@ -1,5 +1,6 @@
 import { Head } from '@inertiajs/react'
 import { EmptyState } from '@/Components/EmptyState'
+import { IsiHalaman } from '@/Components/ui'
 import { GarisTren, KartuAngka } from '@/Components/viz/Grafik'
 import { bungkusInfografis } from '@/Layouts/LayoutInfografis'
 import { formatPersen } from '@/lib/format'
@@ -35,7 +36,7 @@ export default function Stunting({ data }: { data: InfografisStunting | null }) 
   }))
 
   return (
-    <div className="mx-auto max-w-situs px-6 py-10">
+    <IsiHalaman lebar="lebar">
       <Head title="Data Stunting" />
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -112,7 +113,7 @@ export default function Stunting({ data }: { data: InfografisStunting | null }) 
           </div>
         </section>
       )}
-    </div>
+    </IsiHalaman>
   )
 }
 

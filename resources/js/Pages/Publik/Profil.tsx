@@ -7,7 +7,7 @@ import { BookOpen, Eye, MapPin, Maximize2, Quote, Target, Users } from 'lucide-r
 import { KontenKaya } from '@/Components/KontenKaya'
 import { EmptyState } from '@/Components/EmptyState'
 import { Lightbox, type FotoLightbox } from '@/Components/Lightbox'
-import { IsiHalaman, Kartu } from '@/Components/ui'
+import { IsiHalaman, Kartu, KepalaHalaman } from '@/Components/ui'
 import { LayoutPublik } from '@/Layouts/LayoutPublik'
 import { formatAngka } from '@/lib/format'
 import { useHalaman } from '@/types/inertia'
@@ -55,22 +55,20 @@ export default function Profil({ profil }: { profil: ProfilDesa | null }) {
     <>
       <Head title="Profil Desa" />
 
-      <IsiHalaman lebar="lebar">
-        <div className="space-y-12">
-          {/* Kepala halaman terpusat — bukan bilah navy, sesuai desain Figma. */}
-          <header className="text-center">
-            <p className="text-sm font-semibold tracking-[0.14em] text-gold-dark uppercase">
-              Tentang Kami
-            </p>
-            <h1 className="font-heading mt-2 text-3xl font-bold text-navy sm:text-4xl">
-              Profil {namaDesa}
-            </h1>
-          </header>
+      {/*
+        Kepala halaman navy yang sama dengan seluruh halaman publik. Versi
+        terpusat di atas latar krem sempat dipakai di sini saja — dan itulah
+        yang membuat perpindahan dari halaman lain terasa seperti berpindah
+        situs.
+      */}
+      <KepalaHalaman eyebrow="Tentang Kami" judul={`Profil ${namaDesa}`} deskripsi={DESKRIPSI} />
 
+      <IsiHalaman lebar="lebar">
+        <div className="space-y-12 sm:space-y-14">
           {/* Sambutan tidak ada pada desain Figma, tetapi tetap dirender bila
               admin mengisinya agar konten CMS tidak hilang (PRD 6.1). */}
           {profil.sambutan && (
-            <Kartu className="p-6 shadow-md sm:p-8">
+            <Kartu className="p-6 sm:p-8">
               <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
                 {profil.foto_kepala_desa ? (
                   <img
@@ -105,7 +103,7 @@ export default function Profil({ profil }: { profil: ProfilDesa | null }) {
           {(profil.visi || profil.misi.length > 0) && (
             <div className="grid gap-6 lg:grid-cols-2">
               {profil.visi && (
-                <Kartu className="border-t-4 border-t-gold p-8 shadow-md">
+                <Kartu className="border-t-4 border-t-gold p-6 sm:p-8">
                   <Eye className="size-8 text-gold" aria-hidden="true" />
                   <h2 className="font-heading mt-3 text-xl font-bold text-navy">Visi</h2>
                   <p className="mt-3 leading-relaxed text-slate-700">{profil.visi}</p>
@@ -113,7 +111,7 @@ export default function Profil({ profil }: { profil: ProfilDesa | null }) {
               )}
 
               {profil.misi.length > 0 && (
-                <Kartu className="border-t-4 border-t-gold p-8 shadow-md">
+                <Kartu className="border-t-4 border-t-gold p-6 sm:p-8">
                   <Target className="size-8 text-gold" aria-hidden="true" />
                   <h2 className="font-heading mt-3 text-xl font-bold text-navy">Misi</h2>
                   <ul className="mt-3 space-y-3 pl-1">
@@ -158,7 +156,7 @@ export default function Profil({ profil }: { profil: ProfilDesa | null }) {
 
           {/* Sejarah Desa. */}
           {profil.sejarah && (
-            <Kartu className="p-6 shadow-md sm:p-8">
+            <Kartu className="p-6 sm:p-8">
               <div className="flex items-center gap-3">
                 <BookOpen className="size-7 shrink-0 text-navy" aria-hidden="true" />
                 <h2 className="font-heading text-2xl font-bold text-navy">Sejarah Desa</h2>
@@ -181,7 +179,7 @@ export default function Profil({ profil }: { profil: ProfilDesa | null }) {
             <div className="mt-4 grid gap-6 lg:grid-cols-3">
               <div className="lg:col-span-2">
                 {pusatPeta ? (
-                  <div className="overflow-hidden rounded-2xl border-4 border-white shadow-xl">
+                  <div className="overflow-hidden rounded-xl border border-navy/10 shadow-sm">
                     <MapContainer
                       center={pusatPeta}
                       zoom={14}
@@ -198,7 +196,7 @@ export default function Profil({ profil }: { profil: ProfilDesa | null }) {
                     </MapContainer>
                   </div>
                 ) : (
-                  <div className="grid h-[360px] place-items-center rounded-2xl border border-dashed border-navy/20 bg-navy/3 px-6 text-center text-sm text-slate-500">
+                  <div className="grid h-[300px] place-items-center rounded-xl border border-dashed border-navy/20 bg-white px-6 text-center text-sm text-slate-500 sm:h-[360px]">
                     Titik koordinat kantor desa belum diisi.
                   </div>
                 )}
@@ -296,7 +294,7 @@ function KartuBagan({
   onLihat: () => void
 }) {
   return (
-    <Kartu className="overflow-hidden border-t-4 border-t-gold shadow-md">
+    <Kartu className="overflow-hidden border-t-4 border-t-gold">
       <h3 className="font-heading border-b border-navy/10 px-6 py-4 text-center text-lg font-bold text-navy">
         {judul}
       </h3>

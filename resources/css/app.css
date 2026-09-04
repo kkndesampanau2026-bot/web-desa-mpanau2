@@ -50,26 +50,30 @@
   --color-cream: #faf7f0;
 
   /*
-   * Satu garis lebar untuk seluruh situs publik — 90rem = 1440px, lewat
-   * utilitas `max-w-situs`.
+   * Tiga lebar kolom — TIGA, bukan tujuh.
    *
-   * Dipakai bersama oleh KERANGKA (bilah atas, navigasi, footer pada
-   * `LayoutPublik`) dan ISI halaman lebar (`IsiHalaman lebar="lebar"`,
-   * `KepalaHalaman`, bilah tab infografis & PPID, halaman infografis, dan
-   * listing peta). Karena keduanya memakai angka yang sama, logo pada
-   * navigasi, judul halaman, dan tepi kiri kartu jatuh pada garis vertikal
-   * yang sama — inilah yang membuat halaman terbaca rapi.
+   * Sebelumnya tiap halaman memilih sendiri di antara `max-w-2xl` sampai
+   * `max-w-situs`, sehingga tepi kiri judul halaman tidak pernah jatuh pada
+   * garis yang sama dengan logo di navigasi maupun kolom pertama footer.
+   * Ketiga token di bawah adalah satu-satunya lebar yang boleh dipakai
+   * halaman publik, dan ketiganya berbagi gutter yang sama (lihat
+   * `GAYA_WADAH` pada `Components/ui`) — itulah yang membuat navbar, isi, dan
+   * footer terbaca sebagai satu kisi.
    *
-   * 1440px adalah jalan tengah yang dipilih secara sadar: 1536px membuat
-   * kartu terlalu melar (3 kartu sebaris menjadi ~480px dan isinya renggang),
-   * sedangkan 1280px menyisakan margin kiri-kanan yang terlalu tebal pada
-   * monitor lebar.
+   *   situs  120rem/1920px  kerangka & halaman berisi kartu/grafik.
+   *   sedang  64rem/1024px  daftar pendek yang melar bila dibiarkan penuh.
+   *   baca    46rem/736px   teks panjang & formulir — batas panjang baris
+   *                         (±75 karakter) yang nyaman dibaca.
    *
-   * Halaman baca panjang (artikel berita) dan formulir TIDAK memakainya —
-   * keduanya tetap sempit lewat `IsiHalaman lebar="sempit"` supaya baris
-   * teksnya tidak terlalu panjang.
+   * `situs` sengaja setinggi 1920px: halaman MENGIKUTI lebar layar dengan
+   * margin tepi tipis (lihat gutter pada `GAYA_WADAH`), bukan berhenti di
+   * 1280px lalu memusat — pada monitor 1920px, cara itu menyisakan 320px
+   * kosong di kiri dan kanan. Batasnya tetap ada agar pada layar ultrawide
+   * barisan kartu tidak melar tanpa henti.
    */
-  --container-situs: 90rem;
+  --container-situs: 120rem;
+  --container-sedang: 64rem;
+  --container-baca: 46rem;
 
   /* --- Huruf --- */
   --font-sans: 'Manrope', system-ui, 'Segoe UI', Roboto, sans-serif;
@@ -84,10 +88,47 @@ html {
 }
 
 /*
- * Latar TIDAK disetel di sini melainkan pada masing-masing layout: situs
- * publik memakai krem, dashboard memakai abu terang. Menyetelnya global akan
- * membuat salah satu dari keduanya selalu keliru.
+ * Tinggi header lengket, sebagai satu angka yang dibagikan.
+ *
+ * Dipakai `scroll-margin-top` sasaran anchor, supaya judul yang dituju tidak
+ * berhenti tersembunyi di balik header. Header adalah SATU-SATUNYA elemen
+ * lengket di situs ini: sub-navigasi modul (Infografis & PPID) sengaja ikut
+ * menggulir bersama isinya, karena dua batang navigasi yang menetap
+ * bertumpuk memakan tinggi layar sekaligus mengaburkan mana navigasi utama.
  */
+:root {
+  /* bilah atas h-8 (2rem) + bilah navigasi h-16 (4rem) */
+  --tinggi-header: 6rem;
+}
+
+@media (min-width: 640px) {
+  :root {
+    /* bilah navigasi menjadi h-18 (4.5rem) mulai sm */
+    --tinggi-header: 6.5rem;
+  }
+}
+
+:where(h1, h2, h3, section, main)[id] {
+  scroll-margin-top: calc(var(--tinggi-header) + 1rem);
+}
+
+/*
+ * Latar halaman disetel masing-masing layout (krem untuk situs publik, abu
+ * terang untuk dashboard). Yang disetel di sini hanyalah latar di BELAKANG
+ * keduanya — yaitu warna footer.
+ *
+ * Inilah yang menghapus jurang kosong di atas footer pada halaman berisi
+ * sedikit konten. Sebelumnya kerangka publik dipaksa setinggi layar dengan
+ * footer didorong ke dasar (`min-h-svh` + `mt-auto`), sehingga halaman pendek
+ * menyisakan ratusan piksel krem kosong antara kartu terakhir dan footer.
+ * Kini footer mengikuti konten, dan ruang yang tersisa di bawahnya berwarna
+ * sama dengan footer — terbaca sebagai footer yang memanjang, bukan halaman
+ * yang menggantung.
+ */
+html {
+  background-color: var(--color-navy-dark);
+}
+
 body {
   @apply font-sans text-slate-800 antialiased;
 }
@@ -106,6 +147,20 @@ h3 {
  */
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
   @apply outline-2 outline-offset-2 outline-gold;
+}
+
+/*
+ * Baris tab modul (Infografis & PPID) menggulir mendatar pada layar sempit.
+ * Bilah gulirnya disembunyikan karena tab sudah memberi petunjuknya sendiri:
+ * item terakhir sengaja terpotong di tepi kanan sehingga terbaca "masih ada
+ * lanjutannya". Gulirnya tetap berfungsi, termasuk lewat papan ketik.
+ */
+.gulir-mendatar {
+  scrollbar-width: none;
+}
+
+.gulir-mendatar::-webkit-scrollbar {
+  display: none;
 }
 
 /*

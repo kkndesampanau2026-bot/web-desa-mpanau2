@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Trash2 } from 'lucide-react'
 import { api, ApiRequestError, type ApiSuccess } from '@/lib/api'
 import { Kartu, Kolom, Input, Pemberitahuan, Pilihan, TextArea, Tombol } from '@/Components/Admin/Form'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
@@ -124,6 +125,19 @@ export default function IdmAdminPage() {
     onError: (e) => {
       setSukses(null)
       setGalat(e instanceof ApiRequestError ? e : new ApiRequestError('Gagal menyimpan.', 0))
+    },
+  })
+
+  const hapusSkor = useMutation({
+    mutationFn: (id: number) => api.delete(`/admin/idm/${id}`),
+    onSuccess: () => {
+      setGalat(null)
+      setSukses(`Skor IDM tahun ${tahun} berhasil dihapus.`)
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'idm'] })
+    },
+    onError: (e) => {
+      setSukses(null)
+      setGalat(e instanceof ApiRequestError ? e : new ApiRequestError('Gagal menghapus.', 0))
     },
   })
 
@@ -336,9 +350,37 @@ export default function IdmAdminPage() {
                 Tampilkan ke publik
               </label>
 
-              <Tombol type="submit" disabled={simpanSkor.isPending}>
-                {simpanSkor.isPending ? 'Menyimpan…' : `Simpan Skor Tahun ${tahun}`}
-              </Tombol>
+              <div className="flex flex-wrap gap-2">
+                <Tombol type="submit" disabled={simpanSkor.isPending}>
+                  {simpanSkor.isPending ? 'Menyimpan…' : `Simpan Skor Tahun ${tahun}`}
+                </Tombol>
+
+                {/*
+                  Tombol hapus hanya muncul untuk tahun yang datanya memang
+                  sudah tersimpan — menawarkan "hapus" atas tahun yang belum
+                  pernah diisi hanya membingungkan.
+                */}
+                {skorTahunIni && (
+                  <Tombol
+                    type="button"
+                    variasi="bahaya"
+                    disabled={hapusSkor.isPending}
+                    onClick={() => {
+                      if (
+                        confirm(
+                          `Hapus skor IDM tahun ${tahun} beserta seluruh indikatornya? ` +
+                            'Tindakan ini tidak dapat dibatalkan.',
+                        )
+                      ) {
+                        hapusSkor.mutate(skorTahunIni.id)
+                      }
+                    }}
+                  >
+                    <Trash2 className="size-4" aria-hidden="true" />
+                    {hapusSkor.isPending ? 'Menghapus…' : `Hapus Tahun ${tahun}`}
+                  </Tombol>
+                )}
+              </div>
             </div>
           }
         />

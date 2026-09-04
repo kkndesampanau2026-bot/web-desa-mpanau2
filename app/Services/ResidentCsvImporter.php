@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Resident;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 /**
  * Impor data penduduk dari CSV — PRD 6.3 & 10.5.
@@ -141,10 +142,14 @@ class ResidentCsvImporter
             'jenis_kelamin' => ['required', 'string', 'in:L,P,l,p'],
             'tanggal_lahir' => ['nullable', 'date', 'before:today'],
             'no_kk' => ['nullable', 'string', 'regex:/^\d{16}$/'],
-            'status_hubungan_kk' => ['nullable', 'in:Kepala Keluarga,Istri,Anak,Lainnya'],
-            'status_perkawinan' => ['nullable', 'in:Belum Kawin,Kawin,Cerai Hidup,Cerai Mati'],
-            'agama' => ['nullable', 'in:Islam,Kristen,Katolik,Hindu,Buddha,Konghucu,Kepercayaan,Lainnya'],
-            'status_domisili' => ['nullable', 'in:Penduduk Tetap,Penduduk Sementara'],
+            'status_hubungan_kk' => ['nullable', Rule::in(Resident::HUBUNGAN_KK)],
+            'status_perkawinan' => ['nullable', Rule::in(Resident::PERKAWINAN)],
+            'agama' => ['nullable', Rule::in(Resident::AGAMA)],
+            'status_domisili' => ['nullable', Rule::in(Resident::DOMISILI)],
+            // Sempat terlewat, dan itu berarti satu baris CSV berisi jenjang
+            // di luar daftar menggagalkan impor dengan galat basis data —
+            // bukan sebagai baris bermasalah yang dilaporkan ke operator.
+            'pendidikan_terakhir' => ['nullable', Rule::in(Resident::PENDIDIKAN)],
         ];
     }
 

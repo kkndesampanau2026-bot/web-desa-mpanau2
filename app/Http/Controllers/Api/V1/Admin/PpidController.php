@@ -61,6 +61,41 @@ class PpidController extends Controller
         return ApiResponse::success($dasar, 'Dasar hukum berhasil ditambahkan.', 201);
     }
 
+    public function dasarHukumUbah(Request $request, PpidLegalBasis $ppidLegalBasis): JsonResponse
+    {
+        abort_unless($ppidLegalBasis->village_id === $this->village->id(), 404);
+
+        $data = $request->validate([
+            'judul_regulasi' => ['required', 'string', 'max:255'],
+            'nomor_regulasi' => ['nullable', 'string', 'max:255'],
+            'tahun' => ['nullable', 'integer', 'min:1945', 'max:2100'],
+            'urutan_tampil' => ['nullable', 'integer', 'min:0'],
+            'file_pdf' => MediaService::aturanDokumen(),
+        ], MediaService::pesanValidasi('file_pdf'));
+
+        // Berkas hanya diganti bila operator benar-benar memilih yang baru;
+        // menyimpan formulir tanpa memilih berkas TIDAK boleh menghapus PDF
+        // yang sudah terlanjur dibagikan tautannya.
+        if ($request->hasFile('file_pdf')) {
+            $data['file_pdf'] = $this->media->simpanDokumen(
+                $request->file('file_pdf'), 'ppid', $ppidLegalBasis->file_pdf
+            );
+        } else {
+            unset($data['file_pdf']);
+        }
+
+        $sebelum = $ppidLegalBasis->getOriginal();
+        $ppidLegalBasis->update($data);
+
+        Cache::forget("ppid:dasar-hukum:{$this->village->id()}");
+        $this->logger->log(
+            'updated', $ppidLegalBasis, "Memperbarui dasar hukum PPID: {$ppidLegalBasis->judul_regulasi}",
+            $sebelum, $ppidLegalBasis->getAttributes()
+        );
+
+        return ApiResponse::success($ppidLegalBasis, 'Dasar hukum berhasil diperbarui.');
+    }
+
     public function dasarHukumHapus(PpidLegalBasis $ppidLegalBasis): JsonResponse
     {
         abort_unless($ppidLegalBasis->village_id === $this->village->id(), 404);
@@ -122,6 +157,42 @@ class PpidController extends Controller
         $this->logger->log('created', $item, "Menambah informasi PPID ({$item->jenis}): {$item->judul}");
 
         return ApiResponse::success($item, 'Informasi publik berhasil ditambahkan.', 201);
+    }
+
+    public function informasiUbah(Request $request, PpidInformationItem $ppidInformationItem): JsonResponse
+    {
+        abort_unless($ppidInformationItem->village_id === $this->village->id(), 404);
+
+        $data = $request->validate([
+            'jenis' => ['required', Rule::in(PpidInformationItem::JENIS)],
+            'judul' => ['required', 'string', 'max:255'],
+            'deskripsi' => ['nullable', 'string', 'max:2000'],
+            'kategori' => ['nullable', 'string', 'max:255'],
+            'periode' => ['nullable', 'string', 'max:255'],
+            'tingkat_urgensi' => ['nullable', Rule::in(['rendah', 'sedang', 'tinggi'])],
+            'tanggal_publish' => ['nullable', 'date'],
+            'status_tampil' => ['nullable', 'boolean'],
+            'file' => MediaService::aturanDokumen(),
+        ], MediaService::pesanValidasi('file'));
+
+        if ($request->hasFile('file')) {
+            $data['file'] = $this->media->simpanDokumen(
+                $request->file('file'), 'ppid', $ppidInformationItem->file
+            );
+        } else {
+            unset($data['file']);
+        }
+
+        $sebelum = $ppidInformationItem->getOriginal();
+        $ppidInformationItem->update($data);
+
+        $this->bersihkanCacheInformasi();
+        $this->logger->log(
+            'updated', $ppidInformationItem, "Memperbarui informasi PPID: {$ppidInformationItem->judul}",
+            $sebelum, $ppidInformationItem->getAttributes()
+        );
+
+        return ApiResponse::success($ppidInformationItem, 'Informasi publik berhasil diperbarui.');
     }
 
     public function informasiHapus(PpidInformationItem $ppidInformationItem): JsonResponse

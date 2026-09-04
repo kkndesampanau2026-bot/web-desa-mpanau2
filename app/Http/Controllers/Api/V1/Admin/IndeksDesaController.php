@@ -166,6 +166,21 @@ class IndeksDesaController extends Controller
         return ApiResponse::success($skor->fresh(), 'Skor IDM berhasil disimpan.');
     }
 
+    public function idmHapus(IdmScore $idmScore): JsonResponse
+    {
+        abort_unless($idmScore->village_id === $this->village->id(), 404);
+
+        $tahun = $idmScore->tahun;
+        // Indikator ikut terhapus lewat foreign key berkaskade; menghapusnya
+        // di sini juga akan menjadi dua sumber kebenaran yang bisa berbeda.
+        $idmScore->delete();
+        $this->bersihkanCacheIdm();
+
+        $this->logger->log('deleted', $idmScore, "Menghapus skor IDM tahun {$tahun}");
+
+        return ApiResponse::success(message: 'Skor IDM berhasil dihapus.');
+    }
+
     /** Mengganti seluruh tabel indikator satu tahun sekaligus. */
     public function idmIndikatorSimpan(Request $request, IdmScore $idmScore): JsonResponse
     {
@@ -254,6 +269,32 @@ class IndeksDesaController extends Controller
         $this->logger->log('updated', null, "Menyimpan skor SDGs Desa tahun {$data['tahun']}");
 
         return ApiResponse::success(message: 'Skor SDGs Desa berhasil disimpan.');
+    }
+
+    /**
+     * Menghapus seluruh skor SDGs satu tahun sekaligus.
+     *
+     * Satuannya tahun, bukan tujuan: ke-18 tujuan disimpan dan disunting
+     * sebagai satu kesatuan (lihat `sdgsSimpan`), sehingga menghapus satu
+     * tujuan saja akan menyisakan tahun yang capaiannya bolong tanpa cara
+     * mengembalikannya dari antarmuka.
+     */
+    public function sdgsHapus(int $tahun): JsonResponse
+    {
+        $villageId = $this->village->id();
+
+        $jumlah = SdgsScore::where('village_id', $villageId)->where('tahun', $tahun)->delete();
+
+        if ($jumlah === 0) {
+            return ApiResponse::error('Data SDGs tahun tersebut tidak ditemukan.', 404);
+        }
+
+        Cache::forget("infografis:sdgs:{$villageId}:terbaru");
+        Cache::forget("infografis:sdgs:{$villageId}:{$tahun}");
+
+        $this->logger->log('deleted', null, "Menghapus skor SDGs Desa tahun {$tahun}");
+
+        return ApiResponse::success(message: 'Skor SDGs Desa berhasil dihapus.');
     }
 
     private function bersihkanCacheIdm(): void

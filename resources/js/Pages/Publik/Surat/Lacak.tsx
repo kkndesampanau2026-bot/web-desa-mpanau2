@@ -64,6 +64,7 @@ export default function Lacak({
       <Head title="Cek Status Surat" />
 
       <KepalaHalaman
+        lebar="sempit"
         eyebrow="Layanan Mandiri"
         judul="Cek Status Surat"
         deskripsi="Masukkan nomor tiket yang Anda terima saat mengajukan, beserta tanggal lahir pemohon."

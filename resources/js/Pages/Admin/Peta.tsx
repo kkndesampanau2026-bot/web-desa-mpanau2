@@ -2,7 +2,15 @@ import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiRequestError, urlBerkas, type ApiSuccess } from '@/lib/api'
 import { keFormData } from '@/lib/berkas'
-import { Kartu, Kolom, Input, Pemberitahuan, TextArea, Tombol } from '@/Components/Admin/Form'
+import {
+  AksiBaris,
+  Kartu,
+  Kolom,
+  Input,
+  Pemberitahuan,
+  TextArea,
+  Tombol,
+} from '@/Components/Admin/Form'
 import { InputBerkas } from '@/Components/Admin/Berkas'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 import type { ReactNode } from 'react'
@@ -28,16 +36,19 @@ interface DataPoi {
 /** CMS Titik Lokasi (POI) — PRD 5.16. */
 export default function PetaAdminPage() {
   const queryClient = useQueryClient()
-  const [form, setForm] = useState({
+  const kosong = {
     nama: '',
     kategori: '',
     deskripsi: '',
     alamat: '',
     latitude: '',
     longitude: '',
-  })
+  }
+
+  const [form, setForm] = useState(kosong)
   const [foto, setFoto] = useState<File | null>(null)
   const [galat, setGalat] = useState<ApiRequestError | null>(null)
+  const [sunting, setSunting] = useState<TitikLokasi | null>(null)
 
   const { data, isPending } = useQuery({
     queryKey: ['admin', 'poi'],
@@ -47,17 +58,50 @@ export default function PetaAdminPage() {
     },
   })
 
-  const tambah = useMutation({
-    mutationFn: () => api.post('/admin/points-of-interest', keFormData({ ...form, foto })),
+  const simpan = useMutation({
+    mutationFn: () =>
+      // POST + `_method=PUT` saat menyunting: foto dikirim multipart, dan PHP
+      // tidak mengurai body multipart pada request PUT.
+      sunting
+        ? api.post(
+            `/admin/points-of-interest/${sunting.id}`,
+            keFormData({ ...form, foto }, { method: 'PUT' }),
+          )
+        : api.post('/admin/points-of-interest', keFormData({ ...form, foto })),
     onSuccess: () => {
-      setForm({ nama: '', kategori: form.kategori, deskripsi: '', alamat: '', latitude: '', longitude: '' })
+      // Kategori sengaja dipertahankan saat menambah beruntun: operator lazim
+      // memasukkan beberapa titik sekategori sekaligus.
+      setForm({ ...kosong, kategori: sunting ? '' : form.kategori })
       setFoto(null)
       setGalat(null)
+      setSunting(null)
       void queryClient.invalidateQueries({ queryKey: ['admin', 'poi'] })
     },
     onError: (e) =>
       setGalat(e instanceof ApiRequestError ? e : new ApiRequestError('Gagal menyimpan.', 0)),
   })
+
+  function mulaiSunting(t: TitikLokasi) {
+    setSunting(t)
+    setForm({
+      nama: t.nama,
+      kategori: t.kategori,
+      deskripsi: t.deskripsi ?? '',
+      alamat: t.alamat ?? '',
+      latitude: String(t.latitude),
+      longitude: String(t.longitude),
+    })
+    setFoto(null)
+    setGalat(null)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  function batalSunting() {
+    setSunting(null)
+    setForm(kosong)
+    setFoto(null)
+    setGalat(null)
+  }
 
   const hapus = useMutation({
     mutationFn: (id: number) => api.delete(`/admin/points-of-interest/${id}`),
@@ -76,12 +120,12 @@ export default function PetaAdminPage() {
       </div>
 
       <Kartu
-        judul="Tambah Titik Lokasi"
+        judul={sunting ? `Ubah Titik: ${sunting.nama}` : 'Tambah Titik Lokasi'}
         anak={
           <form
             onSubmit={(e: FormEvent) => {
               e.preventDefault()
-              tambah.mutate()
+              simpan.mutate()
             }}
             className="space-y-4"
           >
@@ -176,15 +220,28 @@ export default function PetaAdminPage() {
                   jenis="gambar"
                   berkas={foto}
                   onPilih={setFoto}
-                  petunjuk="Tampil pada popup titik di peta."
+                  pathTersimpan={sunting?.foto ?? undefined}
+                  petunjuk={
+                    sunting
+                      ? 'Biarkan kosong bila foto tidak diganti.'
+                      : 'Tampil pada popup titik di peta.'
+                  }
                   galat={galat?.fieldError('foto')}
                 />
               </div>
             </div>
 
-            <Tombol type="submit" disabled={tambah.isPending}>
-              {tambah.isPending ? 'Menyimpan…' : 'Tambah Titik'}
-            </Tombol>
+            <div className="flex flex-wrap gap-2">
+              <Tombol type="submit" disabled={simpan.isPending}>
+                {simpan.isPending ? 'Menyimpan…' : sunting ? 'Simpan Perubahan' : 'Tambah Titik'}
+              </Tombol>
+
+              {sunting && (
+                <Tombol type="button" variasi="sekunder" onClick={batalSunting}>
+                  Batal
+                </Tombol>
+              )}
+            </div>
           </form>
         }
       />
@@ -232,15 +289,13 @@ export default function PetaAdminPage() {
                       <td className="py-2.5 pr-4 font-mono text-xs text-slate-600">
                         {Number(t.latitude).toFixed(5)}, {Number(t.longitude).toFixed(5)}
                       </td>
-                      <td className="py-2.5 text-right">
-                        <button
-                          onClick={() => {
-                            if (confirm(`Hapus titik "${t.nama}"?`)) hapus.mutate(t.id)
-                          }}
-                          className="text-red-600 hover:underline"
-                        >
-                          Hapus
-                        </button>
+                      <td className="py-2.5">
+                        <AksiBaris
+                          nama={`titik “${t.nama}”`}
+                          onSunting={() => mulaiSunting(t)}
+                          onHapus={() => hapus.mutate(t.id)}
+                          sedangProses={hapus.isPending}
+                        />
                       </td>
                     </tr>
                   ))}

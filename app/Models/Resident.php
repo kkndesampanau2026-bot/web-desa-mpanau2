@@ -25,6 +25,42 @@ class Resident extends Model
 {
     use HasFactory, SoftDeletes;
 
+    /**
+     * Nilai yang diterima kolom-kolom ENUM tabel `residents`.
+     *
+     * Disalin dari migrasi dan dijadikan SATU sumber: aturan validasi API,
+     * pengimpor CSV, dan pilihan pada formulir CMS semuanya membaca dari sini.
+     * Sebelumnya `pendidikan_terakhir` dan `agama` hanya divalidasi sebagai
+     * "string bebas", sehingga nilai di luar daftar lolos validasi lalu ditolak
+     * MySQL — operator melihat galat 500 "Data truncated", bukan pesan yang
+     * memberi tahu pilihan yang sah.
+     */
+    public const HUBUNGAN_KK = ['Kepala Keluarga', 'Istri', 'Anak', 'Lainnya'];
+
+    public const PENDIDIKAN = [
+        'Tidak/Belum Sekolah',
+        'Belum Tamat SD/Sederajat',
+        'Tamat SD/Sederajat',
+        'SLTP/Sederajat',
+        'SLTA/Sederajat',
+        'Diploma I/II',
+        'Diploma III',
+        'Diploma IV/Strata I',
+        'Strata II',
+        'Strata III',
+    ];
+
+    public const PERKAWINAN = ['Belum Kawin', 'Kawin', 'Cerai Hidup', 'Cerai Mati'];
+
+    public const AGAMA = [
+        'Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha', 'Konghucu',
+        'Kepercayaan', 'Lainnya',
+    ];
+
+    public const DOMISILI = ['Penduduk Tetap', 'Penduduk Sementara'];
+
+    public const MUTASI = ['Lahir', 'Mati', 'Pindah Masuk', 'Pindah Keluar'];
+
     protected $fillable = [
         'village_id',
         'dusun_id',

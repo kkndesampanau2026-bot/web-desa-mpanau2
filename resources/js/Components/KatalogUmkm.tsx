@@ -113,11 +113,11 @@ export function KatalogUmkm({ produk, cari: cariTersimpan, jenisProduk, jenisAkt
           Tidak ada produk yang cocok dengan pencarian Anda.
         </p>
       ) : (
-        <ul className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:gap-6 2xl:grid-cols-4">
           {produk.items.map((p) => (
             <li
               key={p.id}
-              className="flex flex-col overflow-hidden rounded-2xl border border-black/5 bg-white shadow-sm transition hover:shadow-sm"
+              className="flex flex-col overflow-hidden rounded-xl border border-navy/10 bg-white shadow-sm transition hover:shadow-sm"
             >
               <Link href={jelajah.detail(p.slug)} className="block">
                 {p.foto_utama ? (
@@ -125,10 +125,10 @@ export function KatalogUmkm({ produk, cari: cariTersimpan, jenisProduk, jenisAkt
                     src={p.foto_utama}
                     alt=""
                     loading="lazy"
-                    className="h-40 w-full object-cover"
+                    className="aspect-[4/3] w-full object-cover"
                   />
                 ) : (
-                  <div aria-hidden="true" className="h-40 w-full bg-navy/5" />
+                  <div aria-hidden="true" className="aspect-[4/3] w-full bg-navy/5" />
                 )}
               </Link>
 

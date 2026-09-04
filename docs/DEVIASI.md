@@ -72,6 +72,256 @@ Konsekuensi yang perlu diketahui:
   seluruh data yang diperlukan.
 
 
+### A5. Pengaduan & Cek Penerima Bansos ditarik dari situs publik (4 September 2026)
+
+PRD 6.6 menetapkan fitur **Cek Penerima Bansos** dan PRD 6.15 menetapkan
+**Pengaduan Masyarakat** sebagai layanan warga di situs publik. **Atas
+permintaan pemilik produk, keduanya tidak lagi ditawarkan dari halaman mana
+pun.** Yang dihapus:
+
+- Tombol "Kirim Pengaduan" pada hero Beranda, serta kartu "Pengaduan
+  Masyarakat" dan "Lacak Pengaduan" di Layanan Mandiri.
+- Formulir **Cek Penerima** pada `/infografis/bansos` berikut route
+  `POST /infografis/bansos/cek` dan method `InfografisController::cekPenerima`.
+  Halaman itu kini murni agregat: total penerima dan jumlah penerima per jenis
+  bantuan, tanpa jalur apa pun menuju data per orang.
+- Kartu "Cek Penerima Bansos" di Layanan Mandiri.
+
+Yang **tidak** dihapus, beserta alasannya:
+
+- Modul Pengaduan sisi CMS (`/admin/pengaduan`), model `Complaint`, tabelnya,
+  lampiran, dan lonceng notifikasi operator — pengaduan yang sudah masuk tetap
+  harus dapat ditindaklanjuti dan diarsipkan.
+- **Tombol mengambang "Aduan Warga" di sudut kanan bawah** beserta popup
+  formulirnya (`Components/AduanWarga.tsx`) — atas permintaan pemilik produk,
+  inilah satu-satunya pintu masuk pengaduan yang tetap ditawarkan, dan ia hadir
+  di seluruh halaman publik termasuk Beranda. Karena itu prop bersama
+  `kategori_pengaduan` pada `HandleInertiaRequests` juga tetap dikirim.
+- Route publik `/pengaduan` dan `/pengaduan/lacak`. Tidak ada tautan menu
+  menuju keduanya, tetapi popup di atas mengirim ke sana (server lalu
+  mengalihkan ke halaman tanda terima berisi nomor tiket), dan nomor tiket yang
+  terlanjur dipegang warga masih dapat dilacak lewat alamat yang sudah mereka
+  simpan.
+- Endpoint API lama `POST /api/v1/infografis/bansos/cek` beserta
+  `BansosSearchService`, log pencariannya, dan layar pemantauan anomali di CMS.
+  Seluruh lapisan `routes/api.php` memang dijadwalkan dihapus pada "Fase 5"
+  migrasi monolit (lihat `docs/MIGRASI-MONOLIT.md`); mencabutnya sendirian di
+  sini akan mematikan layar pemantauan yang masih terpasang dan membuang
+  rangkaian uji privasi `tests/Feature/Fase4/CekBansosTest.php` yang menjaga
+  aturan PRD 6.6. **Perlu keputusan pemilik produk:** bila fitur ini dianggap
+  ditutup seluruhnya, endpoint tersebut ikut dihapus bersama Fase 5.
+
+
+### A6. Tata letak situs publik disatukan pada satu kisi (4 September 2026)
+
+PRD 3.1–3.2 dan desain Figma menetapkan beberapa halaman memakai kepala
+halaman **terpusat** di atas latar krem (Profil, Infografis, Informasi PPID),
+sementara sisanya memakai bilah navy rata kiri. Dalam pemakaian, perbedaan itu
+membuat situs terasa seperti kumpulan halaman yang dikerjakan terpisah: tepi
+kiri judul berpindah-pindah antar halaman, dan pengunjung kehilangan pegangan
+tiap kali bernavigasi. **Atas permintaan pemilik produk, seluruh halaman
+publik kini memakai satu pola.**
+
+Yang berubah:
+
+- **Satu kisi.** `GAYA_WADAH` (`Components/ui`) — dipakai bilah atas,
+  navigasi, kepala halaman, isi, dan footer. Sebelumnya ada **tujuh** lebar
+  berbeda (`max-w-2xl` sampai `max-w-situs`) dengan gutter `px-6` tetap di
+  semua ukuran layar.
+
+  Lebarnya MENGIKUTI layar dengan margin tepi tipis (`px-5 sm:px-6 lg:px-10
+  xl:px-16 2xl:px-22`), dibatasi 120rem/1920px — bukan berhenti pada satu
+  angka lalu memusat. Ini permintaan pemilik produk, diukur dari situs desa
+  yang dijadikan acuan: pada monitor 1902px isinya bermula 90px dari tepi
+  (±4,7% lebar layar), sedangkan container 1280px yang memusat menyisakan
+  320px kosong di kiri dan kanan. Kisi kartu karena itu mendapat kolom
+  keempat mulai 1536px (`2xl:grid-cols-4`) — dengan tiga kolom, kartu
+  memanjang sampai ±560px dan gambar sampulnya setinggi 350px untuk berita
+  berisi dua baris teks.
+- **Kolom sempit dipusatkan, berikut judulnya.** Halaman formulir dan artikel
+  tetap dibatasi ±736px demi panjang baris. Sempat dicoba rata kiri agar
+  tepinya segaris dengan logo, tetapi pada monitor lebar hasilnya timpang —
+  formulir menempel ke kiri dan menyisakan ±1000px kosong di kanan. Kuncinya:
+  `KepalaHalaman` menerima prop `lebar` yang HARUS sama dengan `IsiHalaman`
+  di halaman itu, sehingga judul ikut terpusat dan keduanya berbagi satu tepi
+  kiri. Tanpa itu, judul menempel kiri sementara isinya di tengah.
+- **`KepalaHalaman` dipakai SETIAP halaman publik**, termasuk yang dulu
+  memakai judul terpusat (Profil, Infografis, Informasi PPID) atau `<h1>`
+  polos (Galeri, Listing). Ia mendapat dua slot baru: `kembali` (tautan ke
+  daftar induk) dan `meta` (tanggal, penulis, jumlah dibaca), yang menggantikan
+  kepala halaman buatan sendiri di halaman detail berita & album.
+- **Satu bentuk sub-navigasi modul.** `BilahTab` kini dipakai Infografis saja;
+  PPID sempat memakainya juga, lalu bilah tabnya dihapus atas permintaan
+  pemilik produk — halaman PPID dinavigasikan lewat menu utama dan kartu
+  kategori di `/ppid`. Sebelum disatukan, keduanya berbeda bentuk (pil bulat
+  terpusat vs tab bergaris bawah lengket). Atas permintaan pemilik produk, bentuk yang dipakai keduanya
+  adalah **pil bulat terpusat** milik Infografis — setelah sempat disatukan sebagai
+  tab bergaris bawah rata kiri. Deretan pil itu bagian dari isi halaman dan
+  ikut menggulir — bukan bilah lengket berlatar sendiri di bawah header, yang
+  sempat dicoba dan menghasilkan dua batang navigasi bertumpuk saat halaman
+  digulir. Yang tetap dari penyatuan: satu komponen untuk kedua modul dan
+  gulir mendatar pada layar sempit. Pemusatannya memakai `w-max mx-auto` pada
+  lapisan dalam, bukan `justify-center` pada kotak yang menggulir — margin
+  auto hanya membagi ruang berlebih sehingga menjadi nol saat deretan pil
+  melampaui lebar layar, sedangkan `justify-center` akan mendorong luapannya
+  ke kedua sisi dan membuat pil pertama tidak dapat dicapai betapapun
+  digulir. Bilah menempel di bawah header lewat `--tinggi-header` di `app.css`
+  — menggantikan `top-17` yang ditulis lepas dan sudah tidak sesuai tinggi
+  header sebenarnya, sehingga bilah tab tertimbun separuh saat digulir.
+- **Jarak menuju footer.** Kerangka publik tidak lagi dipaksa setinggi layar
+  dengan footer didorong ke dasar; footer kini mengikuti konten, dan latar
+  `html` disetel senada footer sehingga ruang sisa di bawahnya terbaca sebagai
+  footer yang memanjang — bukan jurang krem setinggi ratusan piksel pada
+  halaman berisi sedikit konten.
+- **Responsif per-breakpoint, bukan sekadar mengecil.** Menu mendatar baru
+  muncul di `xl` (delapan itemnya berdesakan di `lg`); di bawah itu panel dua
+  kolom. Gambar kartu memakai rasio (`aspect-[16/10]`, `aspect-[4/3]`) alih-alih
+  tinggi tetap `h-44`, tinggi peta mengikuti layar, dan bilah atas menyembunyikan
+  nama wilayah di bawah `sm`.
+- **Pengurangan hiasan.** Bulatan emas kabur di hero, lencana berbentuk pil,
+  ubin ikon berwarna pada setiap kartu, sudut `rounded-2xl`, dan bayangan yang
+  mengembang saat disentuh — semuanya dikurangi menjadi garis tepi tipis,
+  sudut `rounded-xl`, dan ikon polos.
+
+Satu cacat lama ikut ditemukan dan diperbaiki dalam proses ini: token grafik
+(`Components/viz/tokens.css`) membawa blok `@media (prefers-color-scheme: dark)`
+yang menukar warna deret menjadi versi terangnya begitu SISTEM OPERASI
+pengunjung disetel gelap — padahal situs ini tidak punya tema gelap dan kartu
+grafiknya tetap putih. Akibatnya biru muda di atas putih hanya berkontras
+±2,2:1 bagi pengunjung tersebut. Blok itu dihapus; penggantinya, mode kontras
+tinggi kini ikut menggelapkan warna deret.
+
+### A7. Banner beranda dapat diganti dari CMS (4 September 2026)
+
+PRD 6.17 mendaftar isi Pengaturan Umum tanpa menyebut gambar banner; hero
+beranda semula tidak ada. Atas permintaan pemilik produk, beranda kini memakai
+foto latar setinggi satu layar, dan **fotonya dapat diganti sendiri oleh
+perangkat desa** lewat Pengaturan Umum — bukan berkas statis yang menuntut
+akses server.
+
+- Kolom baru `settings.banner` menyimpan path relatif pada disk `public`,
+  sepola `logo`. Unggahannya melewati `MediaService` yang sudah ada: nama
+  diacak, MIME disidik dari isi berkas, dikonversi ke WebP.
+- `MediaService::simpanGambar()` menerima parameter lebar maksimum opsional.
+  Banner dipotong pada 1920px (`LEBAR_MAKS_BANNER`), bukan 1600px seperti
+  gambar lain: ia membentang sampai tepi jendela, sehingga pada monitor
+  1920px batas lama membuatnya diregangkan dan buram — tepat pada elemen yang
+  pertama dilihat pengunjung.
+- Bila kolomnya kosong (keadaan setiap desa pada hari pertama), Beranda
+  memakai foto bawaan di `public/gambar/` yang disajikan lewat `<picture>`
+  tiga ukuran. Berkas asli PNG 2,3 MB tidak pernah disajikan apa adanya;
+  varian WebP 800px hanya 49 KB.
+- Lapisan navy 80% + gradien di atas foto bukan hiasan: teks putih dan label
+  emas kecil harus tetap terbaca di atas foto APA PUN yang diunggah admin.
+  Pada bagian paling terang sekalipun, teks putih berkontras ±9:1 dan label
+  emas-muda ±5,8:1. Karena itu pula label kecil di hero memakai `gold-light`,
+  bukan `gold` — emas tua hanya mencapai ±4,2:1 di atas latar bercampur foto.
+
+### A8. Perbaikan: penyimpanan Pengaturan Umum tidak pernah berhasil
+
+Ditemukan saat menguji fitur banner di atas, dan **sudah ada sejak commit
+pertama** — bukan akibat perubahan tampilan.
+
+`SettingController::update()` membungkus penyimpanannya dalam
+`DB::transaction(function () use ($data, $villageId, &$setting) { ... })`,
+tetapi di dalam blok itu memanggil `$request->hasFile('logo')`. Closure PHP
+tidak mewarisi lingkup pemanggilnya, jadi `$request` bernilai null di sana —
+dan karena baris tersebut dilalui pada SETIAP penyimpanan (bukan hanya ketika
+ada berkas), **seluruh penyimpanan Pengaturan Umum berakhir galat 500**. Tidak
+ada uji yang menyentuh endpoint ini sebelumnya, sehingga kegagalannya tidak
+pernah terlihat.
+
+Perbaikannya satu kata: `$request` ikut ditangkap pada klausa `use`. Rangkaian
+uji `tests/Feature/Publik/BannerBerandaTest.php` kini menjaga jalur itu —
+termasuk perkara yang paling mudah terlewat, yaitu menyimpan formulir tanpa
+memilih berkas tidak boleh mengosongkan logo/banner yang sudah ada.
+
+### A9. CRUD dilengkapi pada seluruh modul CMS (4 September 2026)
+
+PRD Bagian 5 menyebut tiap modul CMS "dikelola" tanpa merinci operasinya.
+Dalam implementasinya, sebagian modul hanya memiliki **tambah + hapus**:
+mengoreksi satu salah ketik pada judul dasar hukum PPID menuntut operator
+menghapus barisnya lalu mengunggah ulang PDF-nya — dan tautan lama yang sudah
+telanjur dibagikan warga ikut mati. Atas permintaan pemilik produk, operasi
+ubah/hapus dilengkapi.
+
+Endpoint yang ditambahkan:
+
+| Endpoint | Alasan sebelumnya tidak ada |
+|---|---|
+| `PUT /admin/ppid/dasar-hukum/{id}` | hanya tambah & hapus |
+| `PUT /admin/ppid/informasi/{id}` | hanya tambah & hapus |
+| `PUT /admin/bansos/jenis/{id}` | hanya tambah & hapus |
+| `PUT`, `DELETE /admin/apbdes/kategori/{id}` | kategori hanya dapat ditambah |
+| `DELETE /admin/apbdes/tahun/{id}` | tahun anggaran tidak dapat dihapus |
+| `DELETE /admin/idm/{id}` | skor IDM tidak dapat dihapus |
+| `DELETE /admin/sdgs/{tahun}` | skor SDGs tidak dapat dihapus |
+| `GET /admin/residents/dusuns` | daftar dusun hanya ada di balik `manage-stunting` |
+
+Dua penghapusan sengaja **ditolak** ketika masih ada data yang bergantung:
+tahun anggaran dan kategori APBDes yang masih memuat rincian. Menghapusnya
+berantai akan melenyapkan angka yang menjadi rujukan publik pada halaman
+transparansi hanya karena satu ketukan keliru; servernya menjawab 422 beserta
+jumlah rincian yang harus dibereskan lebih dahulu.
+
+Pada modul yang menyimpan dengan `updateOrCreate` (Stunting, IDM, SDGs) tidak
+ada endpoint ubah tersendiri — dan itu memang disengaja. Yang ditambahkan di
+sisi CMS adalah tombol sunting yang MEMUAT ULANG baris ke formulir, supaya
+operator tidak mengetik ulang seluruh baris demi mengoreksi satu angka.
+
+Satu perubahan aturan validasi: `PUT /admin/bansos/penerima/{id}` kini
+menerima permintaan tanpa `nik`. Daftar penerima hanya memuat NIK tersamar,
+sehingga memaksa operator mengetik ulang 16 digit demi mengoreksi nominal
+justru mengundang salah ketik pada kolom yang paling sensitif.
+
+**Yang sengaja TIDAK dilengkapi:** pengaduan, permohonan informasi PPID, dan
+pengajuan surat. Ketiganya kiriman warga — operator menanggapi statusnya,
+tetapi tidak membuat atau menghapusnya. Nomor tiket ketiganya beredar di
+tangan warga sebagai bukti, dan menghapus barisnya berarti mematikan
+pelacakan yang mereka pegang.
+
+### A10. Perbaikan: validator lebih longgar daripada skema basis data
+
+Dilaporkan pemilik produk saat menambah data penduduk dari CMS:
+
+```
+SQLSTATE[01000]: Warning: 1265 Data truncated for column 'pendidikan_terakhir'
+```
+
+`residents.pendidikan_terakhir` dan `residents.agama` adalah kolom **ENUM**,
+tetapi `ResidentController::validasi()` memvalidasinya sebagai string bebas
+(`max:50` dan `max:20`). Nilai di luar daftar — "PAUD", "atheis" — lolos
+validasi, lalu ditolak MySQL. Yang dilihat operator galat 500, bukan pesan yang
+menyebutkan pilihan yang sah. Pengimpor CSV mengidap separuh cacat yang sama:
+ia memeriksa `agama` tetapi **tidak** `pendidikan_terakhir`, sehingga satu baris
+menyimpang menggagalkan seluruh impor dengan galat basis data alih-alih
+dilaporkan sebagai baris bermasalah.
+
+Perbaikannya:
+
+- Nilai ENUM diangkat menjadi konstanta pada model `Resident` — satu sumber
+  yang dibaca validator API, pengimpor CSV, dan pilihan pada formulir CMS.
+- Formulir CMS memakai dropdown, bukan ketikan bebas, dan daftarnya **diambil
+  dari server** (`GET /admin/residents/opsi`). Menyalin daftar ke berkas React
+  hanya memindahkan masalahnya: salinan yang menyimpang menghasilkan pilihan
+  yang tampak sah di layar tetapi ditolak saat disimpan.
+
+Dua cacat sekelas ikut ditemukan saat menyisir sisanya, keduanya "indeks unik
+basis data tanpa aturan validasi yang sepadan":
+
+- **NIK penduduk ganda** berakhir galat 500. Petunjuknya ada di kode: parameter
+  `$abaikan` pada `validasi()` sudah disiapkan untuk pengecualian saat
+  menyunting, tetapi tidak pernah dipakai. Keunikan kini diperiksa lewat blind
+  index `nik_hash` — `Rule::unique` biasa tidak akan pernah cocok karena NIK
+  disimpan terenkripsi non-deterministik.
+- **Penerima bansos ganda** (orang yang sama, bantuan & tahun yang sama) juga
+  berakhir 500; indeks `penerima_unik_per_bantuan` menegakkannya di basis data
+  tanpa pasangan validasinya.
+
+Penyisiran menyeluruh atas seluruh kolom ENUM dan kolom berpanjang tetap tidak
+menemukan ketidakcocokan lain: modul selain kependudukan sudah memakai
+`Rule::in` dan `max:` yang sepadan dengan skemanya.
+
 ---
 
 ## B. Perubahan pada lingkungan mesin (di luar folder proyek)

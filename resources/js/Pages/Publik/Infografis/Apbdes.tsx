@@ -1,7 +1,7 @@
 import { useId } from 'react'
 import { Head, router } from '@inertiajs/react'
 import { EmptyState } from '@/Components/EmptyState'
-import { Pilihan } from '@/Components/ui'
+import { IsiHalaman, Pilihan } from '@/Components/ui'
 import { GarisTren, KartuAngka, Lingkaran } from '@/Components/viz/Grafik'
 import { bungkusInfografis } from '@/Layouts/LayoutInfografis'
 import { formatRupiah, formatRupiahRingkas } from '@/lib/format'
@@ -34,7 +34,7 @@ export default function Apbdes({ data }: { data: InfografisApbdes | null }) {
   const komposisiBelanja = juringKelompok('Belanja')
 
   return (
-    <div className="mx-auto max-w-situs px-6 py-10">
+    <IsiHalaman lebar="lebar">
       <Head title={`APBDes ${data.tahun}`} />
 
       <PemilihTahun tahun={data.tahun} tersedia={data.tahun_tersedia} />
@@ -133,7 +133,7 @@ export default function Apbdes({ data }: { data: InfografisApbdes | null }) {
           </section>
         ))}
       </div>
-    </div>
+    </IsiHalaman>
   )
 }
 

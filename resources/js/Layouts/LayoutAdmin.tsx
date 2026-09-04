@@ -34,24 +34,79 @@ import { punyaIzin, useHalaman } from '@/types/inertia'
  * Menu untuk modul yang belum berpindah ke Inertia sengaja belum didaftarkan
  * di sini agar tidak ada tautan yang menuju halaman kosong.
  */
-const MENU: { ke: string; label: string; izin: string; ikon: LucideIcon; ujung?: boolean }[] = [
-  { ke: '/admin', label: 'Dashboard', izin: 'view-dashboard', ikon: LayoutDashboard, ujung: true },
-  { ke: '/admin/profil', label: 'Profil Desa', izin: 'manage-village-profile', ikon: Landmark },
-  { ke: '/admin/sotk-bpd', label: 'SOTK & BPD', izin: 'manage-officials', ikon: Users },
-  { ke: '/admin/berita', label: 'Berita', izin: 'manage-news', ikon: Newspaper },
-  { ke: '/admin/galeri', label: 'Galeri', izin: 'manage-gallery', ikon: Images },
-  { ke: '/admin/penduduk', label: 'Data Penduduk', izin: 'manage-population-data', ikon: UsersRound },
-  { ke: '/admin/apbdes', label: 'APBDes', izin: 'manage-apbdes', ikon: Wallet },
-  { ke: '/admin/stunting', label: 'Stunting', izin: 'manage-stunting', ikon: HeartPulse },
-  { ke: '/admin/idm', label: 'IDM', izin: 'manage-idm', ikon: Gauge },
-  { ke: '/admin/sdgs', label: 'SDGs Desa', izin: 'manage-sdgs', ikon: Target },
-  { ke: '/admin/ekonomi', label: 'Potensi & Ekonomi', izin: 'manage-potential', ikon: Store },
-  { ke: '/admin/peta', label: 'Titik Lokasi', izin: 'manage-poi', ikon: MapPin },
-  { ke: '/admin/pengaduan', label: 'Pengaduan', izin: 'respond-complaint', ikon: MessageSquareWarning },
-  { ke: '/admin/bansos', label: 'Bantuan Sosial', izin: 'manage-bansos', ikon: HandCoins },
-  { ke: '/admin/ppid', label: 'PPID', izin: 'manage-ppid-content', ikon: FileText },
-  { ke: '/admin/surat', label: 'Surat Pengantar', izin: 'manage-letter-request', ikon: FileSignature },
-  { ke: '/admin/pengaturan', label: 'Pengaturan Umum', izin: 'manage-settings', ikon: Settings },
+interface ItemMenu {
+  ke: string
+  label: string
+  izin: string
+  ikon: LucideIcon
+  ujung?: boolean
+}
+
+interface GrupMenu {
+  /** Tanpa judul untuk grup pembuka (Dashboard) — label di atas satu item saja mubazir. */
+  judul?: string
+  item: ItemMenu[]
+}
+
+/**
+ * Menu dikelompokkan menurut PEKERJAAN operator, bukan urutan modul dibangun.
+ *
+ * Tujuh belas item dalam satu daftar datar menuntut operator membaca seluruh
+ * daftar tiap kali mencari satu layar — apalagi urutan sebelumnya mengikuti
+ * urutan route didaftarkan, sehingga "Pengaduan" terselip di antara "Titik
+ * Lokasi" dan "Bantuan Sosial" tanpa alasan yang bisa ditebak.
+ *
+ * Urutan grupnya mengikuti seberapa sering dibuka: layanan warga (surat &
+ * pengaduan masuk setiap hari, ada tenggat menanggapi) berada di atas data
+ * statistik yang dimutakhirkan berkala.
+ */
+const MENU: GrupMenu[] = [
+  {
+    item: [
+      { ke: '/admin', label: 'Dashboard', izin: 'view-dashboard', ikon: LayoutDashboard, ujung: true },
+    ],
+  },
+  {
+    judul: 'Profil Desa',
+    item: [
+      { ke: '/admin/profil', label: 'Profil Desa', izin: 'manage-village-profile', ikon: Landmark },
+      { ke: '/admin/sotk-bpd', label: 'SOTK & BPD', izin: 'manage-officials', ikon: Users },
+    ],
+  },
+  {
+    judul: 'Konten Publik',
+    item: [
+      { ke: '/admin/berita', label: 'Berita', izin: 'manage-news', ikon: Newspaper },
+      { ke: '/admin/galeri', label: 'Galeri', izin: 'manage-gallery', ikon: Images },
+      { ke: '/admin/ekonomi', label: 'Potensi & Ekonomi', izin: 'manage-potential', ikon: Store },
+      { ke: '/admin/peta', label: 'Titik Lokasi', izin: 'manage-poi', ikon: MapPin },
+    ],
+  },
+  {
+    judul: 'Layanan Warga',
+    item: [
+      { ke: '/admin/surat', label: 'Surat Pengantar', izin: 'manage-letter-request', ikon: FileSignature },
+      { ke: '/admin/pengaduan', label: 'Pengaduan', izin: 'respond-complaint', ikon: MessageSquareWarning },
+      { ke: '/admin/ppid', label: 'PPID', izin: 'manage-ppid-content', ikon: FileText },
+    ],
+  },
+  {
+    judul: 'Data & Statistik',
+    item: [
+      { ke: '/admin/penduduk', label: 'Data Penduduk', izin: 'manage-population-data', ikon: UsersRound },
+      { ke: '/admin/apbdes', label: 'APBDes', izin: 'manage-apbdes', ikon: Wallet },
+      { ke: '/admin/bansos', label: 'Bantuan Sosial', izin: 'manage-bansos', ikon: HandCoins },
+      { ke: '/admin/stunting', label: 'Stunting', izin: 'manage-stunting', ikon: HeartPulse },
+      { ke: '/admin/idm', label: 'IDM', izin: 'manage-idm', ikon: Gauge },
+      { ke: '/admin/sdgs', label: 'SDGs Desa', izin: 'manage-sdgs', ikon: Target },
+    ],
+  },
+  {
+    judul: 'Sistem',
+    item: [
+      { ke: '/admin/pengaturan', label: 'Pengaturan Umum', izin: 'manage-settings', ikon: Settings },
+    ],
+  },
 ]
 
 /**
@@ -99,7 +154,14 @@ export function LayoutAdmin({
     }
   }, [notifikasiTerbuka])
 
-  const menuTampil = MENU.filter((m) => punyaIzin(pengguna, m.izin))
+  const grupTampil = MENU.map((g) => ({
+    ...g,
+    item: g.item.filter((m) => punyaIzin(pengguna, m.izin)),
+  })).filter((g) => g.item.length > 0)
+
+  // Bilah ringkas layar kecil tetap datar — di sana grup hanya menambah lebar
+  // gulir tanpa membantu, karena seluruh item sudah terlihat sekaligus.
+  const menuTampil = grupTampil.flatMap((g) => g.item)
   const jalur = url.split('?')[0]
 
   function aktif(ke: string, ujung?: boolean) {
@@ -125,26 +187,36 @@ export function LayoutAdmin({
           </span>
         </div>
 
-        <nav aria-label="Navigasi dashboard" className="flex-1 space-y-1 overflow-y-auto p-3">
-          {menuTampil.map((m) => {
-            const ini = aktif(m.ke, m.ujung)
+        <nav aria-label="Navigasi dashboard" className="flex-1 space-y-5 overflow-y-auto p-3">
+          {grupTampil.map((grup, i) => (
+            <div key={grup.judul ?? `grup-${i}`} className="space-y-1">
+              {grup.judul && (
+                <p className="px-3 pb-1 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
+                  {grup.judul}
+                </p>
+              )}
 
-            return (
-              <Link
-                key={m.ke}
-                href={m.ke}
-                aria-current={ini ? 'page' : undefined}
-                className={`flex items-center gap-3 rounded-lg py-2.5 text-sm font-medium transition ${
-                  ini
-                    ? 'border-l-4 border-teal-700 bg-teal-600/10 pr-3 pl-3 text-teal-700'
-                    : 'px-3 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                }`}
-              >
-                <m.ikon className="size-[18px] shrink-0" aria-hidden="true" />
-                {m.label}
-              </Link>
-            )
-          })}
+              {grup.item.map((m) => {
+                const ini = aktif(m.ke, m.ujung)
+
+                return (
+                  <Link
+                    key={m.ke}
+                    href={m.ke}
+                    aria-current={ini ? 'page' : undefined}
+                    className={`flex items-center gap-3 rounded-lg py-2.5 text-sm font-medium transition ${
+                      ini
+                        ? 'border-l-4 border-teal-700 bg-teal-600/10 pr-3 pl-3 text-teal-700'
+                        : 'px-3 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                    }`}
+                  >
+                    <m.ikon className="size-[18px] shrink-0" aria-hidden="true" />
+                    {m.label}
+                  </Link>
+                )
+              })}
+            </div>
+          ))}
         </nav>
       </aside>
 

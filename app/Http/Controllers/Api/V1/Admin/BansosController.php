@@ -67,6 +67,28 @@ class BansosController extends Controller
         return ApiResponse::success($jenis, 'Jenis bantuan berhasil ditambahkan.', 201);
     }
 
+    public function jenisUbah(Request $request, BansosType $bansosType): JsonResponse
+    {
+        abort_unless($bansosType->village_id === $this->village->id(), 404);
+
+        $data = $request->validate([
+            'nama' => ['required', 'string', 'max:255'],
+            'deskripsi' => ['nullable', 'string', 'max:1000'],
+            'sumber_dana' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $sebelum = $bansosType->getOriginal();
+        $bansosType->update($data);
+
+        Cache::forget("infografis:bansos:{$this->village->id()}");
+        $this->logger->log(
+            'updated', $bansosType, "Memperbarui jenis bantuan: {$bansosType->nama}",
+            $sebelum, $bansosType->getAttributes()
+        );
+
+        return ApiResponse::success($bansosType, 'Jenis bantuan berhasil diperbarui.');
+    }
+
     public function jenisHapus(BansosType $bansosType): JsonResponse
     {
         $this->pastikanMilikDesaIni($bansosType->village_id);
@@ -125,6 +147,7 @@ class BansosController extends Controller
             'id' => $p->id,
             'nik' => $p->nikTersamar(),
             'nama' => $p->nama,
+            'bansos_type_id' => $p->bansos_type_id,
             'jenis_bantuan' => $p->jenisBantuan?->nama,
             'dusun' => $p->dusun?->nama,
             'tahun_anggaran' => $p->tahun_anggaran,
@@ -176,7 +199,7 @@ class BansosController extends Controller
         $this->pastikanMilikDesaIni($bansosRecipient->village_id);
 
         $sebelum = $bansosRecipient->getOriginal();
-        $bansosRecipient->update($this->validasiPenerima($request));
+        $bansosRecipient->update($this->validasiPenerima($request, ubah: true, abaikan: $bansosRecipient));
         $this->bersihkanCache();
 
         $this->logger->log(
@@ -241,9 +264,16 @@ class BansosController extends Controller
         ]);
     }
 
-    /** @return array<string, mixed> */
-    private function validasiPenerima(Request $request): array
-    {
+    /**
+     * @param  bool  $ubah  true saat memperbarui: NIK boleh tidak disertakan.
+     * @param  BansosRecipient|null  $abaikan  baris yang sedang disunting
+     * @return array<string, mixed>
+     */
+    private function validasiPenerima(
+        Request $request,
+        bool $ubah = false,
+        ?BansosRecipient $abaikan = null,
+    ): array {
         return $request->validate([
             'bansos_type_id' => [
                 'required',
@@ -254,7 +284,31 @@ class BansosController extends Controller
                 Rule::exists('dusuns', 'id')->where('village_id', $this->village->id()),
             ],
             'nama' => ['required', 'string', 'max:255'],
-            'nik' => ['required', 'string', 'regex:/^\d{16}$/'],
+            // Pada pembaruan NIK bersifat opsional — lihat catatan di atas.
+            'nik' => [
+                $ubah ? 'sometimes' : 'required', 'string', 'regex:/^\d{16}$/',
+                /*
+                 * Satu orang tidak boleh tercatat dua kali untuk bantuan dan
+                 * tahun yang sama — indeks unik `penerima_unik_per_bantuan`
+                 * menegakkannya di basis data. Diperiksa di sini lewat blind
+                 * index (NIK tersimpan terenkripsi non-deterministik, jadi
+                 * `Rule::unique` biasa tidak akan pernah cocok); tanpa itu,
+                 * pencatatan ganda berakhir galat 500 alih-alih pesan yang
+                 * memberi tahu operator bahwa warganya sudah terdaftar.
+                 */
+                function (string $atribut, mixed $nilai, callable $gagal) use ($request, $abaikan) {
+                    $kembar = BansosRecipient::where('village_id', $this->village->id())
+                        ->where('bansos_type_id', $request->integer('bansos_type_id'))
+                        ->where('tahun_anggaran', $request->integer('tahun_anggaran'))
+                        ->where('nik_hash', $this->cipher->hash((string) $nilai))
+                        ->when($abaikan, fn ($q) => $q->whereKeyNot($abaikan->getKey()))
+                        ->exists();
+
+                    if ($kembar) {
+                        $gagal('Warga dengan NIK ini sudah tercatat sebagai penerima bantuan tersebut pada tahun yang sama.');
+                    }
+                },
+            ],
             'no_kk' => ['nullable', 'string', 'regex:/^\d{16}$/'],
             'tahun_anggaran' => ['required', 'integer', 'min:2000', 'max:2100'],
             'status' => ['nullable', Rule::in(['aktif', 'nonaktif', 'dicabut'])],

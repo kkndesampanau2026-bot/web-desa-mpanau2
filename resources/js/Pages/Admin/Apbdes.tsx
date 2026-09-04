@@ -1,7 +1,16 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiRequestError, type ApiSuccess } from '@/lib/api'
-import { Kartu, Kolom, Input, Pemberitahuan, Pilihan, TextArea, Tombol } from '@/Components/Admin/Form'
+import {
+  AksiBaris,
+  Input,
+  Kartu,
+  Kolom,
+  Pemberitahuan,
+  Pilihan,
+  TextArea,
+  Tombol,
+} from '@/Components/Admin/Form'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 import { formatRupiah } from '@/lib/format'
 
@@ -123,6 +132,18 @@ function TabTahun() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'apbdes', 'tahun'] }),
   })
 
+  const hapus = useMutation({
+    mutationFn: (id: number) => api.delete(`/admin/apbdes/tahun/${id}`),
+    onSuccess: () => {
+      setGalat(null)
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'apbdes', 'tahun'] })
+    },
+    // Server menolak tahun yang masih berisi rincian; pesannya diteruskan apa
+    // adanya karena ia menyebutkan berapa rincian yang harus dibereskan dulu.
+    onError: (e) =>
+      setGalat(e instanceof ApiRequestError ? e : new ApiRequestError('Gagal menghapus.', 0)),
+  })
+
   return (
     <div className="space-y-6">
       <Kartu
@@ -172,6 +193,9 @@ function TabTahun() {
                     <th scope="col" className="pb-2 text-right font-medium">Total Anggaran</th>
                     <th scope="col" className="pb-2 font-medium">Status</th>
                     <th scope="col" className="pb-2 font-medium">Publik</th>
+                    <th scope="col" className="pb-2 font-medium">
+                      <span className="sr-only">Aksi</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -205,6 +229,13 @@ function TabTahun() {
                           Tampilkan
                         </label>
                       </td>
+                      <td className="py-2.5">
+                        <AksiBaris
+                          nama={`tahun anggaran ${t.tahun}`}
+                          onHapus={() => hapus.mutate(t.id)}
+                          sedangProses={hapus.isPending}
+                        />
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -223,8 +254,10 @@ function TabTahun() {
 
 function TabKategori() {
   const queryClient = useQueryClient()
-  const [form, setForm] = useState({ kelompok: 'Belanja', nama: '', kode: '', urutan_tampil: '' })
+  const kosong = { kelompok: 'Belanja', nama: '', kode: '', urutan_tampil: '' }
+  const [form, setForm] = useState(kosong)
   const [galat, setGalat] = useState<ApiRequestError | null>(null)
+  const [sunting, setSunting] = useState<Kategori | null>(null)
 
   const { data, isPending } = useQuery({
     queryKey: ['admin', 'apbdes', 'kategori'],
@@ -234,16 +267,24 @@ function TabKategori() {
     },
   })
 
-  const tambah = useMutation({
-    mutationFn: () =>
-      api.post('/admin/apbdes/kategori', {
+  const simpan = useMutation({
+    mutationFn: () => {
+      const isi = {
         kelompok: form.kelompok,
         nama: form.nama,
         kode: form.kode || null,
         urutan_tampil: form.urutan_tampil ? Number(form.urutan_tampil) : null,
-      }),
+      }
+
+      return sunting
+        ? api.put(`/admin/apbdes/kategori/${sunting.id}`, isi)
+        : api.post('/admin/apbdes/kategori', isi)
+    },
     onSuccess: () => {
-      setForm({ kelompok: form.kelompok, nama: '', kode: '', urutan_tampil: '' })
+      // Kelompok dipertahankan saat menambah beruntun: kategori lazim
+      // dimasukkan sekelompok-sekelompok.
+      setForm({ ...kosong, kelompok: sunting ? 'Belanja' : form.kelompok })
+      setSunting(null)
       setGalat(null)
       void queryClient.invalidateQueries({ queryKey: ['admin', 'apbdes', 'kategori'] })
     },
@@ -251,15 +292,25 @@ function TabKategori() {
       setGalat(e instanceof ApiRequestError ? e : new ApiRequestError('Gagal menyimpan.', 0)),
   })
 
+  const hapusKategori = useMutation({
+    mutationFn: (id: number) => api.delete(`/admin/apbdes/kategori/${id}`),
+    onSuccess: () => {
+      setGalat(null)
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'apbdes', 'kategori'] })
+    },
+    onError: (e) =>
+      setGalat(e instanceof ApiRequestError ? e : new ApiRequestError('Gagal menghapus.', 0)),
+  })
+
   return (
     <div className="space-y-6">
       <Kartu
-        judul="Tambah Kategori"
+        judul={sunting ? `Ubah Kategori: ${sunting.nama}` : 'Tambah Kategori'}
         anak={
           <form
             onSubmit={(e) => {
               e.preventDefault()
-              tambah.mutate()
+              simpan.mutate()
             }}
             className="space-y-4"
           >
@@ -296,9 +347,25 @@ function TabKategori() {
                 />
               </Kolom>
             </div>
-            <Tombol type="submit" disabled={tambah.isPending}>
-              {tambah.isPending ? 'Menyimpan…' : 'Tambah Kategori'}
-            </Tombol>
+            <div className="flex flex-wrap gap-2">
+              <Tombol type="submit" disabled={simpan.isPending}>
+                {simpan.isPending ? 'Menyimpan…' : sunting ? 'Simpan Perubahan' : 'Tambah Kategori'}
+              </Tombol>
+
+              {sunting && (
+                <Tombol
+                  type="button"
+                  variasi="sekunder"
+                  onClick={() => {
+                    setSunting(null)
+                    setForm(kosong)
+                    setGalat(null)
+                  }}
+                >
+                  Batal
+                </Tombol>
+              )}
+            </div>
           </form>
         }
       />
@@ -319,6 +386,24 @@ function TabKategori() {
                       {[k.kelompok, k.kode].filter(Boolean).join(' · ')}
                     </p>
                   </div>
+
+                  <AksiBaris
+                    nama={`kategori “${k.nama}”`}
+                    onSunting={() => {
+                      setSunting(k)
+                      setForm({
+                        kelompok: k.kelompok,
+                        nama: k.nama,
+                        kode: k.kode ?? '',
+                        urutan_tampil:
+                          k.urutan_tampil == null ? '' : String(k.urutan_tampil),
+                      })
+                      setGalat(null)
+                      window.scrollTo({ top: 0, behavior: 'smooth' })
+                    }}
+                    onHapus={() => hapusKategori.mutate(k.id)}
+                    sedangProses={hapusKategori.isPending}
+                  />
                 </li>
               ))}
             </ul>
@@ -598,21 +683,13 @@ function TabItem() {
                       <td className="py-2.5 pr-4 text-right tabular-nums text-slate-700">
                         {it.jumlah_realisasi === null ? '—' : formatRupiah(it.jumlah_realisasi)}
                       </td>
-                      <td className="py-2.5 text-right whitespace-nowrap">
-                        <button
-                          onClick={() => suntingItem(it)}
-                          className="text-teal-700 hover:underline"
-                        >
-                          Ubah
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (confirm(`Hapus item "${it.nama_item}"?`)) hapus.mutate(it.id)
-                          }}
-                          className="ml-3 text-red-600 hover:underline"
-                        >
-                          Hapus
-                        </button>
+                      <td className="py-2.5">
+                        <AksiBaris
+                          nama={`item “${it.nama_item}”`}
+                          onSunting={() => suntingItem(it)}
+                          onHapus={() => hapus.mutate(it.id)}
+                          sedangProses={hapus.isPending}
+                        />
                       </td>
                     </tr>
                   ))}

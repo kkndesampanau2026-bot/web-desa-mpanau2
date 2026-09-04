@@ -17,7 +17,7 @@ export default function WisataDetail({
   const [fotoAktif, setFotoAktif] = useState<number | null>(null)
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-10">
+    <div className="mx-auto w-full max-w-baca px-5 py-10 sm:px-6 sm:py-12">
       <Head title={wisata.nama} />
 
       <Link href={kembali} className="text-sm text-slate-500 hover:text-navy">

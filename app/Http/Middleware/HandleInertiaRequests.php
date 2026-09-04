@@ -87,7 +87,7 @@ class HandleInertiaRequests extends Middleware
              * dapat menampilkan formulir lengkap dari halaman publik mana pun,
              * tanpa permintaan tambahan. Konstanta kecil, jadi murah dibawa.
              */
-            'kategori_pengaduan' => $diAreaAdmin ? null : \App\Models\Complaint::KATEGORI,
+            'kategori_pengaduan' => $diAreaAdmin ? null : Complaint::KATEGORI,
 
             /*
              * Pengaduan berstatus "baru" — dibagikan ke SELURUH layar dashboard

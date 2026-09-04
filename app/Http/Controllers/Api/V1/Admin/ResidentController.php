@@ -89,6 +89,31 @@ class ResidentController extends Controller
      * pemanggilan dicatat sebagai jejak AKSES — UU PDP menuntut pembacaan
      * data pribadi ikut tertelusuri, bukan hanya perubahannya.
      */
+    /**
+     * Pilihan untuk formulir penduduk: daftar dusun & seluruh nilai ENUM.
+     *
+     * Endpoint dusun yang sudah ada berada di balik permission
+     * `manage-stunting`; operator kependudukan tidak berhak memakainya,
+     * sehingga formulir ini perlu jalurnya sendiri.
+     */
+    public function opsi(): JsonResponse
+    {
+        return ApiResponse::success([
+            'dusun' => Dusun::where('village_id', $this->village->id())
+                ->orderBy('urutan_tampil')
+                ->orderBy('nama')
+                ->get(['id', 'nama']),
+            // Daftar ENUM dikirim dari server, bukan disalin ke berkas React:
+            // salinan yang menyimpang dari basis data justru menghasilkan
+            // pilihan yang tampak sah di layar tetapi ditolak saat disimpan.
+            'hubungan_kk' => Resident::HUBUNGAN_KK,
+            'pendidikan' => Resident::PENDIDIKAN,
+            'perkawinan' => Resident::PERKAWINAN,
+            'agama' => Resident::AGAMA,
+            'domisili' => Resident::DOMISILI,
+        ]);
+    }
+
     public function show(Resident $resident): JsonResponse
     {
         $this->pastikanMilikDesaIni($resident);
@@ -281,7 +306,27 @@ class ResidentController extends Controller
     private function validasi(Request $request, ?Resident $abaikan = null): array
     {
         return $request->validate([
-            'nik' => ['required', 'string', 'regex:/^\d{16}$/'],
+            'nik' => [
+                'required', 'string', 'regex:/^\d{16}$/',
+                /*
+                 * Keunikan diperiksa lewat blind index, bukan `Rule::unique`
+                 * biasa: NIK tersimpan terenkripsi non-deterministik, sehingga
+                 * membandingkan kolom `nik` tidak akan pernah cocok. Tanpa
+                 * pemeriksaan ini, NIK ganda lolos validasi lalu ditolak indeks
+                 * unik basis data sebagai galat 500 — parameter `$abaikan` pada
+                 * method ini sudah disiapkan untuk itu, tetapi belum terpakai.
+                 */
+                function (string $atribut, mixed $nilai, callable $gagal) use ($abaikan) {
+                    $kembar = Resident::where('village_id', $this->village->id())
+                        ->where('nik_hash', $this->cipher->hash((string) $nilai))
+                        ->when($abaikan, fn ($q) => $q->whereKeyNot($abaikan->getKey()))
+                        ->exists();
+
+                    if ($kembar) {
+                        $gagal('NIK ini sudah terdaftar pada data penduduk desa.');
+                    }
+                },
+            ],
             'no_kk' => ['nullable', 'string', 'regex:/^\d{16}$/'],
             'nama' => ['required', 'string', 'max:255'],
             'jenis_kelamin' => ['required', Rule::in(['L', 'P'])],
@@ -290,17 +335,28 @@ class ResidentController extends Controller
                 'nullable',
                 Rule::exists('dusuns', 'id')->where('village_id', $this->village->id()),
             ],
-            'status_hubungan_kk' => ['nullable', Rule::in(['Kepala Keluarga', 'Istri', 'Anak', 'Lainnya'])],
-            'pendidikan_terakhir' => ['nullable', 'string', 'max:50'],
+            'status_hubungan_kk' => ['nullable', Rule::in(Resident::HUBUNGAN_KK)],
+            // Keduanya kolom ENUM di basis data. Divalidasi sebagai daftar
+            // tertutup, bukan string bebas: nilai di luar daftar akan ditolak
+            // MySQL sebagai "Data truncated" — galat 500 yang tidak memberi
+            // tahu operator pilihan mana yang sah.
+            'pendidikan_terakhir' => ['nullable', Rule::in(Resident::PENDIDIKAN)],
+            // Pekerjaan sengaja tetap teks bebas; kolomnya memang string.
             'pekerjaan' => ['nullable', 'string', 'max:255'],
-            'status_perkawinan' => ['nullable', Rule::in(['Belum Kawin', 'Kawin', 'Cerai Hidup', 'Cerai Mati'])],
-            'agama' => ['nullable', 'string', 'max:20'],
-            'status_domisili' => ['nullable', Rule::in(['Penduduk Tetap', 'Penduduk Sementara'])],
-            'status_mutasi' => ['nullable', Rule::in(['Lahir', 'Mati', 'Pindah Masuk', 'Pindah Keluar'])],
+            'status_perkawinan' => ['nullable', Rule::in(Resident::PERKAWINAN)],
+            'agama' => ['nullable', Rule::in(Resident::AGAMA)],
+            'status_domisili' => ['nullable', Rule::in(Resident::DOMISILI)],
+            'status_mutasi' => ['nullable', Rule::in(Resident::MUTASI)],
             'tanggal_mutasi' => ['nullable', 'date'],
         ], [
             'nik.regex' => 'NIK harus tepat 16 digit angka.',
             'no_kk.regex' => 'No. KK harus tepat 16 digit angka.',
+            'pendidikan_terakhir.in' => 'Pendidikan terakhir harus salah satu dari: '
+                .implode(', ', Resident::PENDIDIKAN).'.',
+            'agama.in' => 'Agama harus salah satu dari: '.implode(', ', Resident::AGAMA).'.',
+            'status_hubungan_kk.in' => 'Hubungan dalam KK tidak dikenali.',
+            'status_perkawinan.in' => 'Status perkawinan tidak dikenali.',
+            'status_domisili.in' => 'Status domisili tidak dikenali.',
         ]);
     }
 

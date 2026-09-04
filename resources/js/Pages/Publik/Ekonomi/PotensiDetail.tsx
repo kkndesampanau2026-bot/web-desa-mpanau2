@@ -23,7 +23,7 @@ export default function PotensiDetail({
   return (
     <>
       <Head title={potensi.judul} />
-      <KepalaHalaman eyebrow={potensi.kategori} judul={potensi.judul} />
+      <KepalaHalaman eyebrow={potensi.kategori} judul={potensi.judul} lebar="sempit" />
 
       <IsiHalaman lebar="sempit">
         <Link
@@ -38,7 +38,7 @@ export default function PotensiDetail({
           <img
             src={potensi.foto}
             alt={potensi.judul}
-            className="mt-6 w-full rounded-2xl object-cover"
+            className="mt-6 w-full rounded-xl object-cover"
           />
         )}
 

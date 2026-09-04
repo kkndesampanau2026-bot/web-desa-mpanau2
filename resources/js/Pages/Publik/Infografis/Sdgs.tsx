@@ -1,5 +1,6 @@
 import { Head } from '@inertiajs/react'
 import { EmptyState } from '@/Components/EmptyState'
+import { IsiHalaman } from '@/Components/ui'
 import { KartuAngka } from '@/Components/viz/Grafik'
 import { bungkusInfografis } from '@/Layouts/LayoutInfografis'
 import type { InfografisSdgs } from '@/types/api'
@@ -25,7 +26,7 @@ export default function Sdgs({ data }: { data: InfografisSdgs | null }) {
   }
 
   return (
-    <div className="mx-auto max-w-situs px-6 py-10">
+    <IsiHalaman lebar="lebar">
       <Head title={`SDGs Desa ${data.tahun}`} />
 
       <div className="max-w-xs">
@@ -40,7 +41,7 @@ export default function Sdgs({ data }: { data: InfografisSdgs | null }) {
         {data.goals.map((goal) => (
           <li
             key={goal.goal_number}
-            className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm"
+            className="rounded-xl border border-navy/10 bg-white p-4 shadow-sm"
           >
             <div className="flex items-baseline gap-3">
               <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-navy text-sm font-semibold text-white tabular-nums">
@@ -73,7 +74,7 @@ export default function Sdgs({ data }: { data: InfografisSdgs | null }) {
           </li>
         ))}
       </ul>
-    </div>
+    </IsiHalaman>
   )
 }
 

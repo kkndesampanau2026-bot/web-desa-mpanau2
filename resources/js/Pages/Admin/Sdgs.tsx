@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Trash2 } from 'lucide-react'
 import { api, ApiRequestError, type ApiSuccess } from '@/lib/api'
 import { Kartu, Kolom, Input, Pemberitahuan, TextArea, Tombol } from '@/Components/Admin/Form'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
@@ -132,6 +133,24 @@ export default function SdgsAdminPage() {
     },
   })
 
+  // Satuan penghapusan adalah TAHUN, bukan tujuan: ke-18 tujuan disimpan
+  // sebagai satu kesatuan, sehingga menghapus satu tujuan saja menyisakan
+  // tahun bercapaian bolong yang tidak bisa dipulihkan dari layar ini.
+  const hapusTahun = useMutation({
+    mutationFn: (t: number) => api.delete(`/admin/sdgs/${t}`),
+    onSuccess: () => {
+      setGalat(null)
+      setSukses(`Skor SDGs Desa tahun ${tahun} berhasil dihapus.`)
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'sdgs'] })
+    },
+    onError: (e) => {
+      setSukses(null)
+      setGalat(e instanceof ApiRequestError ? e : new ApiRequestError('Gagal menghapus.', 0))
+    },
+  })
+
+  const tahunSudahAda = tahunTersedia.includes(Number(tahun))
+
   function ubahBaris(i: number, ubahan: Partial<BarisGoal>) {
     setBaris((lama) => lama.map((b, idx) => (idx === i ? { ...b, ...ubahan } : b)))
   }
@@ -249,9 +268,32 @@ export default function SdgsAdminPage() {
           }
         />
 
-        <Tombol type="submit" disabled={simpan.isPending}>
-          {simpan.isPending ? 'Menyimpan…' : `Simpan Skor Tahun ${tahun}`}
-        </Tombol>
+        <div className="flex flex-wrap gap-2">
+          <Tombol type="submit" disabled={simpan.isPending}>
+            {simpan.isPending ? 'Menyimpan…' : `Simpan Skor Tahun ${tahun}`}
+          </Tombol>
+
+          {tahunSudahAda && (
+            <Tombol
+              type="button"
+              variasi="bahaya"
+              disabled={hapusTahun.isPending}
+              onClick={() => {
+                if (
+                  confirm(
+                    `Hapus seluruh skor SDGs Desa tahun ${tahun} (18 tujuan)? ` +
+                      'Tindakan ini tidak dapat dibatalkan.',
+                  )
+                ) {
+                  hapusTahun.mutate(Number(tahun))
+                }
+              }}
+            >
+              <Trash2 className="size-4" aria-hidden="true" />
+              {hapusTahun.isPending ? 'Menghapus…' : `Hapus Tahun ${tahun}`}
+            </Tombol>
+          )}
+        </div>
       </form>
     </div>
   )

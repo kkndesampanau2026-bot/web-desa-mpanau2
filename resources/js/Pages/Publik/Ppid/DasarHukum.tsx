@@ -1,8 +1,9 @@
+import type { ReactNode } from 'react'
 import { Head } from '@inertiajs/react'
 import { Download, Gavel } from 'lucide-react'
 import { EmptyState } from '@/Components/EmptyState'
 import { IsiHalaman, Kartu, KepalaHalaman } from '@/Components/ui'
-import { bungkusPpid } from '@/Layouts/LayoutPpid'
+import { LayoutPublik } from '@/Layouts/LayoutPublik'
 import type { DasarHukumPpid } from '@/types/api'
 
 const DESKRIPSI = 'Regulasi yang menjadi dasar penerapan keterbukaan informasi publik di desa.'
@@ -21,7 +22,8 @@ export default function DasarHukum({ dasar_hukum: daftar }: { dasar_hukum: Dasar
     <>
       <Head title="Dasar Hukum PPID" />
 
-      <KepalaHalaman eyebrow="PPID" judul="Dasar Hukum" deskripsi={DESKRIPSI} />
+      <KepalaHalaman eyebrow="PPID" judul="Dasar Hukum" deskripsi={DESKRIPSI} lebar="sedang" />
+
 
       <IsiHalaman>
         <ol className="space-y-4">
@@ -68,4 +70,4 @@ export default function DasarHukum({ dasar_hukum: daftar }: { dasar_hukum: Dasar
   )
 }
 
-DasarHukum.layout = bungkusPpid
+DasarHukum.layout = (page: ReactNode) => <LayoutPublik>{page}</LayoutPublik>

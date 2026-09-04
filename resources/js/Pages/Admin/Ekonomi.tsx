@@ -2,7 +2,16 @@ import { Fragment, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiRequestError, urlBerkas, type ApiSuccess } from '@/lib/api'
 import { keFormData } from '@/lib/berkas'
-import { Kartu, Kolom, Input, Pemberitahuan, Pilihan, TextArea, Tombol } from '@/Components/Admin/Form'
+import {
+  AksiBaris,
+  Input,
+  Kartu,
+  Kolom,
+  Pemberitahuan,
+  Pilihan,
+  TextArea,
+  Tombol,
+} from '@/Components/Admin/Form'
 import { InputBerkas } from '@/Components/Admin/Berkas'
 import { PengelolaFoto, type Foto } from '@/Components/Admin/PengelolaFoto'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
@@ -26,6 +35,7 @@ interface Wisata {
   nama: string
   slug: string
   deskripsi: string | null
+  alamat: string | null
   harga_tiket: string | null
   status_tampil: boolean
   photos: Foto[]
@@ -400,20 +410,12 @@ function PanelPotensi() {
                         Lihat
                       </a>
                     )}
-                    <button
-                      onClick={() => mulaiSunting(p)}
-                      className="text-slate-700 hover:underline"
-                    >
-                      Ubah
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (confirm(`Hapus potensi "${p.judul}"?`)) hapus.mutate(p.id)
-                      }}
-                      className="text-red-600 hover:underline"
-                    >
-                      Hapus
-                    </button>
+                    <AksiBaris
+                      nama={`potensi “${p.judul}”`}
+                      onSunting={() => mulaiSunting(p)}
+                      onHapus={() => hapus.mutate(p.id)}
+                      sedangProses={hapus.isPending}
+                    />
                   </div>
                 </li>
               ))}
@@ -427,7 +429,9 @@ function PanelPotensi() {
 
 function PanelWisata() {
   const queryClient = useQueryClient()
-  const [form, setForm] = useState({ nama: '', deskripsi: '', harga_tiket: '', alamat: '' })
+  const kosong = { nama: '', deskripsi: '', harga_tiket: '', alamat: '' }
+  const [form, setForm] = useState(kosong)
+  const [sunting, setSunting] = useState<Wisata | null>(null)
   const [fotoDibuka, setFotoDibuka] = useState<number | null>(null)
   const [galat, setGalat] = useState<ApiRequestError | null>(null)
 
@@ -439,10 +443,14 @@ function PanelWisata() {
     },
   })
 
-  const tambah = useMutation({
-    mutationFn: () => api.post('/admin/wisata', form),
+  const simpan = useMutation({
+    mutationFn: () =>
+      sunting
+        ? api.put(`/admin/wisata/${sunting.id}`, form)
+        : api.post('/admin/wisata', form),
     onSuccess: () => {
-      setForm({ nama: '', deskripsi: '', harga_tiket: '', alamat: '' })
+      setForm(kosong)
+      setSunting(null)
       setGalat(null)
       void queryClient.invalidateQueries({ queryKey: ['admin', 'wisata'] })
     },
@@ -458,12 +466,12 @@ function PanelWisata() {
   return (
     <div className="space-y-6">
       <Kartu
-        judul="Tambah Destinasi Wisata"
+        judul={sunting ? `Ubah Destinasi: ${sunting.nama}` : 'Tambah Destinasi Wisata'}
         anak={
           <form
             onSubmit={(e: FormEvent) => {
               e.preventDefault()
-              tambah.mutate()
+              simpan.mutate()
             }}
             className="space-y-4"
           >
@@ -512,9 +520,25 @@ function PanelWisata() {
               />
             </Kolom>
 
-            <Tombol type="submit" disabled={tambah.isPending}>
-              {tambah.isPending ? 'Menyimpan…' : 'Tambah Destinasi'}
-            </Tombol>
+            <div className="flex flex-wrap gap-2">
+              <Tombol type="submit" disabled={simpan.isPending}>
+                {simpan.isPending ? 'Menyimpan…' : sunting ? 'Simpan Perubahan' : 'Tambah Destinasi'}
+              </Tombol>
+
+              {sunting && (
+                <Tombol
+                  type="button"
+                  variasi="sekunder"
+                  onClick={() => {
+                    setSunting(null)
+                    setForm(kosong)
+                    setGalat(null)
+                  }}
+                >
+                  Batal
+                </Tombol>
+              )}
+            </div>
           </form>
         }
       />
@@ -550,14 +574,22 @@ function PanelWisata() {
                       >
                         {fotoDibuka === w.id ? 'Tutup Foto' : 'Kelola Foto'}
                       </button>
-                      <button
-                        onClick={() => {
-                          if (confirm(`Hapus destinasi "${w.nama}"?`)) hapus.mutate(w.id)
+                      <AksiBaris
+                        nama={`destinasi “${w.nama}”`}
+                        onSunting={() => {
+                          setSunting(w)
+                          setForm({
+                            nama: w.nama,
+                            deskripsi: w.deskripsi ?? '',
+                            harga_tiket: w.harga_tiket ?? '',
+                            alamat: w.alamat ?? '',
+                          })
+                          setGalat(null)
+                          window.scrollTo({ top: 0, behavior: 'smooth' })
                         }}
-                        className="text-red-600 hover:underline"
-                      >
-                        Hapus
-                      </button>
+                        onHapus={() => hapus.mutate(w.id)}
+                        sedangProses={hapus.isPending}
+                      />
                     </div>
                   </div>
 
@@ -586,14 +618,16 @@ function PanelWisata() {
 
 function PanelProduk() {
   const queryClient = useQueryClient()
-  const [form, setForm] = useState({
+  const kosong = {
     nama_produk: '',
     kategori: '',
     harga: '',
     satuan: '',
     nama_penjual: '',
     kontak_wa: '',
-  })
+  }
+  const [form, setForm] = useState(kosong)
+  const [sunting, setSunting] = useState<Produk | null>(null)
   const [fotoDibuka, setFotoDibuka] = useState<number | null>(null)
   const [galat, setGalat] = useState<ApiRequestError | null>(null)
 
@@ -605,17 +639,17 @@ function PanelProduk() {
     },
   })
 
-  const tambah = useMutation({
-    mutationFn: () => api.post('/admin/produk', { ...form, harga: form.harga || null }),
+  const simpan = useMutation({
+    mutationFn: () => {
+      const isi = { ...form, harga: form.harga || null }
+
+      return sunting
+        ? api.put(`/admin/produk/${sunting.id}`, isi)
+        : api.post('/admin/produk', isi)
+    },
     onSuccess: () => {
-      setForm({
-        nama_produk: '',
-        kategori: '',
-        harga: '',
-        satuan: '',
-        nama_penjual: '',
-        kontak_wa: '',
-      })
+      setForm(kosong)
+      setSunting(null)
       setGalat(null)
       void queryClient.invalidateQueries({ queryKey: ['admin', 'produk'] })
     },
@@ -631,12 +665,12 @@ function PanelProduk() {
   return (
     <div className="space-y-6">
       <Kartu
-        judul="Tambah Produk UMKM"
+        judul={sunting ? `Ubah Produk: ${sunting.nama_produk}` : 'Tambah Produk UMKM'}
         anak={
           <form
             onSubmit={(e: FormEvent) => {
               e.preventDefault()
-              tambah.mutate()
+              simpan.mutate()
             }}
             className="space-y-4"
           >
@@ -716,9 +750,25 @@ function PanelProduk() {
               </Kolom>
             </div>
 
-            <Tombol type="submit" disabled={tambah.isPending}>
-              {tambah.isPending ? 'Menyimpan…' : 'Tambah Produk'}
-            </Tombol>
+            <div className="flex flex-wrap gap-2">
+              <Tombol type="submit" disabled={simpan.isPending}>
+                {simpan.isPending ? 'Menyimpan…' : sunting ? 'Simpan Perubahan' : 'Tambah Produk'}
+              </Tombol>
+
+              {sunting && (
+                <Tombol
+                  type="button"
+                  variasi="sekunder"
+                  onClick={() => {
+                    setSunting(null)
+                    setForm(kosong)
+                    setGalat(null)
+                  }}
+                >
+                  Batal
+                </Tombol>
+              )}
+            </div>
           </form>
         }
       />
@@ -793,14 +843,24 @@ function PanelProduk() {
                           >
                             {fotoDibuka === p.id ? 'Tutup Foto' : 'Kelola Foto'}
                           </button>
-                          <button
-                            onClick={() => {
-                              if (confirm(`Hapus produk "${p.nama_produk}"?`)) hapus.mutate(p.id)
+                          <AksiBaris
+                            nama={`produk “${p.nama_produk}”`}
+                            onSunting={() => {
+                              setSunting(p)
+                              setForm({
+                                nama_produk: p.nama_produk,
+                                kategori: p.kategori ?? '',
+                                harga: p.harga == null ? '' : String(p.harga),
+                                satuan: p.satuan ?? '',
+                                nama_penjual: p.nama_penjual,
+                                kontak_wa: p.kontak_wa ?? '',
+                              })
+                              setGalat(null)
+                              window.scrollTo({ top: 0, behavior: 'smooth' })
                             }}
-                            className="text-red-600 hover:underline"
-                          >
-                            Hapus
-                          </button>
+                            onHapus={() => hapus.mutate(p.id)}
+                            sedangProses={hapus.isPending}
+                          />
                         </td>
                       </tr>
 

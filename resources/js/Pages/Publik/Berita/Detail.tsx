@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
-import { Head, Link } from '@inertiajs/react'
-import { ArrowLeft, CalendarDays, Eye, User } from 'lucide-react'
+import { Head } from '@inertiajs/react'
+import { CalendarDays, Eye, User } from 'lucide-react'
 import { KontenKaya } from '@/Components/KontenKaya'
-import { IsiHalaman } from '@/Components/ui'
+import { IsiHalaman, KepalaHalaman } from '@/Components/ui'
 import { LayoutPublik } from '@/Layouts/LayoutPublik'
 import { formatAngka, formatTanggal } from '@/lib/format'
 import type { BeritaDetail } from '@/types/api'
@@ -27,29 +27,17 @@ export default function BeritaDetailHalaman({ berita }: { berita: BeritaDetail }
         )}
       </Head>
 
-      {/* Kepala artikel bergaya navy: judul berita menjadi H1 halaman ini,
-          menggantikan judul modul. */}
-      <header className="border-b-4 border-gold bg-navy">
-        <div className="mx-auto max-w-3xl px-6 py-12 sm:py-14">
-          <Link
-            href="/berita"
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-white/70 transition hover:text-gold"
-          >
-            <ArrowLeft className="size-4" aria-hidden="true" />
-            Kembali ke daftar berita
-          </Link>
-
-          {berita.kategori && (
-            <p className="mt-6 text-xs font-semibold tracking-widest text-gold uppercase">
-              {berita.kategori.nama}
-            </p>
-          )}
-
-          <h1 className="font-heading mt-2 text-3xl leading-tight font-bold text-white sm:text-4xl">
-            {berita.judul}
-          </h1>
-
-          <p className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-white/60">
+      {/*
+        Kepala artikel memakai komponen yang sama dengan seluruh halaman lain
+        — judul beritalah yang menjadi H1 di sini, menggantikan judul modul.
+      */}
+      <KepalaHalaman
+        lebar="sempit"
+        kembali={{ ke: '/berita', label: 'Kembali ke daftar berita' }}
+        eyebrow={berita.kategori?.nama}
+        judul={berita.judul}
+        meta={
+          <>
             <span className="flex items-center gap-1.5">
               <CalendarDays className="size-4" aria-hidden="true" />
               {formatTanggal(berita.tanggal_publish)}
@@ -64,9 +52,9 @@ export default function BeritaDetailHalaman({ berita }: { berita: BeritaDetail }
               <Eye className="size-4" aria-hidden="true" />
               {formatAngka(berita.jumlah_dilihat)} kali dilihat
             </span>
-          </p>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       <IsiHalaman lebar="sempit">
         <article>
@@ -74,7 +62,7 @@ export default function BeritaDetailHalaman({ berita }: { berita: BeritaDetail }
             <img
               src={berita.gambar_utama}
               alt=""
-              className="mb-8 w-full rounded-2xl object-cover shadow-sm"
+              className="mb-8 aspect-[16/9] w-full rounded-xl border border-navy/10 object-cover"
             />
           )}
 

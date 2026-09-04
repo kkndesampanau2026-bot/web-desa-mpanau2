@@ -1,17 +1,19 @@
 import type { ReactNode } from 'react'
-import { Link } from '@inertiajs/react'
-import { Baby, Gauge, HandCoins, Target, Users, Wallet, type LucideIcon } from 'lucide-react'
+import { Baby, Gauge, HandCoins, Target, Users, Wallet } from 'lucide-react'
 import { LayoutPublik } from './LayoutPublik'
+import { BilahTab, KepalaHalaman, type ItemTab } from '@/Components/ui'
 import { useHalaman } from '@/types/inertia'
 
 /**
  * Kerangka modul Infografis — PRD 3.2.
  *
- * Mengikuti desain Figma: kepala halaman terpusat "Infografis {Desa}" diikuti
- * enam "pil" pemilih dimensi data. Pil menggantikan sub-navigasi lama; masing-
- * masing sub-halaman cukup merender kartu angka dan grafiknya sendiri.
+ * Kepala halaman navy yang sama dengan seluruh halaman publik, diikuti bilah
+ * tab enam dimensi data. Sebelumnya modul ini memakai judul terpusat di atas
+ * latar krem berikut pil bulat — satu-satunya halaman yang begitu, sehingga
+ * berpindah ke sini terasa seperti masuk ke situs lain. Judulnya kini jatuh
+ * pada garis kiri yang sama dengan logo dan tab pertama.
  */
-const TAB: { ke: string; label: string; ikon: LucideIcon }[] = [
+const TAB: ItemTab[] = [
   { ke: '/infografis/penduduk', label: 'Penduduk', ikon: Users },
   { ke: '/infografis/apbdes', label: 'APB Desa', ikon: Wallet },
   { ke: '/infografis/stunting', label: 'Stunting', ikon: Baby },
@@ -21,44 +23,17 @@ const TAB: { ke: string; label: string; ikon: LucideIcon }[] = [
 ]
 
 export function LayoutInfografis({ children }: { children: ReactNode }) {
-  const { props, url } = useHalaman()
-  const jalur = url.split('?')[0]
-  const namaDesa = props.pengaturan?.nama_desa ?? 'Desa Mpanau'
+  const namaDesa = useHalaman().props.pengaturan?.nama_desa ?? 'Desa Mpanau'
 
   return (
     <div>
-      <div className="mx-auto max-w-situs px-6 pt-14">
-        <header className="text-center">
-          <p className="text-sm font-semibold tracking-[0.14em] text-gold-dark uppercase">
-            Data Terbuka
-          </p>
-          <h1 className="font-heading mt-2 text-3xl font-bold text-navy sm:text-4xl">
-            Infografis {namaDesa}
-          </h1>
-        </header>
+      <KepalaHalaman
+        eyebrow="Data Terbuka"
+        judul={`Infografis ${namaDesa}`}
+        deskripsi="Ringkasan data desa dalam bentuk angka dan grafik, diperbarui mengikuti pemutakhiran data oleh perangkat desa."
+      />
 
-        <nav aria-label="Kategori infografis" className="mt-8 flex flex-wrap justify-center gap-3">
-          {TAB.map((tab) => {
-            const aktif = jalur === tab.ke
-
-            return (
-              <Link
-                key={tab.ke}
-                href={tab.ke}
-                aria-current={aktif ? 'page' : undefined}
-                className={`inline-flex items-center gap-2 rounded-full border-2 px-5 py-2.5 text-sm font-semibold transition ${
-                  aktif
-                    ? 'border-navy bg-navy text-white'
-                    : 'border-navy/20 bg-white text-navy hover:border-navy/40'
-                }`}
-              >
-                <tab.ikon className="size-4 shrink-0" aria-hidden="true" />
-                {tab.label}
-              </Link>
-            )
-          })}
-        </nav>
-      </div>
+      <BilahTab items={TAB} label="Kategori infografis" />
 
       {children}
     </div>
@@ -68,7 +43,7 @@ export function LayoutInfografis({ children }: { children: ReactNode }) {
 /**
  * Dipakai setiap sub-halaman infografis sebagai `Halaman.layout`.
  *
- * Menyusun dua kerangka sekaligus (situs → hero+pil) dalam satu pemanggilan,
+ * Menyusun dua kerangka sekaligus (situs → kepala+tab) dalam satu pemanggilan,
  * supaya keenam berkas halaman tidak perlu mengulang penumpukan yang sama.
  */
 export function bungkusInfografis(page: ReactNode) {

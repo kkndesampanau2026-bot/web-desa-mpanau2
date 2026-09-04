@@ -1,14 +1,25 @@
 /*
  * Token visualisasi data.
  *
- * Palet ini TERVALIDASI, bukan hasil kira-kira: ketiga slot lolos seluruh
- * pemeriksaan (rentang lightness, chroma, keterpisahan bagi penyandang buta
- * warna, dan kontras) pada mode terang maupun gelap.
+ * Palet ini diturunkan dari design system situs (navy → emas di atas krem),
+ * bukan dari palet generik: grafik infografis muncul berdampingan dengan
+ * kartu angka navy dan judul beraksen emas, sehingga deret berwarna biru-
+ * oranye generik membuat halaman terasa seperti tempelan dari situs lain.
  *
- * Catatan penting: pada mode terang, slot-3 (aqua) berada di bawah kontras
- * 3:1 terhadap latar. Karena itu setiap grafik yang memakainya WAJIB
- * menyertakan label nilai yang terbaca atau tabel data — warna tidak boleh
- * menjadi satu-satunya pembawa makna.
+ * Ketiga slot tetap memenuhi syarat yang sama seperti sebelumnya, dan itu
+ * yang membatasi pilihan warnanya:
+ *
+ *  - Kontras ≥ 3:1 terhadap latar kartu putih (batas WCAG untuk objek grafis).
+ *    slot-1 ±10,8:1 · slot-2 ±3,6:1 · slot-3 ±4,9:1.
+ *  - Terpisah oleh TERANG, bukan corak semata — jarak lightness ketiganya
+ *    lebar, sehingga tetap terbedakan pada penglihatan buta warna maupun
+ *    cetak hitam-putih.
+ *  - Warna tidak pernah menjadi satu-satunya pembawa makna: tiap grafik
+ *    menyertakan label nilai, legenda bernilai, dan tabel setara untuk
+ *    pembaca layar (lihat Grafik.tsx).
+ *
+ * Mengganti identitas warna situs cukup dilakukan di sini — seluruh halaman
+ * infografis memanggil token, tidak satu pun menulis kode warna sendiri.
  */
 .viz-root {
   color-scheme: light;
@@ -17,45 +28,46 @@
   --viz-text-primary: #0b0b0b;
   --viz-text-secondary: #52514e;
   --viz-text-muted: #898781;
-  --viz-grid: #e1e0d9;
-  --viz-axis: #c3c2b7;
+  --viz-grid: #e3e0d6;
+  --viz-axis: #c7c3b4;
 
-  --viz-series-1: #2a78d6; /* biru */
-  --viz-series-2: #eb6834; /* oranye */
-  --viz-series-3: #1baf7a; /* aqua */
+  --viz-series-1: #1a3d6e; /* navy — warna utama situs */
+  --viz-series-2: #a3821c; /* emas tua — aksen resmi situs */
+  --viz-series-3: #2e7d6b; /* hijau-teal — penyeimbang antara keduanya */
 
-  --viz-good: #0ca30c;
-  --viz-critical: #d03b3b;
+  --viz-good: #1f7a4d;
+  --viz-critical: #b3261e;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:where(:not([data-theme='light'])) .viz-root {
-    color-scheme: dark;
+/*
+ * TIDAK ADA varian mode gelap di sini, dan itu disengaja.
+ *
+ * Situs ini bertema terang saja — kartu grafik selalu putih di atas latar
+ * krem, dan tidak ada saklar tema gelap di mana pun (menu aksesibilitas hanya
+ * mengatur ukuran huruf dan kontras tinggi). Sebelumnya berkas ini membawa
+ * blok `@media (prefers-color-scheme: dark)` yang menukar ketiga warna deret
+ * menjadi versi terangnya begitu SISTEM OPERASI pengunjung disetel gelap —
+ * padahal kartunya tetap putih. Akibatnya justru kebalikan dari maksudnya:
+ * biru muda #7fb0ee di atas putih hanya berkontras ±2,2:1, di bawah ambang
+ * WCAG, dan hanya dialami sebagian pengunjung sehingga nyaris mustahil
+ * ditemukan saat diperiksa di satu komputer.
+ *
+ * Kalau kelak situs benar-benar punya tema gelap, tempat menambahkannya
+ * adalah blok `:root[data-theme='dark'] .viz-root` — dipicu oleh pilihan
+ * pengguna di situs ini, bukan oleh setelan sistem operasinya.
+ */
 
-    --viz-surface: #1a1a19;
-    --viz-text-primary: #ffffff;
-    --viz-text-secondary: #c3c2b7;
-    --viz-text-muted: #898781;
-    --viz-grid: #2c2c2a;
-    --viz-axis: #383835;
+/*
+ * Mode kontras tinggi (menu aksesibilitas) ikut menggelapkan deret warna:
+ * pada mode ini latar krem menjadi putih murni, sehingga warna yang tadinya
+ * pas justru kehilangan sebagian kontrasnya.
+ */
+.kontras-tinggi .viz-root {
+  --viz-series-1: #0b2545;
+  --viz-series-2: #6b5410;
+  --viz-series-3: #175d50;
 
-    --viz-series-1: #3987e5;
-    --viz-series-2: #d95926;
-    --viz-series-3: #199e70;
-  }
-}
-
-:root[data-theme='dark'] .viz-root {
-  color-scheme: dark;
-
-  --viz-surface: #1a1a19;
-  --viz-text-primary: #ffffff;
-  --viz-text-secondary: #c3c2b7;
-  --viz-text-muted: #898781;
-  --viz-grid: #2c2c2a;
-  --viz-axis: #383835;
-
-  --viz-series-1: #3987e5;
-  --viz-series-2: #d95926;
-  --viz-series-3: #199e70;
+  --viz-text-secondary: #1e293b;
+  --viz-text-muted: #334155;
+  --viz-axis: #94a3b8;
 }

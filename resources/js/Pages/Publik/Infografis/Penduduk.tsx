@@ -1,5 +1,6 @@
 import { Head } from '@inertiajs/react'
 import { EmptyState } from '@/Components/EmptyState'
+import { IsiHalaman } from '@/Components/ui'
 import { BatangKategori, GarisTren, KartuAngka, Lingkaran } from '@/Components/viz/Grafik'
 import { bungkusInfografis } from '@/Layouts/LayoutInfografis'
 import type { InfografisPenduduk } from '@/types/api'
@@ -19,7 +20,7 @@ export default function Penduduk({ data }: { data: InfografisPenduduk | null }) 
   }
 
   return (
-    <div className="mx-auto max-w-situs px-6 py-10">
+    <IsiHalaman lebar="lebar">
       <Head title="Infografis Kependudukan" />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -86,7 +87,7 @@ export default function Penduduk({ data }: { data: InfografisPenduduk | null }) 
           />
         </div>
       )}
-    </div>
+    </IsiHalaman>
   )
 }
 

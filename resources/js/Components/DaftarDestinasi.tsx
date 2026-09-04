@@ -13,11 +13,11 @@ export function DaftarDestinasi({ wisata }: { wisata: WisataRingkas[] }) {
   const jelajah = useJelajahPotensi()
 
   return (
-    <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:gap-6 2xl:grid-cols-4">
       {wisata.map((w) => (
         <li
           key={w.id}
-          className="group overflow-hidden rounded-2xl border border-black/5 bg-white shadow-sm transition hover:shadow-lg"
+          className="group overflow-hidden rounded-xl border border-navy/10 bg-white shadow-sm transition hover:shadow-md"
         >
           <Link href={jelajah.detail(w.slug)} className="flex h-full flex-col">
             {w.foto_utama ? (
@@ -25,10 +25,10 @@ export function DaftarDestinasi({ wisata }: { wisata: WisataRingkas[] }) {
                 src={w.foto_utama}
                 alt=""
                 loading="lazy"
-                className="h-44 w-full object-cover transition group-hover:scale-105"
+                className="aspect-[16/10] w-full object-cover transition duration-300 group-hover:scale-[1.03]"
               />
             ) : (
-              <div aria-hidden="true" className="h-44 w-full bg-navy/5" />
+              <div aria-hidden="true" className="aspect-[16/10] w-full bg-navy/5" />
             )}
 
             <div className="flex flex-1 flex-col p-5">

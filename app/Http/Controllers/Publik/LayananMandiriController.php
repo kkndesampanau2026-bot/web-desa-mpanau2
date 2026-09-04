@@ -11,8 +11,9 @@ use Inertia\Response;
  *
  * Bukan modul data tersendiri, melainkan halaman pengarah (hub) yang
  * mengumpulkan seluruh layanan mandiri publik yang alurnya sudah ada
- * (pengaduan, permohonan informasi PPID, cek penerima bansos) dalam satu
- * pintu masuk yang mudah ditemukan dari navigasi utama.
+ * (surat pengantar RT/dusun dan permohonan informasi PPID, masing-masing
+ * berikut pelacakannya) dalam satu pintu masuk yang mudah ditemukan dari
+ * navigasi utama.
  */
 class LayananMandiriController extends Controller
 {

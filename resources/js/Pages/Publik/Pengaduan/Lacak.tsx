@@ -23,7 +23,7 @@ export default function LacakPengaduan({
   const [masukan, setMasukan] = useState(tiket ?? '')
 
   return (
-    <div className="mx-auto max-w-2xl px-6 py-10">
+    <div className="mx-auto w-full max-w-baca px-5 py-10 sm:px-6 sm:py-12">
       <Head title="Lacak Pengaduan" />
 
       <h1 className="font-heading text-2xl font-bold text-navy">Lacak Pengaduan</h1>
@@ -70,7 +70,7 @@ export default function LacakPengaduan({
       )}
 
       {pengaduan && (
-        <div className="mt-8 rounded-2xl border border-black/5 bg-white p-5 shadow-sm">
+        <div className="mt-8 rounded-xl border border-navy/10 bg-white p-5 shadow-sm">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <p className="font-mono text-sm text-slate-600">{pengaduan.nomor_tiket}</p>
             <span className="rounded-full bg-navy/5 px-3 py-1 text-sm font-medium text-slate-800">
