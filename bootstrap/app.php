@@ -33,6 +33,13 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\HandleInertiaRequests::class,
         ]);
 
+        $middleware->trustProxies(at: '*');
+
+        // Header keamanan dipasang pada SELURUH respons, termasuk galat —
+        // sebuah respons 500 pun tidak boleh membocorkan versi PHP.
+        $middleware->append(\App\Http\Middleware\HeaderKeamanan::class);
+        // ...baris-baris lain di bawahnya tetap seperti semula
+
         // Sanctum SPA: mengubah request dari domain terdaftar
         // (SANCTUM_STATEFUL_DOMAINS) menjadi request bersesi cookie.
         //
