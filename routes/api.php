@@ -174,7 +174,8 @@ Route::prefix('v1')->group(function () {
         // Berita
         Route::middleware('permission:manage-news')->group(function () {
             Route::apiResource('berita', AdminNewsController::class)
-                ->parameters(['berita' => 'news']);
+                ->parameters(['berita' => 'news'])
+                ->names('admin.berita');
         });
 
         // Pengaturan Umum
