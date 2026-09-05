@@ -9,6 +9,7 @@
         "php": "^8.2",
         "ext-exif": "*",
         "ext-gd": "*",
+        "ext-zip": "*",
         "barryvdh/laravel-dompdf": "^3.1",
         "inertiajs/inertia-laravel": "^3.0",
         "laravel/framework": "^12.0",
