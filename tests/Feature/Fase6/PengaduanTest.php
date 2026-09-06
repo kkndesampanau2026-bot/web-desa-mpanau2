@@ -60,7 +60,7 @@ class PengaduanTest extends TestCase
         return $this->post('/api/v1/pengaduan', array_merge([
             'nama' => 'Budi Santoso',
             'no_telepon_wa' => '081234567890',
-            'kategori_pengaduan' => 'Kebersihan',
+            'kategori_pengaduan' => 'PEK. UMUM',
             'isi_pengaduan' => 'Sampah menumpuk di sekitar jalan dusun sudah dua minggu.',
         ], $ganti, $berkas), ['Accept' => 'application/json']);
     }
@@ -89,7 +89,7 @@ class PengaduanTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.nomor_tiket', $nomor)
             ->assertJsonPath('data.status', 'baru')
-            ->assertJsonPath('data.kategori_pengaduan', 'Kebersihan');
+            ->assertJsonPath('data.kategori_pengaduan', 'PEK. UMUM');
     }
 
     /** Nomor tiket adalah satu-satunya kunci akses, jadi tidak boleh ditebak. */
@@ -148,7 +148,7 @@ class PengaduanTest extends TestCase
             ->assertExactJson([
                 'success' => true,
                 'message' => null,
-                'data' => ['Umum', 'Sosial', 'Keamanan', 'Kesehatan', 'Kebersihan', 'Permintaan'],
+                'data' => ['PENDIDIKAN', 'KESEHATAN', 'PEK. UMUM', 'PERUMAHAN', 'TRANTIBUM', 'SOSIAL'],
             ]);
     }
 

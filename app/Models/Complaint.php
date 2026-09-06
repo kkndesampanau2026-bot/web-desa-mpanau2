@@ -13,9 +13,16 @@ class Complaint extends Model
 {
     use SoftDeletes;
 
-    /** Enam kategori persis seperti situs referensi (PRD 6.15). */
+    /**
+     * Enam bidang urusan pemerintahan desa.
+     *
+     * Kolomnya bertipe ENUM di basis data. Menambah atau mengubah daftar ini
+     * WAJIB disertai migrasi yang ikut mengubah definisi kolomnya — bila
+     * tidak, MySQL menolak setiap pengaduan baru dan kegagalannya baru muncul
+     * saat warga pertama menekan "Kirim".
+     */
     public const KATEGORI = [
-        'Umum', 'Sosial', 'Keamanan', 'Kesehatan', 'Kebersihan', 'Permintaan',
+        'PENDIDIKAN', 'KESEHATAN', 'PEK. UMUM', 'PERUMAHAN', 'TRANTIBUM', 'SOSIAL',
     ];
 
     public const STATUS = ['baru', 'diproses', 'selesai', 'ditolak'];

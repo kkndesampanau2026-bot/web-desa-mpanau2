@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Download } from 'lucide-react'
 import { api, ApiRequestError, type ApiSuccess } from '@/lib/api'
 import { Kartu, Kolom, Pemberitahuan, Pilihan, TextArea, Tombol } from '@/Components/Admin/Form'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
@@ -89,7 +90,8 @@ export default function PengaduanAdminPage() {
         <h1 className="text-xl font-semibold text-slate-900">Pengaduan Masyarakat</h1>
         <p className="mt-1 text-sm text-slate-600">
           Tanggapi pengaduan warga. Nomor telepon pelapor hanya terbuka saat Anda
-          membuka detailnya, dan pembukaan itu tercatat pada log aktivitas.
+          membuka detailnya, dan pembukaan itu tercatat pada log aktivitas —
+          begitu pula setiap pengunduhan rekap.
         </p>
       </div>
 
@@ -106,15 +108,31 @@ export default function PengaduanAdminPage() {
         </div>
       )}
 
-      <div className="flex flex-wrap gap-2">
-        <Chip aktif={!filterStatus} onClick={() => setFilterStatus('')}>
-          Semua
-        </Chip>
-        {STATUS.map((s) => (
-          <Chip key={s} aktif={filterStatus === s} onClick={() => setFilterStatus(s)}>
-            {LABEL_STATUS[s]}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-2">
+          <Chip aktif={!filterStatus} onClick={() => setFilterStatus('')}>
+            Semua
           </Chip>
-        ))}
+          {STATUS.map((s) => (
+            <Chip key={s} aktif={filterStatus === s} onClick={() => setFilterStatus(s)}>
+              {LABEL_STATUS[s]}
+            </Chip>
+          ))}
+        </div>
+
+        {/*
+          Tautan biasa, bukan panggilan XHR: yang dituju adalah unduhan berkas.
+          Filter status yang sedang aktif ikut dibawa, supaya rekap yang
+          terunduh sama isinya dengan tabel yang sedang dilihat operator —
+          bukan diam-diam berisi seluruh pengaduan.
+        */}
+        <a
+          href={`/admin/pengaduan/ekspor${filterStatus ? `?status=${encodeURIComponent(filterStatus)}` : ''}`}
+          className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+        >
+          <Download className="size-4" aria-hidden="true" />
+          Unduh Rekap (Excel)
+        </a>
       </div>
 
       <Kartu

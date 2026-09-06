@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AkunController;
 use App\Http\Controllers\Admin\BannerController;
+use App\Http\Controllers\Admin\EksporPengaduanController;
 use App\Http\Controllers\Admin\PenggunaController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Publik\BerandaController;
@@ -316,6 +317,17 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
         Route::delete('/pengguna/{pengguna}', [PenggunaController::class, 'destroy'])
             ->name('pengguna.hapus');
     });
+
+    /*
+    | Rekap pengaduan sebagai berkas Excel.
+    |
+    | Izinnya sama dengan layar Pengaduan (`respond-complaint`) — berkasnya
+    | memuat nama, nomor WhatsApp, dan isi aduan warga, jadi tidak boleh lebih
+    | longgar daripada layar yang menampilkannya satu per satu.
+    */
+    Route::get('/pengaduan/ekspor', EksporPengaduanController::class)
+        ->middleware('permission:respond-complaint')
+        ->name('pengaduan.ekspor');
 
     /*
     | Banner hero beranda.

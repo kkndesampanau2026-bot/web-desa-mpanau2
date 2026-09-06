@@ -36,7 +36,7 @@ class CaptchaTest extends TestCase
         return $this->postJson('/api/v1/pengaduan', array_merge([
             'nama' => 'Budi Santoso',
             'no_telepon_wa' => '081234567890',
-            'kategori_pengaduan' => 'Kebersihan',
+            'kategori_pengaduan' => 'PEK. UMUM',
             'isi_pengaduan' => 'Sampah menumpuk di jalan dusun sudah dua minggu.',
         ], $tambahan));
     }
