@@ -168,6 +168,16 @@ export default function Beranda({
 
             {wilayah && <p className="mt-3 text-sm text-white/75 sm:text-base">{wilayah}</p>}
           </div>
+          <div className="mt-6 flex flex-wrap justify-center gap-3 sm:mt-8">
+              <Link
+                href="/layanan-mandiri/surat-pengantar"
+                className="mt-15 inline-flex items-center gap-2 rounded-md bg-gold px-5 py-3 text-sm font-semibold text-navy transition hover:bg-gold-light focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-light"
+              >
+                <FileText className="size-4" aria-hidden="true" />
+                Layanan Mandiri Surat Pengantar
+                <ArrowRight className="size-4" aria-hidden="true" />
+              </Link>
+          </div>
         </div>
       </section>
 
