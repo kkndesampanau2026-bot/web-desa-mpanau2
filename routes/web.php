@@ -202,15 +202,21 @@ Route::post('/layanan-mandiri/surat-pengantar', [SuratPengantarController::class
     ->name('surat.kirim');
 
 /*
-| Unduh PDF surat.
+| Membuka & mengunduh PDF surat.
 |
-| Menuntut tanggal lahir pemohon, bukan nomor tiket saja — lihat catatan pada
-| SuratPengantarController::lacak(). Batas lajunya menahan penebakan pasangan
-| tiket + tanggal lahir secara beruntun.
+| Keduanya menuntut tanggal lahir pemohon, bukan nomor tiket saja — lihat
+| catatan pada SuratPengantarController::lacak(). Batas lajunya menahan
+| penebakan pasangan tiket + tanggal lahir secara beruntun, dan keduanya
+| berbagi ember yang sama supaya menambah tombol "Lihat" tidak sekaligus
+| melipatgandakan jatah tebakan.
 */
 Route::get('/layanan-mandiri/surat-pengantar/{tiket}/unduh', [SuratPengantarController::class, 'unduh'])
     ->middleware('throttle:cek-surat')
     ->name('surat.unduh');
+
+Route::get('/layanan-mandiri/surat-pengantar/{tiket}/lihat', [SuratPengantarController::class, 'lihat'])
+    ->middleware('throttle:cek-surat')
+    ->name('surat.lihat');
 
 /*
 |--------------------------------------------------------------------------

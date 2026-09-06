@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
 import { Head } from '@inertiajs/react'
-import { Download, Gavel } from 'lucide-react'
+import { Gavel } from 'lucide-react'
 import { EmptyState } from '@/Components/EmptyState'
-import { IsiHalaman, Kartu, KepalaHalaman } from '@/Components/ui'
+import { AksiBerkasPdf, IsiHalaman, Kartu, KepalaHalaman } from '@/Components/ui'
 import { LayoutPublik } from '@/Layouts/LayoutPublik'
 import type { DasarHukumPpid } from '@/types/api'
 
@@ -50,15 +50,11 @@ export default function DasarHukum({ dasar_hukum: daftar }: { dasar_hukum: Dasar
                   )}
 
                   {d.file && (
-                    <a
-                      href={d.file}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-navy underline-offset-4 hover:text-gold-dark hover:underline"
-                    >
-                      <Download className="size-4" aria-hidden="true" />
-                      Unduh dokumen
-                    </a>
+                    <AksiBerkasPdf
+                      file={d.file}
+                      nama={d.judul_regulasi}
+                      className="mt-3"
+                    />
                   )}
                 </div>
               </Kartu>

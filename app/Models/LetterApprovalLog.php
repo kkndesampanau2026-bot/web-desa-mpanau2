@@ -32,6 +32,18 @@ class LetterApprovalLog extends Model
 
     public const PDF_DIUNDUH = 'pdf_diunduh';
 
+    /**
+     * Berkas dibuka di peramban tanpa diunduh.
+     *
+     * Dicatat terpisah dari PDF_DIUNDUH, bukan disamakan dengannya: keduanya
+     * sama-sama akses terhadap dokumen berisi data pribadi, tetapi menyebut
+     * "diunduh" untuk berkas yang hanya dilihat membuat jejaknya berbohong.
+     *
+     * Tidak muncul pada lini masa warga — tahapannya daftar tetap (lihat
+     * `Pages/Publik/Surat/status.ts`), dan membuka berkas bukan tahap proses.
+     */
+    public const PDF_DILIHAT = 'pdf_dilihat';
+
     public const NOTIFIKASI_GAGAL = 'notifikasi_gagal';
 
     protected $fillable = [

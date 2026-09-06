@@ -1,6 +1,6 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { Head, router } from '@inertiajs/react'
-import { Check, Circle, Download, Search, TicketCheck } from 'lucide-react'
+import { Check, Circle, Download, Eye, Search, TicketCheck } from 'lucide-react'
 import {
   GAYA_INPUT,
   IsiHalaman,
@@ -180,15 +180,30 @@ function HasilPengajuan({
         {p.pdf_tersedia && !ditolak && (
           <div className="flex flex-wrap gap-3 border-t border-navy/5 px-6 py-5">
             {/*
-              Tautan biasa, bukan <Link> Inertia: yang dituju adalah unduhan
-              berkas, dan Inertia akan mencoba menafsirkan responsnya sebagai
-              halaman. Tanggal lahir ikut dikirim karena endpoint unduh
-              memverifikasinya ulang — halaman ini tidak memegang wewenang
-              apa pun yang dapat diwariskan ke sana.
+              Tautan biasa, bukan <Link> Inertia: yang dituju adalah berkas,
+              dan Inertia akan mencoba menafsirkan responsnya sebagai halaman.
+              Tanggal lahir ikut dikirim karena kedua endpoint berkas
+              memverifikasinya ulang — halaman ini tidak memegang wewenang apa
+              pun yang dapat diwariskan ke sana.
+
+              "Lihat" membuka tab baru: surat berada di disk privat dan hanya
+              keluar lewat endpoint sendiri, jadi ia tidak dapat ditanam
+              sebagai <embed> pada halaman ini tanpa membuka jalur kedua ke
+              berkas yang sama.
             */}
             <a
-              href={`/layanan-mandiri/surat-pengantar/${p.ticket_number}/unduh?tanggal_lahir=${encodeURIComponent(tanggalLahir)}`}
+              href={`/layanan-mandiri/surat-pengantar/${p.ticket_number}/lihat?tanggal_lahir=${encodeURIComponent(tanggalLahir)}`}
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 rounded-lg bg-navy px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-navy-light"
+            >
+              <Eye className="size-4" aria-hidden="true" />
+              {p.status === 'DISETUJUI' ? 'Lihat Surat' : 'Lihat Draft'}
+            </a>
+
+            <a
+              href={`/layanan-mandiri/surat-pengantar/${p.ticket_number}/unduh?tanggal_lahir=${encodeURIComponent(tanggalLahir)}`}
+              className="inline-flex items-center justify-center gap-2 rounded-lg border-2 border-navy/20 bg-white px-6 py-2.5 text-sm font-semibold text-navy transition hover:border-navy/40"
             >
               <Download className="size-4" aria-hidden="true" />
               {p.status === 'DISETUJUI' ? 'Unduh Surat (PDF)' : 'Unduh Draft (PDF)'}

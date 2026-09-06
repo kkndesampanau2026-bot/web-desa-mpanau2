@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from '@inertiajs/react'
-import { Check, ChevronDown, type LucideIcon } from 'lucide-react'
+import { Check, ChevronDown, Download, Eye, type LucideIcon } from 'lucide-react'
 import { useHalaman } from '@/types/inertia'
 
 /**
@@ -365,6 +365,69 @@ export function TombolTautan({
     >
       {children}
     </Link>
+  )
+}
+
+
+/**
+ * Pasangan aksi untuk satu berkas PDF publik: melihat & mengunduh.
+ *
+ * Dipakai di seluruh halaman PPID (dasar hukum, daftar informasi, dan dokumen
+ * balasan permohonan), karena itu ia tinggal di sini alih-alih disalin tiga
+ * kali.
+ *
+ * Kedua tombol menunjuk URL yang SAMA; yang membedakan hanya atribut
+ * `download`. Sebelumnya hanya ada satu tautan berlabel "Unduh" yang
+ * sebenarnya membuka berkas di tab baru — peramban menyajikan PDF secara
+ * inline selama tidak diminta menyimpannya. Labelnya menjanjikan hal yang
+ * tidak dilakukannya, dan tidak ada jalan menyimpan berkas tanpa melewati
+ * penampil PDF lebih dulu.
+ *
+ * `download` hanya berlaku untuk sumber se-origin. Itu terpenuhi di sini:
+ * URL-nya dibangun `asset()` dari APP_URL, bukan menunjuk penyimpanan luar.
+ *
+ * Nama dokumen ikut sebagai teks tersembunyi. Tanpa itu, pembaca layar pada
+ * halaman berisi belasan berkas hanya mendengar "Lihat, Unduh, Lihat, Unduh…"
+ * tanpa tahu milik dokumen yang mana.
+ */
+export function AksiBerkasPdf({
+  file,
+  nama,
+  labelUnduh = 'Unduh',
+  className = '',
+}: {
+  file: string
+  /** Judul dokumen — untuk label aksesibilitas, tidak ditampilkan. */
+  nama: string
+  labelUnduh?: string
+  className?: string
+}) {
+  const gaya =
+    'inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition'
+
+  return (
+    <div className={`flex flex-wrap items-center gap-2 ${className}`}>
+      <a
+        href={file}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`${gaya} bg-navy text-white hover:bg-navy-light`}
+      >
+        <Eye className="size-4" aria-hidden="true" />
+        Lihat
+        <span className="sr-only">dokumen {nama}</span>
+      </a>
+
+      <a
+        href={file}
+        download
+        className={`${gaya} border-2 border-navy/15 text-navy hover:border-navy/35`}
+      >
+        <Download className="size-4" aria-hidden="true" />
+        {labelUnduh}
+        <span className="sr-only">dokumen {nama}</span>
+      </a>
+    </div>
   )
 }
 

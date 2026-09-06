@@ -220,13 +220,57 @@ class SuratPengantarController extends Controller
     }
 
     /**
-     * Mengunduh PDF surat.
+     * Mengunduh PDF surat — peramban menyimpannya sebagai berkas.
+     *
+     * Pemeriksaan wewenangnya ada di `berkasSuratMilikPemohon()`, dipakai
+     * bersama `lihat()`.
+     */
+    public function unduh(Request $request, string $tiket): StreamedResponse
+    {
+        $permohonan = $this->berkasSuratMilikPemohon($request, $tiket);
+
+        $this->catatAksesBerkas($permohonan, LetterApprovalLog::PDF_DIUNDUH, 'downloaded', 'diunduh');
+
+        return Storage::disk(PdfSuratPengantar::DISK)->download(
+            $permohonan->pdf_path,
+            $this->namaBerkas($permohonan),
+            ['Content-Type' => 'application/pdf']
+        );
+    }
+
+    /**
+     * Menampilkan surat di dalam peramban, tanpa mengunduhnya lebih dulu.
+     *
+     * Wewenangnya dipastikan ulang persis seperti `unduh()` — tiket dan
+     * tanggal lahir — karena berkas ini hidup di disk PRIVAT dan tidak pernah
+     * punya URL storage yang dapat ditebak. Yang membedakan hanya
+     * `Content-Disposition`: `response()` menyajikannya `inline`, sedangkan
+     * `download()` memaksa peramban menyimpannya.
+     *
+     * Aksesnya tetap dicatat. Melihat isi surat sama saja membaca data pribadi
+     * pemohon, jadi tidak ada alasan jejaknya lebih longgar daripada unduhan.
+     */
+    public function lihat(Request $request, string $tiket): StreamedResponse
+    {
+        $permohonan = $this->berkasSuratMilikPemohon($request, $tiket);
+
+        $this->catatAksesBerkas($permohonan, LetterApprovalLog::PDF_DILIHAT, 'viewed', 'dibuka');
+
+        return Storage::disk(PdfSuratPengantar::DISK)->response(
+            $permohonan->pdf_path,
+            $this->namaBerkas($permohonan),
+            ['Content-Type' => 'application/pdf']
+        );
+    }
+
+    /**
+     * Memastikan pemanggil memang pemohon surat ini, lalu mengembalikannya.
      *
      * Tiket saja tidak cukup, sama seperti halaman cek status: tanggal lahir
      * ikut diminta. Berkas juga tidak pernah disajikan lewat URL storage —
-     * ia hidup di disk privat dan hanya keluar lewat method ini.
+     * ia hidup di disk privat dan hanya keluar lewat kedua method di atas.
      */
-    public function unduh(Request $request, string $tiket): StreamedResponse
+    private function berkasSuratMilikPemohon(Request $request, string $tiket): LetterRequest
     {
         $request->validate(['tanggal_lahir' => ['required', 'date']]);
 
@@ -238,7 +282,7 @@ class SuratPengantarController extends Controller
         abort_if($permohonan === null, 404, 'Surat tidak ditemukan.');
         abort_if(blank($permohonan->pdf_path), 404, 'Berkas surat belum tersedia.');
 
-        // Draft tetap boleh diunduh pemohonnya sendiri (ia bercap DRAFT dan
+        // Draft tetap boleh dibuka pemohonnya sendiri (ia bercap DRAFT dan
         // berguna untuk memeriksa ejaan sebelum disetujui), tetapi pengajuan
         // yang sudah ditolak tidak menyisakan berkas apa pun.
         abort_if($permohonan->status === LetterRequest::DITOLAK, 404, 'Pengajuan ini ditolak.');
@@ -249,25 +293,31 @@ class SuratPengantarController extends Controller
             'Berkas surat tidak ditemukan.'
         );
 
+        return $permohonan;
+    }
+
+    private function catatAksesBerkas(
+        LetterRequest $permohonan,
+        string $aksiRiwayat,
+        string $aksiAudit,
+        string $kataKerja,
+    ): void {
         LetterApprovalLog::create([
             'letter_request_id' => $permohonan->id,
             'role' => 'WARGA',
-            'action' => LetterApprovalLog::PDF_DIUNDUH,
+            'action' => $aksiRiwayat,
         ]);
 
         $this->audit->log(
-            'downloaded',
+            $aksiAudit,
             $permohonan,
-            "Surat {$permohonan->ticket_number} diunduh pemohon"
+            "Surat {$permohonan->ticket_number} {$kataKerja} pemohon"
         );
+    }
 
-        $namaBerkas = 'Surat-Pengantar-'.$permohonan->ticket_number.'.pdf';
-
-        return Storage::disk(PdfSuratPengantar::DISK)->download(
-            $permohonan->pdf_path,
-            $namaBerkas,
-            ['Content-Type' => 'application/pdf']
-        );
+    private function namaBerkas(LetterRequest $permohonan): string
+    {
+        return 'Surat-Pengantar-'.$permohonan->ticket_number.'.pdf';
     }
 
     // -----------------------------------------------------------------

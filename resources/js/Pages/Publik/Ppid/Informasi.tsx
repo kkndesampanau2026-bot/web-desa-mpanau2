@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { Head } from '@inertiajs/react'
-import { ChevronDown, Download, FileText } from 'lucide-react'
-import { IsiHalaman, KepalaHalaman } from '@/Components/ui'
+import { ChevronDown, FileText } from 'lucide-react'
+import { AksiBerkasPdf, IsiHalaman, KepalaHalaman } from '@/Components/ui'
 import { LayoutPublik } from '@/Layouts/LayoutPublik'
 import { formatTanggal } from '@/lib/format'
 import type { InformasiPpid, JenisInformasiPpid } from '@/types/api'
@@ -112,10 +112,18 @@ function Akordeon({
   )
 }
 
-/** Kartu dokumen di dalam kategori — dapat diklik untuk mengunduh PDF. */
+/**
+ * Kartu dokumen di dalam kategori.
+ *
+ * Dua aksi terpisah, bukan satu baris yang dapat diklik. Sebelumnya seluruh
+ * baris adalah tautan berlabel "Unduh" yang sebenarnya MEMBUKA berkas di tab
+ * baru — peramban menyajikan PDF secara inline selama tidak diminta
+ * mengunduhnya. Labelnya karena itu menjanjikan hal yang tidak dilakukannya,
+ * dan tidak ada cara menyimpan berkas tanpa melewati penampil PDF lebih dulu.
+ */
 function Dokumen({ info }: { info: InformasiPpid }) {
-  const isi = (
-    <>
+  return (
+    <div className="flex flex-wrap items-start justify-between gap-3 rounded-lg bg-cream p-3">
       <div className="min-w-0 flex-1">
         <p className="font-semibold text-navy">{info.judul}</p>
         {info.deskripsi && (
@@ -128,28 +136,8 @@ function Dokumen({ info }: { info: InformasiPpid }) {
         </p>
       </div>
 
-      {info.file && (
-        <span className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-gold-dark">
-          <Download className="size-4" aria-hidden="true" />
-          <span className="sr-only sm:not-sr-only">Unduh</span>
-        </span>
-      )}
-    </>
-  )
-
-  const kelas = 'flex items-start justify-between gap-3 rounded-lg bg-cream p-3'
-
-  return info.file ? (
-    <a
-      href={info.file}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={`${kelas} transition hover:bg-gold/10`}
-    >
-      {isi}
-    </a>
-  ) : (
-    <div className={kelas}>{isi}</div>
+      {info.file && <AksiBerkasPdf file={info.file} nama={info.judul} />}
+    </div>
   )
 }
 

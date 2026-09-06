@@ -278,6 +278,55 @@ class SuratPengantarTest extends TestCase
         ]);
     }
 
+    public function test_warga_dapat_melihat_surat_tanpa_mengunduhnya(): void
+    {
+        $this->ajukan();
+        $p = $this->permohonanTerbaru();
+
+        $this->tekanTombol('111111', "approve_rt:{$p->uuid}");
+        $this->tekanTombol('222222', "approve_kadus:{$p->uuid}");
+
+        $respons = $this->get(
+            "/layanan-mandiri/surat-pengantar/{$p->ticket_number}/lihat?tanggal_lahir=1989-03-12"
+        )->assertOk()->assertHeader('content-type', 'application/pdf');
+
+        // Inilah satu-satunya pembeda dari endpoint unduh: peramban diminta
+        // menampilkan berkasnya, bukan menyimpannya.
+        $this->assertStringStartsWith(
+            'inline',
+            $respons->headers->get('content-disposition')
+        );
+
+        // Dicatat sebagai "dilihat", BUKAN "diunduh" — menyamakan keduanya
+        // membuat jejak aksesnya berbohong.
+        $this->assertDatabaseHas('letter_approval_logs', [
+            'letter_request_id' => $p->id,
+            'action' => LetterApprovalLog::PDF_DILIHAT,
+        ]);
+        $this->assertDatabaseMissing('letter_approval_logs', [
+            'letter_request_id' => $p->id,
+            'action' => LetterApprovalLog::PDF_DIUNDUH,
+        ]);
+    }
+
+    public function test_lihat_pdf_menuntut_wewenang_yang_sama_dengan_unduh(): void
+    {
+        $this->ajukan();
+        $p = $this->permohonanTerbaru();
+
+        $dasar = "/layanan-mandiri/surat-pengantar/{$p->ticket_number}/lihat";
+
+        // Tanpa tanggal lahir sama sekali.
+        $this->get($dasar)->assertSessionHasErrors('tanggal_lahir');
+
+        // Tanggal lahir keliru — tiket saja tidak pernah cukup.
+        $this->get("{$dasar}?tanggal_lahir=1990-01-01")->assertNotFound();
+
+        // Pengajuan yang ditolak tidak menyisakan berkas apa pun.
+        $this->tolakLewatTelegram('111111', 'rt', $p->uuid, 'Tidak sesuai.');
+        $this->get("{$dasar}?tanggal_lahir=1989-03-12")->assertNotFound();
+    }
+
     // ==================================================================
     // Skenario 2 & 3 — penolakan
     // ==================================================================

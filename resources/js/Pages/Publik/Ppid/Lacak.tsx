@@ -1,7 +1,8 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { Head, router } from '@inertiajs/react'
-import { ClipboardCheck, Download, Search } from 'lucide-react'
+import { ClipboardCheck, Search } from 'lucide-react'
 import {
+  AksiBerkasPdf,
   GAYA_INPUT,
   IsiHalaman,
   Kartu,
@@ -121,15 +122,11 @@ export default function Lacak({
 
             {permohonan.dokumen_balasan && (
               <div className="border-t border-navy/5 px-6 py-5">
-                <a
-                  href={permohonan.dokumen_balasan}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-lg bg-navy px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-navy-light"
-                >
-                  <Download className="size-4" aria-hidden="true" />
-                  Unduh Dokumen Balasan
-                </a>
+                <AksiBerkasPdf
+                  file={permohonan.dokumen_balasan}
+                  nama="balasan permohonan informasi"
+                  labelUnduh="Unduh Dokumen Balasan"
+                />
               </div>
             )}
           </Kartu>
