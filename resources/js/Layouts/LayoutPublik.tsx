@@ -1,11 +1,12 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from '@inertiajs/react'
-import { Clock, Mail, MapPin, Menu, Phone, Users, X } from 'lucide-react'
+import { Clock, Mail, MapPin, Menu, Phone, PhoneCall, Users, X } from 'lucide-react'
 import { formatAngka } from '@/lib/format'
 import { useHalaman } from '@/types/inertia'
 import { GAYA_WADAH } from '@/Components/ui'
 import { MenuAksesibilitas } from '@/Components/MenuAksesibilitas'
 import { AduanWarga } from '@/Components/AduanWarga'
+import { IkonSosialMedia, labelPlatform } from '@/Components/IkonSosialMedia'
 
 /**
  * Kerangka halaman publik — PRD 3.1.
@@ -66,6 +67,18 @@ function sedangAktif(url: string, menu: ItemMenu): boolean {
     : jalur === menu.ke || jalur.startsWith(`${menu.ke}/`)
 }
 
+/**
+ * Nomor untuk atribut `href="tel:"`.
+ *
+ * Operator menuliskan nomor apa adanya di CMS — "(0451) 123-456" atau
+ * "0812 3456 7890" — dan spasi maupun tanda kurung membuat sebagian ponsel
+ * gagal menyalakan panggilan. Yang ditampilkan tetap teks asli operator;
+ * yang dibersihkan hanya tautannya.
+ */
+function tautanTelepon(nomor: string): string {
+  return nomor.replace(/[^\d+]/g, '')
+}
+
 export function LayoutPublik({ children }: { children: ReactNode }) {
   const { props, url } = useHalaman()
   const pengaturan = props.pengaturan
@@ -93,6 +106,11 @@ export function LayoutPublik({ children }: { children: ReactNode }) {
     .join(' • ')
 
   const jamSenin = pengaturan?.jam_kerja?.senin
+
+  // Keduanya diisi lewat CMS → Pengaturan Umum, dan sudah ikut pada prop
+  // bersama setiap halaman publik — tidak perlu diambil ulang di sini.
+  const sosialMedia = pengaturan?.sosial_media ?? []
+  const nomorPenting = pengaturan?.nomor_telepon_penting ?? []
 
   return (
     <div className="bg-cream">
@@ -267,6 +285,30 @@ export function LayoutPublik({ children }: { children: ReactNode }) {
                 Website resmi Pemerintah {namaDesa}
                 {wilayah && `, ${wilayah}`}.
               </p>
+
+              {/*
+                Sosial media resmi desa (CMS → Pengaturan Umum). Blok ini
+                menghilang seluruhnya bila belum ada satu pun tautan — deretan
+                ikon kosong di footer hanya menyisakan pertanyaan.
+              */}
+              {sosialMedia.length > 0 && (
+                <ul className="mt-4 flex flex-wrap gap-2">
+                  {sosialMedia.map((sosmed) => (
+                    <li key={`${sosmed.platform}-${sosmed.url}`}>
+                      <a
+                        href={sosmed.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={labelPlatform(sosmed.platform)}
+                        className="grid size-9 place-items-center rounded-full border border-white/15 text-white/75 transition hover:border-gold hover:bg-gold hover:text-navy"
+                      >
+                        <IkonSosialMedia platform={sosmed.platform} className="size-4" />
+                        <span className="sr-only">{labelPlatform(sosmed.platform)}</span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
 
             {/* Kontak Kantor Desa. */}
@@ -341,6 +383,49 @@ export function LayoutPublik({ children }: { children: ReactNode }) {
               </p>
             </div>
           </div>
+
+          {/*
+            Nomor telepon penting (CMS → Pengaturan Umum).
+
+            Diletakkan sebagai pita sendiri di bawah keempat kolom, bukan
+            dijejalkan menjadi kolom kelima: jumlahnya ditentukan operator dan
+            bisa bertambah kapan saja, sementara grid empat kolom akan pecah
+            begitu isinya lebih dari itu. Di sini ia bebas mengalir ke baris
+            berikutnya.
+          */}
+          {nomorPenting.length > 0 && (
+            <section
+              aria-labelledby="judul-nomor-penting"
+              className="mt-8 border-t border-white/10 pt-6 sm:mt-10"
+            >
+              <h2
+                id="judul-nomor-penting"
+                className="font-heading text-sm font-bold tracking-wide text-gold uppercase"
+              >
+                Nomor Penting
+              </h2>
+              <ul className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                {nomorPenting.map((nomor) => (
+                  <li key={`${nomor.nama_layanan}-${nomor.nomor}`}>
+                    <a
+                      href={`tel:${tautanTelepon(nomor.nomor)}`}
+                      className="flex items-center gap-2.5 rounded-lg bg-white/5 px-3 py-2.5 transition hover:bg-white/10"
+                    >
+                      <PhoneCall className="size-4 shrink-0 text-gold/80" aria-hidden="true" />
+                      <span className="min-w-0">
+                        <span className="block truncate text-xs text-white/60">
+                          {nomor.nama_layanan}
+                        </span>
+                        <span className="block truncate text-sm font-semibold text-white tabular-nums">
+                          {nomor.nomor}
+                        </span>
+                      </span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
           <p className="mt-8 border-t border-white/10 pt-6 text-xs text-white/45 sm:mt-10">
             © {new Date().getFullYear()} Pemerintah {namaDesa}. Seluruh hak cipta dilindungi.
