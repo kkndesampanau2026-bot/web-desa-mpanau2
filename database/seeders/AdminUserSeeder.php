@@ -30,6 +30,7 @@ class AdminUserSeeder extends Seeder
         $akun = [
             ['name' => 'Super Admin', 'email' => 'superadmin@desa.test', 'role' => 'Super Admin'],
             ['name' => 'Admin Desa Mpanau', 'email' => 'admin@desa.test', 'role' => 'Admin Utama'],
+            ['name' => 'Operator Desa', 'email' => 'operator@desa.test', 'role' => 'Operator Utama'],
             ['name' => 'Operator Konten', 'email' => 'konten@desa.test', 'role' => 'Operator Konten'],
             ['name' => 'Operator PPID', 'email' => 'ppid@desa.test', 'role' => 'Operator PPID'],
         ];
@@ -50,6 +51,6 @@ class AdminUserSeeder extends Seeder
             $user->syncRoles([$data['role']]);
         }
 
-        $this->command->info('4 akun operator dibuat. Kata sandi: '.$password);
+        $this->command->info(count($akun).' akun operator dibuat. Kata sandi: '.$password);
     }
 }

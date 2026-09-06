@@ -99,10 +99,20 @@ Created by `AdminUserSeeder`, non-production environments only. Password via `SE
 |---|---|---|
 | `superadmin@desa.test` | Super Admin | Everything, via `Gate::before` in `AppServiceProvider` (bypasses permission checks entirely — new permissions are automatically covered without reseeding) |
 | `admin@desa.test` | Admin Utama | Everything including personal data (`view-*-pii` permissions) |
+| `operator@desa.test` | Operator Utama | Everything Admin Utama can do **except `manage-users`** — see below |
 | `konten@desa.test` | Operator Konten | Berita, galeri, potensi, wisata, produk, POI, pengaduan |
 | `ppid@desa.test` | Operator PPID | PPID module + information requests only (no pengaduan access — see `docs/DEVIASI.md` §C15 for why this separation matters) |
 
 Permissions are managed via `spatie/laravel-permission`; `manage-*` (can edit a record) and `view-*-pii` (can see raw NIK) are intentionally separate abilities so an operator can be given work access without personal-data exposure.
+
+`Operator Utama` is defined as `allPermissions()` **minus** `manage-users` (`RolePermissionSeeder::permissionsOperatorUtama()`), not as a hand-written list — a new permission added in a later phase must reach this role automatically, or the module silently 403s for it while appearing in Admin Utama's menu. Withholding `manage-users` is the whole point of the role: anyone who can create accounts can create an Admin Utama account, and so recover every ability being withheld.
+
+Account management lives in two deliberately separate screens:
+
+- `/admin/pengguna` (`manage-users`) — create/edit/delete other people's accounts, assign roles. Guards enforced server-side: only a Super Admin may mint a Super Admin, nobody may edit their own row here (the fastest way to lock yourself out), and the last active account holding `manage-users` cannot be demoted, deactivated, or deleted.
+- `/admin/akun` (**no permission**) — the signed-in operator's own name/email/phone plus a password change that requires the current password. It carries no permission requirement on purpose: every operator must be able to rotate their own password, including ones who may not see any other Sistem screen.
+
+Both are Inertia-native (controller → page props → `useForm`) and live in `app/Http/Controllers/Admin/` — the pattern new admin modules follow, unlike the older screens still on `/api/v1`.
 
 ## Known sharp edges
 

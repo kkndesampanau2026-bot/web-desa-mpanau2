@@ -119,6 +119,19 @@ class RolePermissionSeeder extends Seeder
         Role::findOrCreate('Admin Utama', 'web')
             ->syncPermissions(self::allPermissions());
 
+        /*
+         * Operator Utama — sekuat Admin Utama, KECUALI mengelola akun.
+         *
+         * Dibuat agar pekerjaan harian desa (mengisi seluruh modul, termasuk
+         * data penduduk & bansos) tidak menuntut penyerahan akun Admin Utama.
+         * Yang ditahan hanyalah `manage-users`, dan penahanan itu bermakna:
+         * siapa pun yang memegangnya dapat membuat akun baru berperan Admin
+         * Utama, sehingga memberikannya sama saja dengan memberikan seluruh
+         * kewenangan yang tersisa.
+         */
+        Role::findOrCreate('Operator Utama', 'web')
+            ->syncPermissions(self::permissionsOperatorUtama());
+
         Role::findOrCreate('Operator Konten', 'web')->syncPermissions([
             ...self::PERMISSION_GROUPS['konten'],
             ...self::PERMISSION_GROUPS['pengaduan'],
@@ -139,5 +152,21 @@ class RolePermissionSeeder extends Seeder
     public static function allPermissions(): array
     {
         return array_merge(...array_values(self::PERMISSION_GROUPS));
+    }
+
+    /**
+     * Seluruh permission kecuali pengelolaan akun.
+     *
+     * Ditulis sebagai selisih dari `allPermissions()`, bukan sebagai daftar
+     * tersendiri: permission baru yang ditambahkan pada fase berikutnya harus
+     * OTOMATIS ikut ke peran ini. Daftar manual akan diam-diam tertinggal, dan
+     * gejalanya membingungkan — modul baru muncul di menu Admin Utama tetapi
+     * berbalas 403 bagi Operator Utama.
+     *
+     * @return list<string>
+     */
+    public static function permissionsOperatorUtama(): array
+    {
+        return array_values(array_diff(self::allPermissions(), ['manage-users']));
     }
 }

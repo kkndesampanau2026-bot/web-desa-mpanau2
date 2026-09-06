@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Admin\AkunController;
+use App\Http\Controllers\Admin\PenggunaController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Publik\BerandaController;
 use App\Http\Controllers\Publik\BeritaController;
@@ -286,4 +288,38 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
             ->middleware("permission:{$izin}")
             ->name($jalur);
     }
+
+    /*
+    | Pengelolaan akun operator.
+    |
+    | Berbeda dari daftar di atas: datanya datang sebagai prop Inertia dari
+    | controller, bukan lewat XHR ke /api/v1 — pola yang wajib diikuti modul
+    | baru (lihat docs/MIGRASI-MONOLIT.md Fase 4).
+    |
+    | `manage-users` sengaja dijaga terpisah dari izin lain. Peran "Operator
+    | Utama" memegang seluruh izin KECUALI ini, sebab yang dapat membuat akun
+    | dapat membuat akun Admin Utama — dan dengan begitu memperoleh kembali
+    | apa pun yang ditahan darinya.
+    */
+    Route::middleware('permission:manage-users')->group(function () {
+        Route::get('/pengguna', [PenggunaController::class, 'index'])->name('pengguna');
+        Route::post('/pengguna', [PenggunaController::class, 'store'])->name('pengguna.simpan');
+        Route::put('/pengguna/{pengguna}', [PenggunaController::class, 'update'])
+            ->name('pengguna.perbarui');
+        Route::delete('/pengguna/{pengguna}', [PenggunaController::class, 'destroy'])
+            ->name('pengguna.hapus');
+    });
+
+    /*
+    | Akun sendiri — TANPA permission tambahan.
+    |
+    | Setiap operator harus dapat mengganti kata sandinya sendiri, termasuk
+    | Operator Konten yang tidak berhak membuka satu pun layar grup Sistem.
+    | Mensyaratkan `manage-users` di sini akan memaksa pilihan antara memberi
+    | semua orang hak membuat akun, atau mengunci mereka dari kata sandinya
+    | sendiri.
+    */
+    Route::get('/akun', [AkunController::class, 'tampilkan'])->name('akun');
+    Route::put('/akun', [AkunController::class, 'perbarui'])->name('akun.perbarui');
+    Route::put('/akun/sandi', [AkunController::class, 'ubahSandi'])->name('akun.sandi');
 });

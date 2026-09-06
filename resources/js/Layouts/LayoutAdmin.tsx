@@ -15,8 +15,10 @@ import {
   MessageSquareWarning,
   Newspaper,
   Settings,
+  ShieldCheck,
   Store,
   Target,
+  UserCog,
   Users,
   UsersRound,
   Wallet,
@@ -105,6 +107,14 @@ const MENU: GrupMenu[] = [
     judul: 'Sistem',
     item: [
       { ke: '/admin/pengaturan', label: 'Pengaturan Umum', izin: 'manage-settings', ikon: Settings },
+      { ke: '/admin/pengguna', label: 'Akun Operator', izin: 'manage-users', ikon: ShieldCheck },
+      /*
+       * "Akun Saya" dijaga `view-dashboard`, bukan `manage-users`: setiap
+       * peran memegang izin itu, sehingga menunya tampil bagi semua operator —
+       * termasuk yang tidak berhak membuka layar Sistem lainnya. Route-nya
+       * sendiri memang tidak menuntut permission apa pun.
+       */
+      { ke: '/admin/akun', label: 'Akun Saya', izin: 'view-dashboard', ikon: UserCog },
     ],
   },
 ]
@@ -314,14 +324,27 @@ export function LayoutAdmin({
                 )}
               </div>
 
-              <div className="hidden text-right sm:block">
-                <p className="text-sm font-medium text-slate-900">{pengguna?.nama}</p>
-                <p className="text-xs text-slate-500">{pengguna?.roles.join(', ')}</p>
-              </div>
+              {/*
+                Nama & avatar sekaligus menjadi jalan ke "Akun Saya" — tempat
+                yang paling dulu dicari orang untuk mengganti kata sandinya,
+                jauh sebelum menelusuri sidebar.
+              */}
+              <Link
+                href="/admin/akun"
+                aria-label="Akun saya"
+                className="flex items-center gap-3 rounded-full transition hover:opacity-80"
+              >
+                <span className="hidden text-right sm:block">
+                  <span className="block text-sm font-medium text-slate-900">{pengguna?.nama}</span>
+                  <span className="block text-xs text-slate-500">
+                    {pengguna?.roles.join(', ')}
+                  </span>
+                </span>
 
-              <span className="grid size-9 shrink-0 place-items-center rounded-full bg-teal-600 text-sm font-semibold text-white">
-                {inisial}
-              </span>
+                <span className="grid size-9 shrink-0 place-items-center rounded-full bg-teal-600 text-sm font-semibold text-white">
+                  {inisial}
+                </span>
+              </Link>
 
               {/*
                 Keluar wajib POST: sebagai tautan GET ia dapat dipicu oleh
