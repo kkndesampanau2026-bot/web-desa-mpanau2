@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from '@inertiajs/react'
-import { Clock, Mail, MapPin, Menu, Phone, PhoneCall, Users, X } from 'lucide-react'
+import { Clock, Mail, MapPin, Menu, Phone, Users, X } from 'lucide-react'
 import { formatAngka } from '@/lib/format'
 import { useHalaman } from '@/types/inertia'
 import { GAYA_WADAH } from '@/Components/ui'
@@ -265,7 +265,12 @@ export function LayoutPublik({ children }: { children: ReactNode }) {
       */}
       <footer className="border-t-4 border-gold bg-navy-dark text-white/70">
         <div className={`${GAYA_WADAH} py-10 sm:py-12`}>
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4 lg:gap-10">
+          {/*
+            Lima kolom mulai lg, dengan jarak antar-kolom yang dirapatkan di
+            sana dan kembali melebar di xl — pada 1024px, lima kolom ber-gap
+            10 menyisakan lebar teks yang terlalu sempit untuk alamat kantor.
+          */}
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-5 lg:gap-6 xl:gap-10">
             {/* Identitas & deskripsi singkat. */}
             <div>
               <div className="flex items-center gap-2.5">
@@ -372,6 +377,36 @@ export function LayoutPublik({ children }: { children: ReactNode }) {
               </ul>
             </div>
 
+            {/*
+              Nomor Penting — bersebelahan dengan Tautan Cepat dan memakai
+              bentuk daftar yang sama. Nomornya ikut ditampilkan di bawah nama
+              layanan, bukan hanya tersembunyi di dalam `href`: sebagian besar
+              pengunjung membuka situs ini dari komputer kantor desa, di mana
+              tautan `tel:` tidak menelepon apa pun.
+            */}
+            {nomorPenting.length > 0 && (
+              <div>
+                <h2 className="font-heading text-sm font-bold tracking-wide text-gold uppercase">
+                  Nomor Penting
+                </h2>
+                <ul className="mt-3 space-y-2 text-sm">
+                  {nomorPenting.map((nomor) => (
+                    <li key={`${nomor.nama_layanan}-${nomor.nomor}`}>
+                      <a
+                        href={`tel:${tautanTelepon(nomor.nomor)}`}
+                        className="group block underline-offset-4 hover:text-gold"
+                      >
+                        <span className="group-hover:underline">{nomor.nama_layanan}</span>
+                        <span className="block text-xs text-white/45 tabular-nums">
+                          {nomor.nomor}
+                        </span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             {/* Jam Pelayanan — keterangan naratif. */}
             <div>
               <h2 className="font-heading text-sm font-bold tracking-wide text-gold uppercase">
@@ -383,49 +418,6 @@ export function LayoutPublik({ children }: { children: ReactNode }) {
               </p>
             </div>
           </div>
-
-          {/*
-            Nomor telepon penting (CMS → Pengaturan Umum).
-
-            Diletakkan sebagai pita sendiri di bawah keempat kolom, bukan
-            dijejalkan menjadi kolom kelima: jumlahnya ditentukan operator dan
-            bisa bertambah kapan saja, sementara grid empat kolom akan pecah
-            begitu isinya lebih dari itu. Di sini ia bebas mengalir ke baris
-            berikutnya.
-          */}
-          {nomorPenting.length > 0 && (
-            <section
-              aria-labelledby="judul-nomor-penting"
-              className="mt-8 border-t border-white/10 pt-6 sm:mt-10"
-            >
-              <h2
-                id="judul-nomor-penting"
-                className="font-heading text-sm font-bold tracking-wide text-gold uppercase"
-              >
-                Nomor Penting
-              </h2>
-              <ul className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                {nomorPenting.map((nomor) => (
-                  <li key={`${nomor.nama_layanan}-${nomor.nomor}`}>
-                    <a
-                      href={`tel:${tautanTelepon(nomor.nomor)}`}
-                      className="flex items-center gap-2.5 rounded-lg bg-white/5 px-3 py-2.5 transition hover:bg-white/10"
-                    >
-                      <PhoneCall className="size-4 shrink-0 text-gold/80" aria-hidden="true" />
-                      <span className="min-w-0">
-                        <span className="block truncate text-xs text-white/60">
-                          {nomor.nama_layanan}
-                        </span>
-                        <span className="block truncate text-sm font-semibold text-white tabular-nums">
-                          {nomor.nomor}
-                        </span>
-                      </span>
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
 
           <p className="mt-8 border-t border-white/10 pt-6 text-xs text-white/45 sm:mt-10">
             © {new Date().getFullYear()} Pemerintah {namaDesa}. Seluruh hak cipta dilindungi.

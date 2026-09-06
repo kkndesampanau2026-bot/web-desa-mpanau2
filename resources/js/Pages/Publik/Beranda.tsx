@@ -2,7 +2,6 @@ import type { ReactNode } from 'react'
 import { Head, Link } from '@inertiajs/react'
 import {
   ArrowRight,
-  FileSignature,
   FileText,
   Landmark,
   MapPin,
@@ -12,10 +11,10 @@ import {
   Wallet,
 } from 'lucide-react'
 import { formatTanggal } from '@/lib/format'
-import { GAYA_WADAH, IsiHalaman, JudulSeksi, Kartu, TombolTautan } from '@/Components/ui'
+import { GAYA_WADAH, IsiHalaman, JudulSeksi, Kartu } from '@/Components/ui'
 import { LayoutPublik } from '@/Layouts/LayoutPublik'
 import { useHalaman } from '@/types/inertia'
-import type { BeritaRingkas, Profil } from '@/types/api'
+import type { BeritaRingkas } from '@/types/api'
 
 /**
  * Beranda — PRD Bagian 4 no. 1: hero + ringkasan cepat seluruh modul
@@ -61,10 +60,8 @@ const PINTASAN = [
 ]
 
 export default function Beranda({
-  profil,
   berita_terbaru: beritaTerbaru,
 }: {
-  profil: Profil | null
   berita_terbaru: BeritaRingkas[]
 }) {
   // Identitas desa datang dari prop bersama — sudah dipakai header & footer,
@@ -107,11 +104,14 @@ export default function Beranda({
 
         Lapisan navy di atasnya BUKAN hiasan: teks putih dan label emas kecil
         harus tetap terbaca di atas foto apa pun yang diunggah admin — termasuk
-        langit cerah. Dasarnya 80% — pada bagian paling terang sekalipun, teks
-        putih tetap berkontras ±9:1 dan label emas-muda ±5,8:1 (ambang WCAG
-        4,5:1 untuk teks kecil). Gradiennya menambah kepekatan di sisi kiri
-        tempat judul berada, dan menipis ke kanan sehingga fotonya paling
-        terbaca di sana — di mana hanya ada kutipan visi berhuruf besar.
+        langit cerah. Kepekatannya 80% — pada bagian paling terang sekalipun,
+        teks putih tetap berkontras ±9:1 dan label emas-muda ±5,8:1 (ambang
+        WCAG 4,5:1 untuk teks kecil).
+
+        Lapisannya rata, tanpa gradien. Sebelumnya ia lebih pekat di kiri
+        tempat judul berada dan menipis ke kanan; sejak isinya dipusatkan,
+        kemiringan itu justru meletakkan bagian paling terang tepat di belakang
+        salah satu sisi teks.
 
         Label kecil memakai `gold-light`, bukan `gold`: emas tua berkontras
         hanya ±4,2:1 di atas latar bercampur foto ini, sedangkan di atas navy
@@ -148,48 +148,28 @@ export default function Beranda({
 
         <div
           aria-hidden="true"
-          className="absolute inset-0 -z-10 bg-navy/80 bg-gradient-to-r from-navy/60 via-navy/25 to-transparent"
+          className="absolute inset-0 -z-10 bg-navy/80"
         />
 
         <div className={`${GAYA_WADAH} py-14 sm:py-16`}>
-          <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-16">
-            <div>
-              <p className="flex items-center gap-3 text-xs font-semibold tracking-[0.14em] text-gold-light uppercase">
-                <span aria-hidden="true" className="h-px w-8 bg-gold-light/60" />
-                Situs Resmi Pemerintah Desa
-              </p>
+          {/*
+            Satu kolom terpusat: identitas desa saja, tanpa tombol maupun
+            kutipan visi. Garis emas dipasang di kedua sisi label — dengan teks
+            yang kini rata tengah, satu garis di kiri saja membuatnya terbaca
+            miring.
+          */}
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="flex items-center justify-center gap-3 text-xs font-semibold tracking-[0.14em] text-gold-light uppercase">
+              <span aria-hidden="true" className="h-px w-8 bg-gold-light/60" />
+              Situs Resmi Pemerintah Desa
+              <span aria-hidden="true" className="h-px w-8 bg-gold-light/60" />
+            </p>
 
-              <h1 className="font-heading mt-4 text-3xl leading-tight font-bold text-white sm:text-4xl lg:text-5xl">
-                {namaDesa}
-              </h1>
+            <h1 className="font-heading mt-4 text-3xl leading-tight font-bold text-white sm:text-4xl lg:text-5xl">
+              {namaDesa}
+            </h1>
 
-              {wilayah && <p className="mt-3 text-sm text-white/75 sm:text-base">{wilayah}</p>}
-
-              <div className="mt-8 flex flex-wrap gap-3">
-                <TombolTautan ke="/profil" gaya="utama" ukuran="besar">
-                  Profil Desa
-                  <ArrowRight className="size-4" aria-hidden="true" />
-                </TombolTautan>
-                <Link
-                  href="/layanan-mandiri"
-                  className="inline-flex items-center gap-2 rounded-full border border-white/40 px-6 py-3 text-base font-semibold text-white transition hover:border-white hover:bg-white/10"
-                >
-                  <FileSignature className="size-4" aria-hidden="true" />
-                  Layanan Mandiri
-                </Link>
-              </div>
-            </div>
-
-            {profil?.visi && (
-              <blockquote className="border-l-2 border-gold-light/70 pl-5 lg:pl-8">
-                <p className="font-heading text-lg leading-relaxed text-white sm:text-xl">
-                  “{profil.visi}”
-                </p>
-                <footer className="mt-4 text-xs font-semibold tracking-[0.14em] text-gold-light uppercase">
-                  Visi Desa
-                </footer>
-              </blockquote>
-            )}
+            {wilayah && <p className="mt-3 text-sm text-white/75 sm:text-base">{wilayah}</p>}
           </div>
         </div>
       </section>
