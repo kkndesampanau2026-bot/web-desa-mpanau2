@@ -1,0 +1,79 @@
+#!/bin/sh
+#
+# Penyiapan kontainer sebelum nginx/php-fpm/queue dijalankan supervisor.
+# Dijalankan ulang pada SETIAP deploy dan restart, jadi setiap langkah di sini
+# harus aman dijalankan berkali-kali.
+
+set -e
+
+cd /var/www/html
+
+echo "==> Menyiapkan direktori storage"
+# Volume Railway dipasang pada storage/app dan membayangi isi bawaan citra,
+# sehingga sub-direktorinya harus dibuat ulang tiap boot.
+mkdir -p storage/app/public \
+         storage/app/private \
+         storage/framework/cache/data \
+         storage/framework/sessions \
+         storage/framework/views \
+         storage/logs \
+         bootstrap/cache
+chown -R www-data:www-data storage bootstrap/cache
+chmod -R ug+rwX storage bootstrap/cache
+
+echo "==> Menyetel port nginx: ${PORT:-8080}"
+sed "s/__PORT__/${PORT:-8080}/g" /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
+
+if [ -z "${APP_KEY}" ]; then
+    echo "GAGAL: APP_KEY belum diisi. Jalankan 'php artisan key:generate --show' lalu simpan hasilnya sebagai variabel APP_KEY di Railway."
+    exit 1
+fi
+
+if [ -z "${PII_HASH_KEY}" ]; then
+    echo "GAGAL: PII_HASH_KEY belum diisi. Modul Kependudukan memerlukannya untuk membuat blind index NIK/No. KK. Buat dengan 'php artisan pii:key'."
+    exit 1
+fi
+
+echo "==> Menunggu basis data ${DB_HOST}:${DB_PORT:-3306}"
+percobaan=0
+until php -r 'exit(@fsockopen(getenv("DB_HOST"), (int) (getenv("DB_PORT") ?: 3306), $e, $s, 3) ? 0 : 1);' 2>/dev/null; do
+    percobaan=$((percobaan + 1))
+    if [ "$percobaan" -ge 30 ]; then
+        echo "GAGAL: basis data tidak merespons setelah 60 detik."
+        exit 1
+    fi
+    sleep 2
+done
+
+echo "==> Membangun ulang cache konfigurasi"
+# Cache lama dari citra/volume dibuang lebih dulu agar variabel Railway yang
+# baru benar-benar terpakai.
+php artisan config:clear
+php artisan config:cache
+# CATATAN: `route:cache` sengaja TIDAK dijalankan. routes/api.php memuat dua
+# route yang aksinya berupa closure (/api/v1/health dan /api/v1/admin/ping),
+# dan Laravel menolak men-serialisasi closure — perintahnya akan gagal.
+php artisan view:cache
+
+echo "==> Menautkan storage publik"
+php artisan storage:link --force
+
+echo "==> Menjalankan migrasi"
+php artisan migrate --force
+
+if [ "${JALANKAN_SEEDER}" = "true" ]; then
+    echo "==> Menjalankan seeder"
+    php artisan db:seed --force
+fi
+
+# Seeder membuat empat akun operator contoh dan selalu menyetel status_aktif
+# menjadi true. Daftar di bawah dimatikan setiap boot supaya akun demo tidak
+# pernah bisa dipakai masuk dari internet, bahkan bila seeder terlanjur
+# dijalankan ulang.
+if [ -n "${AKUN_DEMO_NONAKTIF}" ]; then
+    echo "==> Menonaktifkan akun demo: ${AKUN_DEMO_NONAKTIF}"
+    php artisan tinker --execute="\App\Models\User::whereIn('email', array_map('trim', explode(',', '${AKUN_DEMO_NONAKTIF}')))->update(['status_aktif' => false]);"
+fi
+
+echo "==> Aplikasi siap. Menjalankan nginx, php-fpm, dan pekerja antrean."
+exec supervisord -c /etc/supervisor/supervisord.conf
