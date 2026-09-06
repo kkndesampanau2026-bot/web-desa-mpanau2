@@ -136,21 +136,12 @@ export function LayoutPublik({ children }: { children: ReactNode }) {
         */}
         <div className="bg-navy">
           <div className={`${GAYA_WADAH} flex h-16 items-center justify-between gap-4 sm:h-18`}>
-            <Link href="/" className="flex min-w-0 items-center gap-3">
-              {pengaturan?.logo ? (
-                <img
-                  src={pengaturan.logo}
-                  alt=""
-                  className="size-10 shrink-0 rounded-full object-cover sm:size-11"
-                />
-              ) : (
-                <span
-                  aria-hidden="true"
-                  className="font-heading grid size-10 shrink-0 place-items-center rounded-full border-2 border-gold text-sm font-bold text-gold sm:size-11"
-                >
-                  DM
-                </span>
-              )}
+            <Link href="/" className="flex min-w-0 items-center gap-1.5">
+              <img
+                src="/gambar/logo_desa.png"
+                alt=""
+                className="size-10 shrink-0 rounded-full object-contain sm:size-11"
+              />
               <span className="min-w-0">
                 <span className="font-heading block truncate leading-tight font-bold text-white">
                   {namaDesa}
@@ -255,20 +246,11 @@ export function LayoutPublik({ children }: { children: ReactNode }) {
             sana dan kembali melebar di xl — pada 1024px, lima kolom ber-gap
             10 menyisakan lebar teks yang terlalu sempit untuk alamat kantor.
           */}
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-5 lg:gap-6 xl:gap-10">
+          <div className="grid items-start gap-x-8 gap-y-8 sm:grid-cols-2 lg:grid-cols-[1.35fr_1.35fr_1fr_1fr_1.2fr] lg:gap-x-8 lg:gap-y-10 xl:gap-x-12">
             {/* Identitas & deskripsi singkat. */}
             <div>
-              <div className="flex items-center gap-2.5">
-                {pengaturan?.logo ? (
-                  <img src={pengaturan.logo} alt="" className="size-10 rounded-full object-cover" />
-                ) : (
-                  <span
-                    aria-hidden="true"
-                    className="font-heading grid size-10 shrink-0 place-items-center rounded-full border-2 border-gold text-xs font-bold text-gold"
-                  >
-                    DM
-                  </span>
-                )}
+              <div className="flex items-center gap-1.5">
+                <img src="/gambar/logo_desa.png" alt="" className="size-10 rounded-full object-contain" />
                 <span className="font-heading text-lg font-bold text-white">{namaDesa}</span>
               </div>
               <p className="mt-3 text-sm leading-relaxed text-white/70">
@@ -346,12 +328,12 @@ export function LayoutPublik({ children }: { children: ReactNode }) {
               </h2>
               <ul className="mt-3 space-y-2 text-sm">
                 {[
-                  ['/profil', 'Profil Desa'],
+                  // ['/profil', 'Profil Desa'],
                   ['/potensi?kategori=Pariwisata', 'Wisata Desa'],
                   ['/potensi?kategori=Ekonomi', 'Ekonomi Desa'],
                   ['/ppid', 'PPID Desa'],
-                  ['/layanan-mandiri', 'Layanan Mandiri'],
-                  ['/berita', 'Berita Desa'],
+                  ['/infografis/apbdes', 'APB Desa'],
+                  // ['/berita', 'Berita Desa'],
                 ].map(([ke, label]) => (
                   <li key={ke}>
                     <Link href={ke} className="underline-offset-4 hover:text-gold hover:underline">
