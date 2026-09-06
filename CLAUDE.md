@@ -112,7 +112,9 @@ Account management lives in two deliberately separate screens:
 - `/admin/pengguna` (`manage-users`) — create/edit/delete other people's accounts, assign roles. Guards enforced server-side: only a Super Admin may mint a Super Admin, nobody may edit their own row here (the fastest way to lock yourself out), and the last active account holding `manage-users` cannot be demoted, deactivated, or deleted.
 - `/admin/akun` (**no permission**) — the signed-in operator's own name/email/phone plus a password change that requires the current password. It carries no permission requirement on purpose: every operator must be able to rotate their own password, including ones who may not see any other Sistem screen.
 
-Both are Inertia-native (controller → page props → `useForm`) and live in `app/Http/Controllers/Admin/` — the pattern new admin modules follow, unlike the older screens still on `/api/v1`.
+Both are Inertia-native (controller → page props → `useForm`) and live in `app/Http/Controllers/Admin/` — the pattern new admin modules follow, unlike the older screens still on `/api/v1`. `/admin/banner` (`manage-settings`) follows it too.
+
+The homepage hero reads its images from `village_banners`, not from `settings.banner` — that column still exists only so the migration that introduced the table stays reversible, and `Setting::$fillable` no longer lists it. An empty table means the hero falls back to the built-in `public/gambar/banner-beranda-*` files. `BannerController` must clear the `settings:{villageId}` cache on every write, or uploads stay invisible on the homepage for up to an hour and operators conclude the upload failed.
 
 ## Known sharp edges
 

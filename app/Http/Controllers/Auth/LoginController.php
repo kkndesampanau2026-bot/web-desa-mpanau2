@@ -51,7 +51,11 @@ class LoginController extends Controller
             'identitas' => [
                 'nama_desa' => $situs['nama_desa'],
                 'logo' => $situs['logo'],
-                'banner' => $situs['banner'],
+                // Hero login memakai SATU gambar: layar ini tidak berputar,
+                // dan carousel di balik formulir kredensial lebih mengganggu
+                // daripada membantu. Yang dipakai gambar pertama — urutan yang
+                // sama dengan yang ditetapkan operator untuk beranda.
+                'banner' => $situs['banner'][0]['url'] ?? null,
                 'wilayah' => $situs['wilayah'],
             ],
         ]);

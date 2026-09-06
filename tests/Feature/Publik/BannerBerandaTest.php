@@ -2,9 +2,10 @@
 
 namespace Tests\Feature\Publik;
 
-use App\Models\Setting;
+use App\Http\Controllers\Admin\BannerController;
 use App\Models\User;
 use App\Models\Village;
+use App\Models\VillageBanner;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -14,14 +15,13 @@ use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 /**
- * Banner beranda yang dapat diganti perangkat desa (Pengaturan Umum).
+ * Banner beranda yang dapat diganti perangkat desa (CMS → Banner Beranda).
  *
- * Sebelumnya banner berupa berkas statis di `public/gambar/`; menggantinya
- * menuntut akses ke server. Yang diuji di sini bukan sekadar "kolomnya ada",
- * melainkan rantai lengkapnya: unggahan lewat CMS tersimpan, muncul sebagai
- * prop bersama Inertia, dan — yang paling mudah terlewat — Beranda tetap
- * tampil normal ketika banner belum pernah diunggah, karena itulah keadaan
- * setiap desa pada hari pertama.
+ * Semula satu kolom `settings.banner`; kini daftar gambar yang digilir hero.
+ * Yang diuji bukan sekadar "kolomnya ada", melainkan rantai lengkapnya:
+ * unggahan lewat CMS tersimpan, muncul berurutan sebagai prop bersama Inertia,
+ * dan — yang paling mudah terlewat — Beranda tetap tampil normal ketika belum
+ * ada satu pun banner, karena itulah keadaan setiap desa pada hari pertama.
  */
 class BannerBerandaTest extends TestCase
 {
@@ -41,47 +41,82 @@ class BannerBerandaTest extends TestCase
         ]);
     }
 
-    private function operator(): User
+    private function operator(string $peran = 'Admin Utama'): User
     {
         $user = User::create([
             'name' => 'Admin Uji',
-            'email' => 'admin@uji.test',
-            'password' => Hash::make('rahasia'),
+            'email' => 'admin'.uniqid().'@uji.test',
+            'password' => Hash::make('rahasia123'),
             'village_id' => $this->village->id,
         ]);
-        $user->assignRole('Admin Utama');
+        $user->assignRole($peran);
 
         return $user;
     }
 
-    public function test_banner_kosong_membuat_beranda_memakai_berkas_bawaan(): void
+    // -----------------------------------------------------------------
+    // Sisi publik
+    // -----------------------------------------------------------------
+
+    public function test_tanpa_banner_beranda_memakai_berkas_bawaan(): void
     {
         $this->get('/')
             ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page->where('pengaturan.banner', null));
+            ->assertInertia(fn (Assert $page) => $page->where('pengaturan.banner', []));
     }
 
-    public function test_operator_dapat_mengunggah_banner_dan_tampil_di_beranda(): void
+    public function test_banner_tampil_berurutan_sebagai_prop_bersama(): void
+    {
+        // Sengaja disisipkan dengan urutan terbalik dari urutan pembuatan,
+        // supaya yang diuji benar-benar `urutan_tampil` dan bukan kebetulan id.
+        VillageBanner::create([
+            'village_id' => $this->village->id, 'path' => 'banner/kedua.webp',
+            'judul' => 'Sawah', 'urutan_tampil' => 2,
+        ]);
+        VillageBanner::create([
+            'village_id' => $this->village->id, 'path' => 'banner/pertama.webp',
+            'judul' => 'Balai Desa', 'urutan_tampil' => 1,
+        ]);
+
+        $this->get('/')->assertInertia(fn (Assert $page) => $page
+            ->has('pengaturan.banner', 2)
+            ->where('pengaturan.banner.0.url', asset('storage/banner/pertama.webp'))
+            ->where('pengaturan.banner.0.judul', 'Balai Desa')
+            ->where('pengaturan.banner.1.url', asset('storage/banner/kedua.webp'))
+        );
+    }
+
+    // -----------------------------------------------------------------
+    // Sisi CMS
+    // -----------------------------------------------------------------
+
+    public function test_operator_dapat_mengunggah_beberapa_banner_sekaligus(): void
     {
         Storage::fake('public');
 
         $this->actingAs($this->operator())
-            ->put('/api/v1/admin/settings', [
-                'nama_desa' => 'Desa Uji',
-                'banner' => UploadedFile::fake()->image('banner.jpg', 1600, 900),
+            ->post('/admin/banner', [
+                'gambar' => [
+                    UploadedFile::fake()->image('satu.jpg', 1600, 900),
+                    UploadedFile::fake()->image('dua.jpg', 1600, 900),
+                ],
             ])
-            ->assertOk();
+            ->assertRedirect();
 
-        $banner = Setting::where('village_id', $this->village->id)->value('banner');
-        $this->assertNotNull($banner, 'Path banner seharusnya tersimpan pada settings.');
-        Storage::disk('public')->assertExists($banner);
+        $banner = VillageBanner::where('village_id', $this->village->id)
+            ->orderBy('urutan_tampil')->get();
 
-        // Nama berkas tidak boleh berasal dari pengunggah — lihat MediaService.
-        $this->assertStringNotContainsString('banner.jpg', $banner);
+        $this->assertCount(2, $banner);
 
-        $this->get('/')->assertInertia(
-            fn (Assert $page) => $page->where('pengaturan.banner', asset('storage/'.$banner))
-        );
+        foreach ($banner as $b) {
+            Storage::disk('public')->assertExists($b->path);
+            // Nama berkas tidak boleh berasal dari pengunggah — lihat MediaService.
+            $this->assertStringNotContainsString('satu.jpg', $b->path);
+            $this->assertStringNotContainsString('dua.jpg', $b->path);
+        }
+
+        // Urutannya harus berbeda, kalau tidak tombol naik/turun tidak berarti.
+        $this->assertNotSame($banner[0]->urutan_tampil, $banner[1]->urutan_tampil);
     }
 
     public function test_berkas_selain_gambar_ditolak(): void
@@ -89,36 +124,157 @@ class BannerBerandaTest extends TestCase
         Storage::fake('public');
 
         $this->actingAs($this->operator())
-            ->putJson('/api/v1/admin/settings', [
-                'nama_desa' => 'Desa Uji',
-                'banner' => UploadedFile::fake()->create('dokumen.pdf', 100, 'application/pdf'),
+            ->post('/admin/banner', [
+                'gambar' => [UploadedFile::fake()->create('dokumen.pdf', 100, 'application/pdf')],
             ])
-            ->assertStatus(422)
-            ->assertJsonValidationErrors(['banner']);
+            ->assertSessionHasErrors('gambar.0');
+
+        $this->assertSame(0, VillageBanner::count());
     }
 
-    public function test_menyimpan_tanpa_banner_tidak_menghapus_banner_lama(): void
+    public function test_jumlah_banner_dibatasi(): void
     {
         Storage::fake('public');
-        $operator = $this->operator();
 
-        $this->actingAs($operator)->put('/api/v1/admin/settings', [
-            'nama_desa' => 'Desa Uji',
-            'banner' => UploadedFile::fake()->image('banner.jpg', 1600, 900),
-        ])->assertOk();
+        for ($i = 0; $i < BannerController::MAKS_BANNER; $i++) {
+            VillageBanner::create([
+                'village_id' => $this->village->id,
+                'path' => "banner/ada-{$i}.webp",
+                'urutan_tampil' => $i,
+            ]);
+        }
 
-        $sebelum = Setting::where('village_id', $this->village->id)->value('banner');
+        $this->actingAs($this->operator())
+            ->post('/admin/banner', ['gambar' => [UploadedFile::fake()->image('lebih.jpg')]])
+            ->assertSessionHasErrors('gambar');
 
-        // Operator menyunting nomor telepon saja; kolom berkas dibiarkan kosong.
-        $this->actingAs($operator)->put('/api/v1/admin/settings', [
-            'nama_desa' => 'Desa Uji',
-            'telepon' => '0451-123456',
-        ])->assertOk();
+        // Pesannya harus menyebut kuota, bukan ukuran berkas — keduanya
+        // memakai aturan `max` dan mudah tertukar.
+        $this->assertStringContainsString('batas', session('errors')->first('gambar'));
+        $this->assertSame(BannerController::MAKS_BANNER, VillageBanner::count());
+    }
 
-        $this->assertSame(
-            $sebelum,
-            Setting::where('village_id', $this->village->id)->value('banner'),
-            'Menyimpan formulir tanpa memilih berkas tidak boleh mengosongkan banner.'
+    public function test_urutan_dapat_digeser_dengan_menukar_tetangga(): void
+    {
+        $pertama = VillageBanner::create([
+            'village_id' => $this->village->id, 'path' => 'banner/a.webp', 'urutan_tampil' => 1,
+        ]);
+        $kedua = VillageBanner::create([
+            'village_id' => $this->village->id, 'path' => 'banner/b.webp', 'urutan_tampil' => 2,
+        ]);
+
+        $this->actingAs($this->operator())
+            ->put("/admin/banner/{$kedua->id}/geser", ['arah' => 'naik'])
+            ->assertRedirect();
+
+        $this->assertSame(2, $pertama->fresh()->urutan_tampil);
+        $this->assertSame(1, $kedua->fresh()->urutan_tampil);
+
+        // Sudah di ujung: bukan galat, hanya tidak ada yang berubah.
+        $this->actingAs($this->operator())
+            ->put("/admin/banner/{$kedua->id}/geser", ['arah' => 'naik'])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(1, $kedua->fresh()->urutan_tampil);
+    }
+
+    public function test_urutan_warisan_yang_kembar_tetap_dapat_ditukar(): void
+    {
+        // Baris hasil migrasi dari kolom lama semuanya bernomor 0. Menukar dua
+        // nilai yang sama tidak memindahkan apa pun bila tidak ditangani.
+        $a = VillageBanner::create([
+            'village_id' => $this->village->id, 'path' => 'banner/a.webp', 'urutan_tampil' => 0,
+        ]);
+        $b = VillageBanner::create([
+            'village_id' => $this->village->id, 'path' => 'banner/b.webp', 'urutan_tampil' => 0,
+        ]);
+
+        $this->actingAs($this->operator())
+            ->put("/admin/banner/{$b->id}/geser", ['arah' => 'naik'])
+            ->assertRedirect();
+
+        $this->assertLessThan(
+            $a->fresh()->urutan_tampil,
+            $b->fresh()->urutan_tampil,
+            'Banner kedua seharusnya kini berada di atas yang pertama.'
         );
+    }
+
+    public function test_menghapus_banner_ikut_menghapus_berkasnya(): void
+    {
+        Storage::fake('public');
+
+        $this->actingAs($this->operator())
+            ->post('/admin/banner', ['gambar' => [UploadedFile::fake()->image('satu.jpg')]]);
+
+        $banner = VillageBanner::firstOrFail();
+        Storage::disk('public')->assertExists($banner->path);
+
+        $this->actingAs($this->operator())
+            ->delete("/admin/banner/{$banner->id}")
+            ->assertRedirect();
+
+        $this->assertSame(0, VillageBanner::count());
+        Storage::disk('public')->assertMissing($banner->path);
+    }
+
+    public function test_keterangan_banner_dapat_disunting(): void
+    {
+        $banner = VillageBanner::create([
+            'village_id' => $this->village->id, 'path' => 'banner/a.webp', 'urutan_tampil' => 1,
+        ]);
+
+        $this->actingAs($this->operator())
+            ->put("/admin/banner/{$banner->id}", ['judul' => 'Panorama Sawah'])
+            ->assertRedirect();
+
+        $this->assertSame('Panorama Sawah', $banner->fresh()->judul);
+    }
+
+    public function test_perubahan_banner_langsung_terlihat_di_beranda(): void
+    {
+        Storage::fake('public');
+
+        // Beranda dibuka lebih dulu agar prop bersamanya ter-cache.
+        $this->get('/')->assertInertia(fn (Assert $page) => $page->where('pengaturan.banner', []));
+
+        $this->actingAs($this->operator())
+            ->post('/admin/banner', ['gambar' => [UploadedFile::fake()->image('satu.jpg')]]);
+
+        // Tanpa pembersihan cache di BannerController, baris ini masih kosong
+        // sampai satu jam berlalu — dan operator menyimpulkan unggahannya gagal.
+        $this->get('/')->assertInertia(fn (Assert $page) => $page->has('pengaturan.banner', 1));
+    }
+
+    // -----------------------------------------------------------------
+    // Kewenangan
+    // -----------------------------------------------------------------
+
+    public function test_tamu_dan_operator_tanpa_izin_ditolak(): void
+    {
+        $this->get('/admin/banner')->assertRedirect('/admin/masuk');
+
+        $konten = $this->operator('Operator Konten');
+        $this->actingAs($konten)->get('/admin/banner')->assertForbidden();
+        $this->actingAs($konten)
+            ->post('/admin/banner', ['gambar' => [UploadedFile::fake()->image('satu.jpg')]])
+            ->assertForbidden();
+    }
+
+    public function test_banner_desa_lain_tidak_dapat_disentuh(): void
+    {
+        $desaLain = Village::create([
+            'nama' => 'Desa Lain', 'slug' => 'desa-lain', 'is_active' => true,
+        ]);
+        $milikOrangLain = VillageBanner::create([
+            'village_id' => $desaLain->id, 'path' => 'banner/lain.webp', 'urutan_tampil' => 1,
+        ]);
+
+        $this->actingAs($this->operator())
+            ->delete("/admin/banner/{$milikOrangLain->id}")
+            ->assertNotFound();
+
+        $this->assertNotNull($milikOrangLain->fresh());
     }
 }

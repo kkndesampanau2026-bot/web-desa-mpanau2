@@ -71,6 +71,25 @@ php artisan migrate --force
 echo "==> Menyinkronkan peran & izin"
 php artisan db:seed --force --class='Database\Seeders\RolePermissionSeeder'
 
+# Cache aplikasi dikosongkan pada setiap deploy.
+#
+# Bukan kerapian. Cache memakai driver `database`, jadi isinya BERTAHAN
+# melewati deploy — termasuk ketika kode baru mengubah BENTUK data yang
+# tersimpan di sana. Itu persis yang terjadi saat banner beranda berubah dari
+# satu string menjadi daftar: selama satu jam berikutnya, situs tetap
+# menyajikan bentuk lama dari cache, dan gejalanya menyesatkan karena tidak
+# ada galat apa pun — fiturnya hanya "belum jalan".
+#
+# Aman dijalankan: seluruh isi cache adalah data turunan yang dihitung ulang
+# dari basis data saat pertama diminta. Satu-satunya yang bukan — penautan
+# balasan Telegram — memang berumur pendek dan pulih dengan menekan tombol
+# TOLAK sekali lagi (lihat TelegramWebhookController).
+#
+# Dijalankan SESUDAH migrasi: driver database menghapus isi tabel `cache`,
+# yang pada pemasangan baru belum ada sebelum migrasi berjalan.
+echo "==> Mengosongkan cache aplikasi"
+php artisan cache:clear
+
 if [ "${JALANKAN_SEEDER}" = "true" ]; then
     echo "==> Menjalankan seeder"
     php artisan db:seed --force

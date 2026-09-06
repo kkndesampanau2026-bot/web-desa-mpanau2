@@ -11,7 +11,9 @@ class Setting extends Model
     protected $fillable = [
         'village_id',
         'logo',
-        'banner',
+        // 'banner' sengaja TIDAK di sini lagi: hero beranda kini memakai
+        // tabel `village_banners` (banyak gambar). Kolomnya masih ada demi
+        // rollback migrasi, tetapi tidak boleh ditulisi lewat jalur ini.
         'nama_desa',
         'kode_wilayah',
         'kelurahan',

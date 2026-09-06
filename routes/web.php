@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AkunController;
+use App\Http\Controllers\Admin\BannerController;
 use App\Http\Controllers\Admin\PenggunaController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Publik\BerandaController;
@@ -314,6 +315,20 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
             ->name('pengguna.perbarui');
         Route::delete('/pengguna/{pengguna}', [PenggunaController::class, 'destroy'])
             ->name('pengguna.hapus');
+    });
+
+    /*
+    | Banner hero beranda.
+    |
+    | Dijaga `manage-settings`, izin yang sama dengan Pengaturan Umum: ia
+    | bagian dari identitas visual desa, bukan konten berita.
+    */
+    Route::middleware('permission:manage-settings')->group(function () {
+        Route::get('/banner', [BannerController::class, 'index'])->name('banner');
+        Route::post('/banner', [BannerController::class, 'store'])->name('banner.simpan');
+        Route::put('/banner/{banner}', [BannerController::class, 'update'])->name('banner.perbarui');
+        Route::put('/banner/{banner}/geser', [BannerController::class, 'geser'])->name('banner.geser');
+        Route::delete('/banner/{banner}', [BannerController::class, 'destroy'])->name('banner.hapus');
     });
 
     /*

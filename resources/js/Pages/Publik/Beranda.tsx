@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { formatTanggal } from '@/lib/format'
 import { GAYA_WADAH, IsiHalaman, JudulSeksi, Kartu } from '@/Components/ui'
+import { KaroselHero } from '@/Components/KaroselHero'
 import { LayoutPublik } from '@/Layouts/LayoutPublik'
 import { useHalaman } from '@/types/inertia'
 import type { BeritaRingkas } from '@/types/api'
@@ -68,9 +69,9 @@ export default function Beranda({
   // jadi controller tidak perlu mengirimnya lagi khusus untuk halaman ini.
   const { pengaturan } = useHalaman().props
 
-  // Banner unggahan perangkat desa (Pengaturan Umum). Null berarti belum
-  // pernah diunggah; foto bawaan di bawah yang dipakai.
-  const bannerAdmin = pengaturan?.banner
+  // Banner unggahan perangkat desa (CMS → Banner Beranda). Daftar kosong
+  // berarti belum ada yang diunggah; foto bawaan di bawah yang dipakai.
+  const bannerAdmin = pengaturan?.banner ?? []
 
   const namaDesa = pengaturan?.nama_desa ?? 'Desa Mpanau'
   const wilayah = [
@@ -94,8 +95,10 @@ export default function Beranda({
         ponsel dipakai 75svh: layar setinggi 844px yang terisi hero seluruhnya
         membuat pengunjung harus menggulir sebelum tahu situs ini berisi apa.
 
-        Fotonya boleh diganti perangkat desa dari Pengaturan Umum. Bila belum
-        pernah diunggah, dipakai foto bawaan yang disajikan lewat `<picture>`
+        Fotonya boleh diganti perangkat desa dari CMS → Banner Beranda, dan
+        boleh lebih dari satu: begitu ada dua atau lebih, `KaroselHero`
+        menggilirnya otomatis lengkap dengan tombol maju/mundur. Bila belum
+        pernah diunggah satu pun, dipakai foto bawaan yang disajikan lewat `<picture>`
         dengan tiga ukuran: berkas aslinya PNG 2,3 MB — memuatnya apa adanya
         berarti pengunjung ber-4G menunggu seberat itu sebelum melihat apa pun,
         padahal hero inilah yang tampil pertama (PRD 12.1). Varian WebP 800px
@@ -119,14 +122,8 @@ export default function Beranda({
         terlihat serupa.
       */}
       <section className="relative isolate flex min-h-[75svh] items-center overflow-hidden border-b-4 border-gold bg-navy lg:min-h-[calc(100svh-var(--tinggi-header))]">
-        {bannerAdmin ? (
-          <img
-            src={bannerAdmin}
-            alt=""
-            fetchPriority="high"
-            decoding="async"
-            className="absolute inset-0 -z-10 size-full object-cover object-center"
-          />
+        {bannerAdmin.length > 0 ? (
+          <KaroselHero gambar={bannerAdmin} />
         ) : (
           <picture>
             <source

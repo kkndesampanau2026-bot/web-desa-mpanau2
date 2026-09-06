@@ -107,6 +107,7 @@ const MENU: GrupMenu[] = [
     judul: 'Sistem',
     item: [
       { ke: '/admin/pengaturan', label: 'Pengaturan Umum', izin: 'manage-settings', ikon: Settings },
+      { ke: '/admin/banner', label: 'Banner Beranda', izin: 'manage-settings', ikon: Images },
       { ke: '/admin/pengguna', label: 'Akun Operator', izin: 'manage-users', ikon: ShieldCheck },
       /*
        * "Akun Saya" dijaga `view-dashboard`, bukan `manage-users`: setiap
