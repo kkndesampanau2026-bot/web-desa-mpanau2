@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { Link } from '@inertiajs/react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiRequestError, type ApiSuccess } from '@/lib/api'
 import { keFormData } from '@/lib/berkas'
@@ -43,7 +44,6 @@ export default function PengaturanPage() {
   const [nomor, setNomor] = useState<NomorPenting[]>([])
   const [sosmed, setSosmed] = useState<SosialMedia[]>([])
   const [logo, setLogo] = useState<File | null>(null)
-  const [banner, setBanner] = useState<File | null>(null)
   const [galat, setGalat] = useState<ApiRequestError | null>(null)
   const [sukses, setSukses] = useState(false)
 
@@ -84,7 +84,6 @@ export default function PengaturanPage() {
             nomor_telepon_penting: nomor.filter((n) => n.nama_layanan && n.nomor),
             sosial_media: sosmed.filter((s) => s.platform && s.url),
             logo,
-            banner,
           },
           { method: 'PUT' },
         ),
@@ -95,7 +94,6 @@ export default function PengaturanPage() {
       // Berkas dilepas setelah terkirim; bila tidak, menyimpan ulang akan
       // mengunggah logo yang sama untuk kedua kalinya.
       setLogo(null)
-      setBanner(null)
       void queryClient.invalidateQueries({ queryKey: ['admin', 'settings'] })
     },
     onError: (e) => {
@@ -173,19 +171,22 @@ export default function PengaturanPage() {
               />
             </div>
 
-            <div className="sm:col-span-2">
-              <InputBerkas
-                label="Banner Beranda"
-                jenis="gambar"
-                berkas={banner}
-                onPilih={(b) => {
-                  setBanner(b)
-                  setSukses(false)
-                }}
-                pathTersimpan={data?.setting?.banner}
-                petunjuk="Foto latar pada bagian atas beranda. Pilih foto MENDATAR beresolusi tinggi (minimal 1600×900); bagian tengahnya yang paling terlihat, dan sebuah lapisan gelap dipasang di atasnya agar teks tetap terbaca. Kosongkan untuk memakai foto bawaan."
-                galat={galat?.fieldError('banner')}
-              />
+            {/*
+              Banner beranda TIDAK lagi di sini.
+
+              Hero kini memuat beberapa gambar bergilir, dan unggah/hapus
+              gambar tidak cocok dengan formulir yang menyimpan seluruh isinya
+              sekaligus — kegagalan pada satu gambar akan membatalkan alamat
+              kantor dan jam kerja yang sudah benar. Pengelolaannya pindah ke
+              layar "Banner Beranda" tersendiri.
+            */}
+            <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600 sm:col-span-2">
+              Banner beranda kini dapat memuat beberapa gambar yang bergilir
+              otomatis. Kelola lewat menu{' '}
+              <Link href="/admin/banner" className="font-semibold text-teal-700 hover:underline">
+                Banner Beranda
+              </Link>
+              .
             </div>
           </div>
         }

@@ -96,8 +96,13 @@ export interface Pengaturan {
   nama_desa: string | null
   kode_wilayah: string | null
   logo: string | null
-  /** Banner beranda. Null berarti Beranda memakai berkas bawaannya sendiri. */
-  banner: string | null
+  /**
+   * Gambar hero beranda, urut sesuai yang ditetapkan operator di CMS.
+   *
+   * KOSONG berarti Beranda memakai berkas bawaannya sendiri. Dulu ini satu
+   * string; kini daftar, karena hero bergilir antar beberapa foto.
+   */
+  banner: { url: string; judul: string | null }[]
   wilayah: {
     kelurahan: string | null
     kecamatan: string | null

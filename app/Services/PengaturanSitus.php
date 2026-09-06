@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\ImportantPhoneNumber;
 use App\Models\Setting;
 use App\Models\SocialMediaLink;
+use App\Models\VillageBanner;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -41,9 +42,28 @@ class PengaturanSitus
                 'nama_desa' => $setting?->nama_desa ?: $village->nama,
                 'kode_wilayah' => $setting?->kode_wilayah ?: $village->kode_wilayah,
                 'logo' => $setting?->logo ? asset('storage/'.$setting->logo) : null,
-                // Null berarti "pakai banner bawaan" — Beranda menyediakan
-                // berkas statisnya sendiri, lengkap dengan varian ukurannya.
-                'banner' => $setting?->banner ? asset('storage/'.$setting->banner) : null,
+                /*
+                 * Daftar gambar hero, urut sesuai yang ditetapkan operator.
+                 *
+                 * KOSONG berarti "pakai banner bawaan" — Beranda menyediakan
+                 * berkas statisnya sendiri, lengkap dengan varian ukurannya.
+                 * Dulu ini satu kolom `settings.banner`; sekarang tabel
+                 * tersendiri agar hero dapat bergilir antar beberapa foto.
+                 */
+                'banner' => VillageBanner::where('village_id', $villageId)
+                    ->orderBy('urutan_tampil')
+                    ->orderBy('id')
+                    ->get()
+                    ->map(fn (VillageBanner $b) => [
+                        'url' => asset('storage/'.$b->path),
+                        'judul' => $b->judul,
+                    ])
+                    ->values()
+                    // ->all() supaya bentuknya array biasa di SETIAP pemakai.
+                    // Sebagai Collection, ia berubah wujud setelah melewati
+                    // cache dan menuntut pemanggilnya menebak-nebak apakah
+                    // yang dipegangnya array atau objek.
+                    ->all(),
                 'wilayah' => [
                     'kelurahan' => $setting?->kelurahan,
                     'kecamatan' => $setting?->kecamatan,

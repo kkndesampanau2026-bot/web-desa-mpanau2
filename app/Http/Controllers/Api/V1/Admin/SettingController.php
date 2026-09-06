@@ -64,10 +64,12 @@ class SettingController extends Controller
             'sosial_media.*.platform' => ['required', 'string', 'max:50'],
             'sosial_media.*.url' => ['required', 'url', 'max:255'],
             'logo' => MediaService::aturanGambar(),
-            'banner' => MediaService::aturanGambar(),
+            // Banner TIDAK lagi di sini: hero beranda kini memuat beberapa
+            // gambar dan dikelola layar tersendiri (Admin\BannerController).
+            // Membiarkan satu kolom banner di formulir ini akan menghadirkan
+            // dua tempat berbeda untuk menyetel gambar yang sama.
         ], [
             ...MediaService::pesanValidasi('logo'),
-            ...MediaService::pesanValidasi('banner'),
             'kode_wilayah.regex' => 'Kode wilayah harus berformat xx.xx.xx.xxxx (contoh: 72.10.01.2013).',
         ]);
 
@@ -90,19 +92,6 @@ class SettingController extends Controller
                 );
             } else {
                 unset($data['logo']);
-            }
-
-            // Banner tampil selebar layar, jadi tidak dikecilkan seagresif
-            // gambar lain — lihat MediaService::LEBAR_MAKS_BANNER.
-            if ($request->hasFile('banner')) {
-                $data['banner'] = $this->media->simpanGambar(
-                    $request->file('banner'),
-                    'identitas',
-                    $setting->banner,
-                    MediaService::LEBAR_MAKS_BANNER,
-                );
-            } else {
-                unset($data['banner']);
             }
 
             $setting->fill($data);
