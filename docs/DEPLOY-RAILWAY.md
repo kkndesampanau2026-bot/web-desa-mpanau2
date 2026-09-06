@@ -95,9 +95,20 @@ terlindungi.
 
 | Variabel | Fungsi |
 |---|---|
-| `JALANKAN_SEEDER` | Bila `true`, `php artisan db:seed --force` dijalankan tiap boot. **Setel ke `false` setelah seeding pertama berhasil** agar konten yang diedit lewat CMS tidak tertimpa nilai seeder. |
+| `JALANKAN_SEEDER` | Bila `true`, `php artisan db:seed --force` dijalankan tiap boot. **Setel ke `false` setelah seeding pertama berhasil** agar konten yang diedit lewat CMS tidak tertimpa nilai seeder. Tidak memengaruhi peran & izin — lihat di bawah. |
 | `AKUN_DEMO_NONAKTIF` | Daftar email dipisah koma yang `status_aktif`-nya dimatikan setiap boot. Dijalankan *setelah* seeder, sehingga akun demo tetap mati walau seeder terlanjur berjalan ulang. |
 | `SEED_ADMIN_PASSWORD` | Kata sandi akun operator yang dibuat `AdminUserSeeder`. |
+
+### Peran & izin selalu disinkronkan
+
+`RolePermissionSeeder` dijalankan pada **setiap** boot, terlepas dari
+`JALANKAN_SEEDER`. Isinya lebih dekat ke skema daripada ke data: ia hanya
+`findOrCreate` peran/izin lalu `syncPermissions`, tidak menyentuh konten
+maupun akun, dan aman dijalankan berulang.
+
+Tanpa langkah ini, peran atau izin baru yang ditambahkan di kode tidak akan
+pernah ada di produksi selama `JALANKAN_SEEDER` bernilai `false` — dan
+gejalanya menyesatkan: menunya muncul, tetapi setiap halamannya berbalas 403.
 
 ## Data awal
 

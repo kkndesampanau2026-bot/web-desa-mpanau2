@@ -61,6 +61,16 @@ php artisan storage:link --force
 echo "==> Menjalankan migrasi"
 php artisan migrate --force
 
+# Peran & izin disinkronkan pada SETIAP boot, terlepas dari JALANKAN_SEEDER.
+#
+# RolePermissionSeeder bersifat idempoten (findOrCreate + syncPermissions) dan
+# tidak menyentuh konten maupun akun — isinya lebih dekat ke skema daripada ke
+# data. Tanpa langkah ini, peran atau izin baru yang ditambahkan di kode tidak
+# akan pernah ada di produksi selama JALANKAN_SEEDER bernilai false, dan
+# gejalanya menyesatkan: menu muncul tetapi setiap halamannya berbalas 403.
+echo "==> Menyinkronkan peran & izin"
+php artisan db:seed --force --class='Database\Seeders\RolePermissionSeeder'
+
 if [ "${JALANKAN_SEEDER}" = "true" ]; then
     echo "==> Menjalankan seeder"
     php artisan db:seed --force
