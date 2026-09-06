@@ -4,7 +4,8 @@ import { Accessibility, Contrast, Minus, Plus, RotateCcw, X } from 'lucide-react
 /**
  * Menu aksesibilitas mengambang — PRD 12.4.
  *
- * Tombol bulat di kiri bawah membuka panel pengaturan sederhana yang membantu
+ * Tombol bulat di kiri bawah — bersebelahan dengan statistik kunjungan —
+ * membuka panel pengaturan sederhana yang membantu
  * warga dengan keterbatasan penglihatan: memperbesar ukuran teks dan menyalakan
  * mode kontras tinggi. Preferensi disimpan di `localStorage` sehingga bertahan
  * antar kunjungan.
@@ -61,7 +62,14 @@ export function MenuAksesibilitas() {
   }, [buka])
 
   return (
-    <div ref={pembungkus} className="fixed bottom-5 left-5 z-40">
+    /*
+      Posisinya `relative`, bukan `fixed`: sejak tombol statistik kunjungan
+      berdiri bersebelahan, `LayoutPublik` yang mendudukkan keduanya dalam satu
+      wadah mengambang. Menetapkan `left` sendiri di sini berarti jarak antar
+      tombol menjadi angka ajaib yang harus dihitung ulang tiap kali salah satu
+      berubah ukuran.
+    */
+    <div ref={pembungkus} className="relative">
       {buka && (
         <div
           role="dialog"

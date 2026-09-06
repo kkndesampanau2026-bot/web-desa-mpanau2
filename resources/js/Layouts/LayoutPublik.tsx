@@ -1,20 +1,20 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from '@inertiajs/react'
-import { Clock, Mail, MapPin, Menu, Phone, Users, X } from 'lucide-react'
-import { formatAngka } from '@/lib/format'
+import { Clock, Mail, MapPin, Menu, Phone, X } from 'lucide-react'
 import { useHalaman } from '@/types/inertia'
 import { GAYA_WADAH } from '@/Components/ui'
 import { MenuAksesibilitas } from '@/Components/MenuAksesibilitas'
+import { MenuKunjungan } from '@/Components/MenuKunjungan'
 import { AduanWarga } from '@/Components/AduanWarga'
 import { IkonSosialMedia, labelPlatform } from '@/Components/IkonSosialMedia'
 
 /**
  * Kerangka halaman publik — PRD 3.1.
  *
- * Bilah atas navy-gelap berisi identitas resmi & penghitung pengunjung, bilah
- * navigasi navy dengan menu berpil emas pada item aktif, footer empat kolom,
- * serta dua tombol mengambang (menu aksesibilitas di kiri bawah dan "Aduan
- * Warga" di kanan bawah).
+ * Bilah atas navy-gelap berisi identitas resmi, bilah navigasi navy dengan
+ * menu berpil emas pada item aktif, footer lima kolom, serta tombol mengambang:
+ * aksesibilitas & statistik kunjungan berdampingan di kiri bawah, "Aduan Warga"
+ * di kanan bawah.
  *
  * Ketiga bagian kerangka memakai `GAYA_WADAH` yang sama dengan isi halaman,
  * jadi logo, judul halaman, dan kolom pertama footer jatuh pada satu garis
@@ -82,7 +82,6 @@ function tautanTelepon(nomor: string): string {
 export function LayoutPublik({ children }: { children: ReactNode }) {
   const { props, url } = useHalaman()
   const pengaturan = props.pengaturan
-  const totalPengunjung = props.statistik_kunjungan?.total
   const [menuTerbuka, setMenuTerbuka] = useState(false)
 
   // Menu ponsel ditutup setiap kali berpindah halaman; membiarkannya terbuka
@@ -123,28 +122,24 @@ export function LayoutPublik({ children }: { children: ReactNode }) {
 
       <header className="sticky top-0 z-40 shadow-md">
         {/*
-          Bilah atas: identitas resmi & penghitung pengunjung.
+          Bilah atas: identitas resmi desa.
+
+          Angka pengunjung dulu duduk di sini, tetapi hanya totalnya — enam
+          kategori lain yang sudah dihitung server tidak pernah terlihat, dan
+          satu angka telanjang di samping nama desa lebih banyak menyita tinggi
+          header daripada memberi tahu apa pun. Seluruhnya kini pindah ke panel
+          mengambang `MenuKunjungan`.
 
           Nama wilayah disembunyikan di bawah sm. Pada ponsel ia terpaksa
           membungkus ke baris kedua, menaikkan tinggi header yang sudah
           menyita layar — sementara isinya sudah diulang di footer.
         */}
         <div className="bg-navy-dark">
-          <div className={`${GAYA_WADAH} flex h-8 items-center justify-between gap-4`}>
+          <div className={`${GAYA_WADAH} flex h-8 items-center`}>
             <p className="hidden truncate text-[11px] text-white/60 sm:block">
               Pemerintah {namaDesa}
               {wilayah && ` • ${wilayah}`}
             </p>
-
-            {totalPengunjung != null && (
-              <span className="flex shrink-0 items-center gap-1.5 text-[11px] text-white/70">
-                <Users className="size-3 shrink-0" aria-hidden="true" />
-                Pengunjung
-                <span className="font-semibold text-gold tabular-nums">
-                  {formatAngka(totalPengunjung)}
-                </span>
-              </span>
-            )}
           </div>
         </div>
 
@@ -419,14 +414,25 @@ export function LayoutPublik({ children }: { children: ReactNode }) {
             </div>
           </div>
 
-          <p className="mt-8 border-t border-white/10 pt-6 text-xs text-white/45 sm:mt-10">
+          <p className="mt-8 border-t border-white/10 pt-6 text-center text-xs text-white/45 sm:mt-10">
             © {new Date().getFullYear()} Pemerintah {namaDesa}. Seluruh hak cipta dilindungi.
           </p>
         </div>
       </footer>
 
-      {/* Tombol mengambang: aksesibilitas (kiri) & aduan warga (kanan). */}
-      <MenuAksesibilitas />
+      {/*
+        Tombol mengambang kiri bawah: aksesibilitas & statistik kunjungan.
+
+        Keduanya didudukkan di sini, bukan memasang `fixed` masing-masing,
+        supaya jaraknya ditentukan satu `gap` dan tidak menjadi angka ajaib
+        yang harus dihitung ulang bila salah satu tombol berubah ukuran.
+      */}
+      <div className="fixed bottom-5 left-5 z-40 flex items-center gap-3">
+        <MenuAksesibilitas />
+        <MenuKunjungan />
+      </div>
+
+      {/* Aduan warga — sudut berlawanan, agar tidak menumpuk dengan keduanya. */}
       <AduanWarga />
     </div>
   )
