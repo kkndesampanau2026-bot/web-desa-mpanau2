@@ -11,17 +11,16 @@ import { IkonSosialMedia, labelPlatform } from '@/Components/IkonSosialMedia'
 /**
  * Kerangka halaman publik — PRD 3.1.
  *
- * Bilah atas navy-gelap berisi identitas resmi, bilah navigasi navy dengan
- * menu berpil emas pada item aktif, footer lima kolom, serta tombol mengambang:
- * aksesibilitas & statistik kunjungan berdampingan di kiri bawah, "Aduan Warga"
- * di kanan bawah.
+ * Satu bilah navigasi navy dengan menu berpil emas pada item aktif, footer
+ * lima kolom, serta tombol mengambang: aksesibilitas & statistik kunjungan
+ * berdampingan di kiri bawah, "Aduan Warga" di kanan bawah.
  *
- * Ketiga bagian kerangka memakai `GAYA_WADAH` yang sama dengan isi halaman,
+ * Kedua bagian kerangka memakai `GAYA_WADAH` yang sama dengan isi halaman,
  * jadi logo, judul halaman, dan kolom pertama footer jatuh pada satu garis
- * vertikal di setiap ukuran layar. Tingginya pun ditetapkan (h-8 + h-16,
- * menjadi h-18 mulai sm) supaya sama dengan `--tinggi-header` yang dipakai
- * sub-navigasi lengket dan lompatan anchor — bukan angka yang ditebak ulang
- * di tiap berkas.
+ * vertikal di setiap ukuran layar. Tinggi headernya pun ditetapkan (h-16,
+ * menjadi h-18 mulai sm) supaya sama dengan `--tinggi-header` pada app.css —
+ * yang dipakai lompatan anchor dan tinggi hero Beranda, bukan angka yang
+ * ditebak ulang di tiap berkas.
  *
  * Identitas desa datang dari prop bersama Inertia, sehingga header & footer
  * sudah terisi pada render pertama — tanpa kedipan nama desa kosong.
@@ -122,28 +121,19 @@ export function LayoutPublik({ children }: { children: ReactNode }) {
 
       <header className="sticky top-0 z-40 shadow-md">
         {/*
-          Bilah atas: identitas resmi desa.
+          Header hanya satu bilah.
 
-          Angka pengunjung dulu duduk di sini, tetapi hanya totalnya — enam
-          kategori lain yang sudah dihitung server tidak pernah terlihat, dan
-          satu angka telanjang di samping nama desa lebih banyak menyita tinggi
-          header daripada memberi tahu apa pun. Seluruhnya kini pindah ke panel
-          mengambang `MenuKunjungan`.
+          Di atasnya dulu ada bilah navy-gelap berisi "Pemerintah <desa> •
+          <wilayah>" dan angka pengunjung. Angkanya sudah pindah ke panel
+          mengambang, dan barisnya sendiri mengulang apa yang persis di
+          bawahnya sudah tertulis (nama desa pada logo, wilayah di bawahnya)
+          serta diulang lagi di footer — dua rem tinggi layar untuk kalimat
+          yang tidak menambah apa pun.
 
-          Nama wilayah disembunyikan di bawah sm. Pada ponsel ia terpaksa
-          membungkus ke baris kedua, menaikkan tinggi header yang sudah
-          menyita layar — sementara isinya sudah diulang di footer.
+          Bila bilah itu dihidupkan kembali, `--tinggi-header` pada app.css
+          WAJIB ikut bertambah: ia dipakai `scroll-margin-top` sasaran anchor
+          dan tinggi hero Beranda.
         */}
-        <div className="bg-navy-dark">
-          <div className={`${GAYA_WADAH} flex h-8 items-center`}>
-            <p className="hidden truncate text-[11px] text-white/60 sm:block">
-              Pemerintah {namaDesa}
-              {wilayah && ` • ${wilayah}`}
-            </p>
-          </div>
-        </div>
-
-        {/* Bilah navigasi utama. */}
         <div className="bg-navy">
           <div className={`${GAYA_WADAH} flex h-16 items-center justify-between gap-4 sm:h-18`}>
             <Link href="/" className="flex min-w-0 items-center gap-3">

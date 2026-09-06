@@ -97,14 +97,14 @@ html {
  * bertumpuk memakan tinggi layar sekaligus mengaburkan mana navigasi utama.
  */
 :root {
-  /* bilah atas h-8 (2rem) + bilah navigasi h-16 (4rem) */
-  --tinggi-header: 6rem;
+  /* satu bilah navigasi, h-16 (4rem) */
+  --tinggi-header: 4rem;
 }
 
 @media (min-width: 640px) {
   :root {
     /* bilah navigasi menjadi h-18 (4.5rem) mulai sm */
-    --tinggi-header: 6.5rem;
+    --tinggi-header: 4.5rem;
   }
 }
 
