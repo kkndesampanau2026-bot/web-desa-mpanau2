@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Services\ActivityLogger;
+use App\Services\PengaturanSitus;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -24,11 +25,36 @@ use Inertia\Response;
  */
 class LoginController extends Controller
 {
-    public function __construct(private readonly ActivityLogger $logger) {}
+    public function __construct(
+        private readonly ActivityLogger $logger,
+        private readonly PengaturanSitus $pengaturan,
+    ) {}
 
+    /**
+     * Identitas desa dikirim sebagai prop halaman, bukan diambil dari prop
+     * bersama `pengaturan`.
+     *
+     * `HandleInertiaRequests` sengaja mengirim `pengaturan => null` untuk
+     * seluruh jalur `admin/*` — termasuk halaman ini — karena kerangka CMS
+     * tidak memakai header/footer situs. Halaman masuk adalah pengecualian:
+     * ia satu-satunya layar di bawah `admin/` yang membawa identitas desa,
+     * dan pengunjung yang tersesat ke sini harus tahu ini situs milik siapa.
+     *
+     * Biayanya nihil — `untukTataLetak()` sudah ter-cache dan dipakai setiap
+     * halaman publik.
+     */
     public function tampilkan(): Response
     {
-        return Inertia::render('Auth/Masuk');
+        $situs = $this->pengaturan->untukTataLetak();
+
+        return Inertia::render('Auth/Masuk', [
+            'identitas' => [
+                'nama_desa' => $situs['nama_desa'],
+                'logo' => $situs['logo'],
+                'banner' => $situs['banner'],
+                'wilayah' => $situs['wilayah'],
+            ],
+        ]);
     }
 
     public function masuk(Request $request): RedirectResponse
