@@ -18,6 +18,9 @@ class DatabaseSeeder extends Seeder
             // contoh: ia dibutuhkan agar formulir warga punya pilihan RT,
             // sehingga tetap dijalankan di produksi.
             SuratPengantarSeeder::class,
+            // Kategori berita juga data master: tanpanya formulir CMS tidak
+            // punya pilihan kategori sama sekali.
+            KategoriBeritaSeeder::class,
             // Konten contoh untuk pengembangan; otomatis dilewati di produksi.
             KontenDemoSeeder::class,
             DataTransparansiDemoSeeder::class,

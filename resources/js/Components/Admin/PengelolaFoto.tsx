@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
-import { Check, Pencil, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, Pencil, X } from 'lucide-react'
 import { api, ApiRequestError, urlBerkas } from '@/lib/api'
 import { keFormData } from '@/lib/berkas'
 import { Pemberitahuan, Tombol } from '@/Components/Admin/Form'
@@ -25,6 +25,7 @@ export function PengelolaFoto({
   urlUnggah,
   urlHapus,
   urlUbah,
+  urlGeser,
   foto,
   onBerubah,
   petunjuk,
@@ -39,6 +40,13 @@ export function PengelolaFoto({
    * menyediakan endpoint itu (wisata & produk) tidak menampilkan janji palsu.
    */
   urlUbah?: (idFoto: number) => string
+  /**
+   * Membentuk endpoint PUT untuk menggeser urutan satu foto. Urutan itu
+   * menentukan foto mana yang menjadi gambar utama di situs publik, sehingga
+   * tanpa endpoint ini salah urut saat mengunggah hanya dapat diperbaiki
+   * dengan menghapus lalu mengunggah ulang seluruhnya.
+   */
+  urlGeser?: (idFoto: number) => string
   foto: Foto[]
   /** Dipanggil setelah unggah/hapus berhasil, untuk memuat ulang data. */
   onBerubah: () => void
@@ -72,6 +80,17 @@ export function PengelolaFoto({
       setGalat(e instanceof ApiRequestError ? e.message : 'Gagal menyimpan keterangan.'),
   })
 
+  const geser = useMutation({
+    mutationFn: ({ idFoto, arah }: { idFoto: number; arah: 'naik' | 'turun' }) =>
+      api.put(urlGeser!(idFoto), { arah }),
+    onSuccess: () => {
+      setGalat(null)
+      onBerubah()
+    },
+    onError: (e) =>
+      setGalat(e instanceof ApiRequestError ? e.message : 'Gagal mengubah urutan foto.'),
+  })
+
   const hapus = useMutation({
     mutationFn: (idFoto: number) => api.delete(urlHapus(idFoto)),
     onSuccess: () => {
@@ -88,13 +107,22 @@ export function PengelolaFoto({
 
       {foto.length > 0 && (
         <ul className="grid grid-cols-3 gap-2 sm:grid-cols-5">
-          {foto.map((f) => (
+          {foto.map((f, i) => (
             <li key={f.id} className="group relative">
               <img
                 src={urlBerkas(f.path) ?? undefined}
                 alt={f.alt_text ?? f.caption ?? 'Foto'}
                 className="aspect-square w-full rounded-lg border border-slate-200 object-cover"
               />
+              {/*
+                Nomor urut ditulis di sudut kiri: "foto pertama menjadi gambar
+                utama" hanya berarti bila operator dapat melihat mana yang
+                pertama.
+              */}
+              <span className="absolute top-1 left-1 grid size-5 place-items-center rounded-full bg-slate-900/70 text-[10px] font-bold text-white">
+                {i + 1}
+              </span>
+
               <div className="absolute top-1 right-1 flex gap-1">
                 {urlUbah && (
                   <button
@@ -126,6 +154,31 @@ export function PengelolaFoto({
                   <X className="size-3.5" aria-hidden="true" />
                 </button>
               </div>
+
+              {urlGeser && foto.length > 1 && (
+                <div className="absolute right-1 bottom-1 flex gap-1">
+                  <button
+                    type="button"
+                    disabled={i === 0 || geser.isPending}
+                    title="Geser ke kiri"
+                    aria-label={`Majukan urutan foto ke-${i + 1}`}
+                    onClick={() => geser.mutate({ idFoto: f.id, arah: 'naik' })}
+                    className="rounded-full bg-white/90 p-1 text-slate-600 shadow-sm transition hover:bg-white hover:text-teal-700 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <ArrowLeft className="size-3.5" aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    disabled={i === foto.length - 1 || geser.isPending}
+                    title="Geser ke kanan"
+                    aria-label={`Mundurkan urutan foto ke-${i + 1}`}
+                    onClick={() => geser.mutate({ idFoto: f.id, arah: 'turun' })}
+                    className="rounded-full bg-white/90 p-1 text-slate-600 shadow-sm transition hover:bg-white hover:text-teal-700 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <ArrowRight className="size-3.5" aria-hidden="true" />
+                  </button>
+                </div>
+              )}
 
               {suntingId === f.id ? (
                 <div className="mt-1 flex items-center gap-1">

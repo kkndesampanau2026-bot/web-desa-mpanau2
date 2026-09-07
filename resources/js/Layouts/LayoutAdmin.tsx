@@ -79,7 +79,6 @@ const MENU: GrupMenu[] = [
     judul: 'Konten Publik',
     item: [
       { ke: '/admin/berita', label: 'Berita', izin: 'manage-news', ikon: Newspaper },
-      { ke: '/admin/galeri', label: 'Galeri', izin: 'manage-gallery', ikon: Images },
       { ke: '/admin/ekonomi', label: 'Potensi & Ekonomi', izin: 'manage-potential', ikon: Store },
       { ke: '/admin/peta', label: 'Titik Lokasi', izin: 'manage-poi', ikon: MapPin },
     ],

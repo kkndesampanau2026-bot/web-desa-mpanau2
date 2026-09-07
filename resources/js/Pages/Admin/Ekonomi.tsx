@@ -12,7 +12,7 @@ import {
   TextArea,
   Tombol,
 } from '@/Components/Admin/Form'
-import { InputBerkas } from '@/Components/Admin/Berkas'
+import { InputBanyakGambar, InputBerkas } from '@/Components/Admin/Berkas'
 import { PengelolaFoto, type Foto } from '@/Components/Admin/PengelolaFoto'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 import type { ReactNode } from 'react'
@@ -432,7 +432,7 @@ function PanelWisata() {
   const kosong = { nama: '', deskripsi: '', harga_tiket: '', alamat: '' }
   const [form, setForm] = useState(kosong)
   const [sunting, setSunting] = useState<Wisata | null>(null)
-  const [fotoDibuka, setFotoDibuka] = useState<number | null>(null)
+  const [fotoBaru, setFotoBaru] = useState<File[]>([])
   const [galat, setGalat] = useState<ApiRequestError | null>(null)
 
   const { data, isPending } = useQuery({
@@ -443,14 +443,41 @@ function PanelWisata() {
     },
   })
 
+  /*
+   * Foto diambil dari hasil kueri TERBARU, bukan dari `sunting` — objek itu
+   * potret sesaat ketika tombol "Ubah" ditekan, dan tidak ikut berubah setelah
+   * foto diunggah atau dihapus. Tanpa ini, grid foto membeku pada keadaan
+   * lamanya dan operator mengira perubahannya gagal.
+   */
+  const fotoTersimpan = sunting
+    ? (data?.find((w) => w.id === sunting.id)?.photos ?? sunting.photos ?? [])
+    : []
+
+  /*
+   * Dua langkah: simpan datanya dulu, baru unggah fotonya.
+   *
+   * Endpoint fotonya beralamat pada destinasi yang sudah ada
+   * (`/wisata/{id}/foto`), sehingga destinasi BARU belum punya id saat
+   * formulir dikirim. Bila unggahan gagal setelah data tersimpan, destinasinya
+   * tetap ada dan fotonya dapat ditambahkan lewat tombol "Ubah" — kegagalan
+   * yang terlihat dan dapat diperbaiki, bukan data yang hilang diam-diam.
+   */
   const simpan = useMutation({
-    mutationFn: () =>
-      sunting
-        ? api.put(`/admin/wisata/${sunting.id}`, form)
-        : api.post('/admin/wisata', form),
+    mutationFn: async () => {
+      const r = sunting
+        ? await api.put(`/admin/wisata/${sunting.id}`, form)
+        : await api.post<ApiSuccess<Wisata>>('/admin/wisata', form)
+
+      const id = sunting?.id ?? (r.data as ApiSuccess<Wisata>).data.id
+
+      if (fotoBaru.length > 0) {
+        await api.post(`/admin/wisata/${id}/foto`, keFormData({ foto: fotoBaru }))
+      }
+    },
     onSuccess: () => {
       setForm(kosong)
       setSunting(null)
+      setFotoBaru([])
       setGalat(null)
       void queryClient.invalidateQueries({ queryKey: ['admin', 'wisata'] })
     },
@@ -520,6 +547,45 @@ function PanelWisata() {
               />
             </Kolom>
 
+            {/*
+              Saat MENYUNTING, foto yang sudah tersimpan ikut tampil di dalam
+              formulir — beserta tombol ganti keterangan, geser urutan, dan
+              hapus. Sebelumnya keduanya terpisah: formulir hanya menerima foto
+              BARU, sementara yang sudah ada hanya dapat disentuh lewat tombol
+              "Kelola Foto" pada baris daftar. Operator yang membuka "Ubah"
+              wajar mengira semua yang bisa diubah ada di situ.
+
+              Saat MENAMBAH, destinasinya belum punya id sehingga endpoint
+              fotonya belum beralamat ke mana pun; yang dipakai adalah pilihan
+              berkas biasa yang diunggah menyusul setelah data tersimpan.
+            */}
+            {sunting ? (
+              <div>
+                <p className="block text-sm font-medium text-slate-900">Foto Destinasi</p>
+                <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                  <PengelolaFoto
+                    urlUnggah={`/admin/wisata/${sunting.id}/foto`}
+                    urlUbah={(idFoto) => `/admin/wisata/${sunting.id}/foto/${idFoto}`}
+                    urlGeser={(idFoto) => `/admin/wisata/${sunting.id}/foto/${idFoto}/geser`}
+                    urlHapus={(idFoto) => `/admin/wisata/${sunting.id}/foto/${idFoto}`}
+                    foto={fotoTersimpan}
+                    onBerubah={() =>
+                      void queryClient.invalidateQueries({ queryKey: ['admin', 'wisata'] })
+                    }
+                    petunjuk="Foto pertama (bernomor 1) dipakai sebagai gambar utama destinasi. Pakai panah untuk mengubah urutannya, pensil untuk keterangan, dan silang merah untuk menghapus."
+                  />
+                </div>
+              </div>
+            ) : (
+              <InputBanyakGambar
+                label="Foto Destinasi"
+                berkas={fotoBaru}
+                onUbah={setFotoBaru}
+                petunjuk="Foto pertama dipakai sebagai gambar utama destinasi. Setelah destinasi tersimpan, foto dapat ditambah, diurutkan ulang, atau dihapus lewat tombol Ubah."
+                galat={galat?.fieldError('foto')}
+              />
+            )}
+
             <div className="flex flex-wrap gap-2">
               <Tombol type="submit" disabled={simpan.isPending}>
                 {simpan.isPending ? 'Menyimpan…' : sunting ? 'Simpan Perubahan' : 'Tambah Destinasi'}
@@ -567,13 +633,6 @@ function PanelWisata() {
                       </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-3 text-sm">
-                      <button
-                        onClick={() => setFotoDibuka(fotoDibuka === w.id ? null : w.id)}
-                        aria-expanded={fotoDibuka === w.id}
-                        className="text-slate-700 hover:underline"
-                      >
-                        {fotoDibuka === w.id ? 'Tutup Foto' : 'Kelola Foto'}
-                      </button>
                       <AksiBaris
                         nama={`destinasi “${w.nama}”`}
                         onSunting={() => {
@@ -593,19 +652,6 @@ function PanelWisata() {
                     </div>
                   </div>
 
-                  {fotoDibuka === w.id && (
-                    <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
-                      <PengelolaFoto
-                        urlUnggah={`/admin/wisata/${w.id}/foto`}
-                        urlHapus={(idFoto) => `/admin/wisata/${w.id}/foto/${idFoto}`}
-                        foto={w.photos ?? []}
-                        onBerubah={() =>
-                          void queryClient.invalidateQueries({ queryKey: ['admin', 'wisata'] })
-                        }
-                        petunjuk="Foto pertama dipakai sebagai gambar utama destinasi."
-                      />
-                    </div>
-                  )}
                 </li>
               ))}
             </ul>
@@ -628,8 +674,9 @@ function PanelProduk() {
   }
   const [form, setForm] = useState(kosong)
   const [sunting, setSunting] = useState<Produk | null>(null)
-  const [fotoDibuka, setFotoDibuka] = useState<number | null>(null)
   const [galat, setGalat] = useState<ApiRequestError | null>(null)
+
+  const [fotoBaru, setFotoBaru] = useState<File[]>([])
 
   const { data, isPending } = useQuery({
     queryKey: ['admin', 'produk'],
@@ -639,17 +686,32 @@ function PanelProduk() {
     },
   })
 
+  // Dari hasil kueri terbaru, bukan dari potret `sunting` — lihat panel Wisata.
+  const fotoTersimpan = sunting
+    ? (data?.find((p) => p.id === sunting.id)?.photos ?? sunting.photos ?? [])
+    : []
+
+  // Dua langkah, dengan alasan yang sama seperti pada panel Wisata: endpoint
+  // fotonya beralamat pada produk yang sudah ada, sehingga produk baru belum
+  // punya id saat formulir dikirim.
   const simpan = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       const isi = { ...form, harga: form.harga || null }
 
-      return sunting
-        ? api.put(`/admin/produk/${sunting.id}`, isi)
-        : api.post('/admin/produk', isi)
+      const r = sunting
+        ? await api.put(`/admin/produk/${sunting.id}`, isi)
+        : await api.post<ApiSuccess<Produk>>('/admin/produk', isi)
+
+      const id = sunting?.id ?? (r.data as ApiSuccess<Produk>).data.id
+
+      if (fotoBaru.length > 0) {
+        await api.post(`/admin/produk/${id}/foto`, keFormData({ foto: fotoBaru }))
+      }
     },
     onSuccess: () => {
       setForm(kosong)
       setSunting(null)
+      setFotoBaru([])
       setGalat(null)
       void queryClient.invalidateQueries({ queryKey: ['admin', 'produk'] })
     },
@@ -750,6 +812,34 @@ function PanelProduk() {
               </Kolom>
             </div>
 
+            {/* Alasannya sama dengan panel Wisata — lihat komentar di sana. */}
+            {sunting ? (
+              <div>
+                <p className="block text-sm font-medium text-slate-900">Foto Produk</p>
+                <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                  <PengelolaFoto
+                    urlUnggah={`/admin/produk/${sunting.id}/foto`}
+                    urlUbah={(idFoto) => `/admin/produk/${sunting.id}/foto/${idFoto}`}
+                    urlGeser={(idFoto) => `/admin/produk/${sunting.id}/foto/${idFoto}/geser`}
+                    urlHapus={(idFoto) => `/admin/produk/${sunting.id}/foto/${idFoto}`}
+                    foto={fotoTersimpan}
+                    onBerubah={() =>
+                      void queryClient.invalidateQueries({ queryKey: ['admin', 'produk'] })
+                    }
+                    petunjuk="Foto pertama (bernomor 1) dipakai sebagai gambar utama produk. Pakai panah untuk mengubah urutannya, pensil untuk keterangan, dan silang merah untuk menghapus."
+                  />
+                </div>
+              </div>
+            ) : (
+              <InputBanyakGambar
+                label="Foto Produk"
+                berkas={fotoBaru}
+                onUbah={setFotoBaru}
+                petunjuk="Foto pertama dipakai sebagai gambar utama produk. Setelah produk tersimpan, foto dapat ditambah, diurutkan ulang, atau dihapus lewat tombol Ubah."
+                galat={galat?.fieldError('foto')}
+              />
+            )}
+
             <div className="flex flex-wrap gap-2">
               <Tombol type="submit" disabled={simpan.isPending}>
                 {simpan.isPending ? 'Menyimpan…' : sunting ? 'Simpan Perubahan' : 'Tambah Produk'}
@@ -836,13 +926,6 @@ function PanelProduk() {
                           )}
                         </td>
                         <td className="py-2.5 text-right whitespace-nowrap">
-                          <button
-                            onClick={() => setFotoDibuka(fotoDibuka === p.id ? null : p.id)}
-                            aria-expanded={fotoDibuka === p.id}
-                            className="mr-3 text-slate-700 hover:underline"
-                          >
-                            {fotoDibuka === p.id ? 'Tutup Foto' : 'Kelola Foto'}
-                          </button>
                           <AksiBaris
                             nama={`produk “${p.nama_produk}”`}
                             onSunting={() => {
@@ -864,23 +947,6 @@ function PanelProduk() {
                         </td>
                       </tr>
 
-                      {fotoDibuka === p.id && (
-                        <tr key={`${p.id}-foto`} className="border-b border-slate-100">
-                          {/* colSpan menyamai jumlah kolom tabel; tanpa ini baris
-                              foto hanya selebar kolom pertama. */}
-                          <td colSpan={4} className="bg-slate-50 p-4">
-                            <PengelolaFoto
-                              urlUnggah={`/admin/produk/${p.id}/foto`}
-                              urlHapus={(idFoto) => `/admin/produk/${p.id}/foto/${idFoto}`}
-                              foto={p.photos ?? []}
-                              onBerubah={() =>
-                                void queryClient.invalidateQueries({ queryKey: ['admin', 'produk'] })
-                              }
-                              petunjuk="Foto pertama dipakai sebagai gambar utama produk."
-                            />
-                          </td>
-                        </tr>
-                      )}
                     </Fragment>
                   ))}
                 </tbody>

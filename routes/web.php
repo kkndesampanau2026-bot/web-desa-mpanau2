@@ -8,7 +8,6 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Publik\BerandaController;
 use App\Http\Controllers\Publik\BeritaController;
 use App\Http\Controllers\Publik\EkonomiController;
-use App\Http\Controllers\Publik\GaleriController;
 use App\Http\Controllers\Publik\InfografisController;
 use App\Http\Controllers\Publik\LayananMandiriController;
 use App\Http\Controllers\Publik\PengaduanController;
@@ -18,6 +17,7 @@ use App\Http\Controllers\Publik\ProfilController;
 use App\Http\Controllers\Publik\SuratPengantarController;
 use App\Http\Controllers\Publik\TelegramWebhookController;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -59,9 +59,6 @@ Route::middleware('catat.kunjungan')->group(function () {
 
     Route::get('/berita', [BeritaController::class, 'index'])->name('berita.index');
     Route::get('/berita/{slug}', [BeritaController::class, 'show'])->name('berita.show');
-
-    Route::get('/galeri', [GaleriController::class, 'index'])->name('galeri.index');
-    Route::get('/galeri/{slug}', [GaleriController::class, 'show'])->name('galeri.show');
 
     /*
     | Infografis — satu halaman induk dengan 6 sub-tab (PRD Bagian 11).
@@ -141,10 +138,47 @@ Route::middleware('catat.kunjungan')->group(function () {
 
     /*
     | Pengaduan Masyarakat — PRD 6.15.
+    |
+    | Halaman FORMULIRNYA sudah tidak ada. Mengadu kini hanya lewat tombol
+    | mengambang "Aduan Warga" yang menemani pengunjung di setiap halaman —
+    | halaman tersendiri berisi formulir yang sama hanyalah pintu masuk kedua
+    | menuju tempat yang sama.
+    |
+    | Yang tersisa adalah pelacakannya, dan ia pindah ke bawah /layanan-mandiri
+    | bersama layanan warga lain. POST /pengaduan (pengiriman aduan) TETAP di
+    | alamat lama — itu endpoint yang dipanggil tombol mengambang, bukan
+    | halaman.
     */
-    Route::get('/pengaduan', [PengaduanController::class, 'formulir'])->name('pengaduan');
-    Route::get('/pengaduan/lacak', [PengaduanController::class, 'lacak'])
+    Route::get('/layanan-mandiri/lacak', [PengaduanController::class, 'lacak'])
         ->name('pengaduan.lacak');
+
+    /*
+    | Alamat lama. Nomor tiket beredar bersama tautannya — tersalin ke
+    | WhatsApp, tercatat di buku agenda desa — jadi keduanya tetap dijawab
+    | sebagai pengalihan permanen alih-alih berubah menjadi 404.
+    */
+    /*
+     * `Route::get`, BUKAN `Route::redirect`.
+     *
+     * `Route::redirect()` mendaftarkan route untuk SEMUA method, termasuk
+     * POST — dan `POST /pengaduan` adalah endpoint yang dipakai tombol
+     * mengambang "Aduan Warga" untuk mengirim aduan. Saat ini pengirimannya
+     * selamat semata karena route POST-nya didaftarkan belakangan sehingga
+     * menimpa entri milik redirect; sandaran yang hilang begitu urutan baris
+     * di berkas ini berubah, dan gejalanya paling buruk: aduan warga berbalas
+     * "berhasil" padahal tidak pernah tersimpan.
+     */
+    Route::get('/pengaduan', fn () => redirect('/layanan-mandiri', 301));
+
+    Route::get(
+        '/pengaduan/lacak',
+        fn (Request $request) => redirect(
+            '/layanan-mandiri/lacak'.($request->query('tiket')
+                ? '?tiket='.urlencode((string) $request->query('tiket'))
+                : ''),
+            301
+        )
+    );
 
     /*
     | Peta Desa & Titik Lokasi — PRD 6.9.
@@ -276,7 +310,6 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
         ['profil', 'Profil', 'manage-village-profile'],
         ['sotk-bpd', 'Sotk', 'manage-officials'],
         ['berita', 'Berita', 'manage-news'],
-        ['galeri', 'Galeri', 'manage-gallery'],
         ['penduduk', 'Penduduk', 'manage-population-data'],
         ['apbdes', 'Apbdes', 'manage-apbdes'],
         ['stunting', 'Stunting', 'manage-stunting'],

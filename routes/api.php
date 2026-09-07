@@ -4,7 +4,6 @@ use App\Http\Controllers\Api\V1\Admin\BansosController as AdminBansosController;
 use App\Http\Controllers\Api\V1\Admin\BpdMemberController as AdminBpdMemberController;
 use App\Http\Controllers\Api\V1\Admin\BudgetController;
 use App\Http\Controllers\Api\V1\Admin\EkonomiController as AdminEkonomiController;
-use App\Http\Controllers\Api\V1\Admin\GalleryController as AdminGalleryController;
 use App\Http\Controllers\Api\V1\Admin\IndeksDesaController;
 use App\Http\Controllers\Api\V1\Admin\NewsController as AdminNewsController;
 use App\Http\Controllers\Api\V1\Admin\OfficialController as AdminOfficialController;
@@ -18,7 +17,6 @@ use App\Http\Controllers\Api\V1\Admin\SuratPengantarController as AdminSuratCont
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Public\BansosController;
 use App\Http\Controllers\Api\V1\Public\EkonomiController;
-use App\Http\Controllers\Api\V1\Public\GalleryController;
 use App\Http\Controllers\Api\V1\Public\InfografisController;
 use App\Http\Controllers\Api\V1\Public\NewsController;
 use App\Http\Controllers\Api\V1\Public\PengaduanController;
@@ -82,8 +80,6 @@ Route::prefix('v1')->group(function () {
         // tertelan oleh parameter {slug}.
         Route::get('/berita/{slug}', [NewsController::class, 'show']);
 
-        Route::get('/galeri', [GalleryController::class, 'index']);
-        Route::get('/galeri/{slug}', [GalleryController::class, 'show']);
 
         Route::get('/settings', [SettingController::class, 'index']);
 
@@ -173,6 +169,10 @@ Route::prefix('v1')->group(function () {
 
         // Berita
         Route::middleware('permission:manage-news')->group(function () {
+            // Didaftarkan SEBELUM apiResource agar "kategori" tidak tertelan
+            // sebagai parameter {news} pada /berita/{news}.
+            Route::get('berita/kategori', [AdminNewsController::class, 'kategori']);
+
             Route::apiResource('berita', AdminNewsController::class)
                 ->parameters(['berita' => 'news'])
                 ->names('admin.berita');
@@ -301,20 +301,19 @@ Route::prefix('v1')->group(function () {
         |------------------------------------------------------------------
         */
 
-        Route::middleware('permission:manage-gallery')->group(function () {
-            Route::get('/galeri', [AdminGalleryController::class, 'index']);
-            Route::post('/galeri', [AdminGalleryController::class, 'store']);
-            Route::get('/galeri/{gallery}', [AdminGalleryController::class, 'show']);
-            // Form yang menyertakan berkas harus dikirim sebagai POST dengan
-            // field `_method=PUT`: PHP tidak mengurai body multipart pada
-            // request PUT, sedangkan method spoofing Laravel menanganinya.
-            Route::put('/galeri/{gallery}', [AdminGalleryController::class, 'update']);
-            Route::delete('/galeri/{gallery}', [AdminGalleryController::class, 'destroy']);
-
-            Route::post('/galeri/{gallery}/foto', [AdminGalleryController::class, 'unggahFoto']);
-            Route::put('/galeri/{gallery}/foto/{photo}', [AdminGalleryController::class, 'ubahFoto']);
-            Route::delete('/galeri/{gallery}/foto/{photo}', [AdminGalleryController::class, 'hapusFoto']);
-        });
+        /*
+        | Modul Galeri DIHENTIKAN.
+        |
+        | Seluruh route-nya — publik maupun CMS — dicabut agar tidak ada lagi
+        | jalur yang dapat membukanya. Model, migrasi, dan data albumnya
+        | sengaja DIBIARKAN utuh: mencabut route dapat dibatalkan dalam satu
+        | commit, sedangkan menghapus tabelnya membuang foto kegiatan desa
+        | yang sudah terlanjur diunggah dan tidak dapat dipulihkan.
+        |
+        | Permission `manage-gallery` ikut dibiarkan pada RolePermissionSeeder
+        | dengan alasan yang sama: mencabutnya menuntut perubahan peran yang
+        | harus dibalik satu per satu bila modul ini dihidupkan lagi.
+        */
 
         Route::middleware('permission:manage-potential')->group(function () {
             Route::get('/potensi', [AdminEkonomiController::class, 'potensiIndex']);
@@ -329,6 +328,17 @@ Route::prefix('v1')->group(function () {
             Route::put('/wisata/{tourismSpot}', [AdminEkonomiController::class, 'wisataUbah']);
             Route::delete('/wisata/{tourismSpot}', [AdminEkonomiController::class, 'wisataHapus']);
             Route::post('/wisata/{tourismSpot}/foto', [AdminEkonomiController::class, 'wisataFotoUnggah']);
+            // Keterangan & urutan foto dapat diperbaiki tanpa mengunggah
+            // ulang — salah urut atau salah ketik saat unggah adalah kesalahan
+            // yang lumrah, dan menghapus lalu mengunggah lagi bukan perbaikan.
+            Route::put(
+                '/wisata/{tourismSpot}/foto/{photo}',
+                [AdminEkonomiController::class, 'wisataFotoUbah']
+            );
+            Route::put(
+                '/wisata/{tourismSpot}/foto/{photo}/geser',
+                [AdminEkonomiController::class, 'wisataFotoGeser']
+            );
             Route::delete(
                 '/wisata/{tourismSpot}/foto/{photo}',
                 [AdminEkonomiController::class, 'wisataFotoHapus']
@@ -341,6 +351,14 @@ Route::prefix('v1')->group(function () {
             Route::put('/produk/{product}', [AdminEkonomiController::class, 'produkUbah']);
             Route::delete('/produk/{product}', [AdminEkonomiController::class, 'produkHapus']);
             Route::post('/produk/{product}/foto', [AdminEkonomiController::class, 'produkFotoUnggah']);
+            Route::put(
+                '/produk/{product}/foto/{photo}',
+                [AdminEkonomiController::class, 'produkFotoUbah']
+            );
+            Route::put(
+                '/produk/{product}/foto/{photo}/geser',
+                [AdminEkonomiController::class, 'produkFotoGeser']
+            );
             Route::delete(
                 '/produk/{product}/foto/{photo}',
                 [AdminEkonomiController::class, 'produkFotoHapus']

@@ -5,6 +5,7 @@ import {
   FileSearch,
   FileSignature,
   FileText,
+  MessageSquareWarning,
   TicketCheck,
   type LucideIcon,
 } from 'lucide-react'
@@ -12,7 +13,7 @@ import { IsiHalaman, Kartu, KepalaHalaman } from '@/Components/ui'
 import { LayoutPublik } from '@/Layouts/LayoutPublik'
 
 const DESKRIPSI =
-  'Berbagai layanan warga yang dapat diakses mandiri tanpa perlu datang ke kantor desa: mengajukan surat pengantar, memantau proses persetujuannya, hingga memohon informasi publik kepada PPID Desa.'
+  'Berbagai layanan warga yang dapat diakses mandiri tanpa perlu datang ke kantor desa: mengajukan surat pengantar, memantau proses persetujuannya, memohon informasi publik kepada PPID Desa, hingga melacak pengaduan yang sudah dikirim.'
 
 interface Layanan {
   ikon: LucideIcon
@@ -63,6 +64,23 @@ const LAYANAN: Layanan[] = [
       'Pantau perkembangan permohonan informasi publik yang telah Anda ajukan menggunakan nomor registrasi.',
     ke: '/ppid/permintaan/lacak',
     aksi: 'Lacak permohonan',
+  },
+  /*
+   * Hanya PELACAKANNYA yang berdiri di sini, bukan formulir pengaduannya.
+   *
+   * Mengirim aduan sudah punya jalannya sendiri lewat tombol mengambang
+   * "Aduan Warga" yang menemani pengunjung di SETIAP halaman — menaruh kartu
+   * kedua menuju formulir yang sama hanya menggandakan pintu masuk. Yang
+   * selama ini tidak punya pintu justru pelacakannya: warga yang sudah
+   * memegang nomor tiket harus menebak alamatnya sendiri.
+   */
+  {
+    ikon: MessageSquareWarning,
+    judul: 'Lacak Aduan Warga',
+    deskripsi:
+      'Pantau tindak lanjut pengaduan yang telah Anda kirim beserta tanggapan petugas, menggunakan nomor tiket aduan.',
+    ke: '/layanan-mandiri/lacak',
+    aksi: 'Lacak aduan',
   },
 ]
 

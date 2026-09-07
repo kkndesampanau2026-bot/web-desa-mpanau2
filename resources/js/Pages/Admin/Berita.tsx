@@ -28,6 +28,14 @@ interface Berita {
   gambar_utama: string | null
   og_image: string | null
   jumlah_dilihat: number
+  /** Dimuat lewat `->with('kategori')` pada endpoint index & show. */
+  kategori: KategoriBerita | null
+}
+
+interface KategoriBerita {
+  id: number
+  nama: string
+  slug: string
 }
 
 const STATUS: Berita['status'][] = ['draft', 'terjadwal', 'published', 'diarsipkan']
@@ -166,11 +174,26 @@ function FormBerita({
   const [galat, setGalat] = useState<ApiRequestError | null>(null)
   const [gambarUtama, setGambarUtama] = useState<File | null>(null)
   const [ogImage, setOgImage] = useState<File | null>(null)
+
+  /*
+    Kategori diambil dari endpoint CMS, bukan dari daftar berita yang sudah
+    ada: kategori yang belum pernah dipakai satu berita pun tetap harus dapat
+    dipilih — justru itulah keadaan setiap desa pada hari pertama.
+  */
+  const { data: kategori } = useQuery({
+    queryKey: ['admin', 'berita', 'kategori'],
+    queryFn: async () => {
+      const r = await api.get<ApiSuccess<KategoriBerita[]>>('/admin/berita/kategori')
+      return r.data.data
+    },
+  })
   const [form, setForm] = useState({
     judul: berita?.judul ?? '',
     ringkasan: berita?.ringkasan ?? '',
     konten: berita?.konten ?? '',
     status: berita?.status ?? ('draft' as Berita['status']),
+    // Kosong berarti "tanpa kategori" — dikirim sebagai null, bukan "".
+    news_category_id: berita?.kategori?.id ? String(berita.kategori.id) : '',
     // datetime-local menuntut format YYYY-MM-DDTHH:mm.
     tanggal_publish: berita?.tanggal_publish?.slice(0, 16) ?? '',
   })
@@ -180,6 +203,7 @@ function FormBerita({
       const isi = {
         ...nilai,
         tanggal_publish: nilai.tanggal_publish || null,
+        news_category_id: nilai.news_category_id || null,
         gambar_utama: gambarUtama,
         og_image: ogImage,
       }
@@ -262,6 +286,25 @@ function FormBerita({
             </Kolom>
 
             <div className="grid gap-4 sm:grid-cols-2">
+              <Kolom
+                label="Kategori"
+                htmlFor="news_category_id"
+                petunjuk="Menentukan chip filter tempat berita ini muncul di situs publik."
+                galat={galat?.fieldError('news_category_id')}
+              >
+                <Pilihan
+                  id="news_category_id"
+                  value={form.news_category_id}
+                  onChange={(v) => setForm((f) => ({ ...f, news_category_id: v }))}
+                  options={(kategori ?? []).map((k) => ({
+                    value: String(k.id),
+                    label: k.nama,
+                  }))}
+                  placeholder="Tanpa kategori"
+                  galat={galat?.fieldError('news_category_id')}
+                />
+              </Kolom>
+
               <Kolom label="Status" htmlFor="status">
                 <Pilihan
                   id="status"

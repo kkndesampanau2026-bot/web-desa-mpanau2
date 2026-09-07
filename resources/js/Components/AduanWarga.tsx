@@ -7,10 +7,13 @@ import { useHalaman } from '@/types/inertia'
 /**
  * Tombol mengambang "Aduan Warga" beserta popup formulirnya.
  *
- * Formulir ini kembaran dari halaman `/pengaduan`, tetapi dapat dibuka dari
- * halaman publik mana pun. Ia mengirim ke endpoint yang sama; server lalu
- * mengarahkan ke halaman pengaduan yang menampilkan nomor tiket, sehingga
- * warga tetap memperoleh tanda terima meski mengadu lewat popup.
+ * Inilah SATU-SATUNYA cara warga mengirim aduan: halaman `/pengaduan` yang
+ * dulu memuat formulir kembarannya sudah dihapus, karena ia hanya pintu masuk
+ * kedua menuju formulir yang sama.
+ *
+ * Setelah terkirim, server mengarahkan ke halaman lacak beserta nomor
+ * tiketnya — bukan `back()` — sebab popup ini dapat dibuka dari halaman mana
+ * pun, dan tanda terima belum tentu terlihat pada halaman asalnya.
  *
  * Kategori pengaduan datang sebagai prop bersama Inertia agar popup tidak
  * perlu memuat data sendiri.
@@ -50,8 +53,8 @@ export function AduanWarga() {
     e.preventDefault()
     post('/pengaduan', {
       forceFormData: true,
-      // Sukses memicu redirect server ke /pengaduan (menampilkan tiket);
-      // popup ditutup & dikosongkan sebelum navigasi berlangsung.
+      // Sukses memicu redirect server ke /layanan-mandiri/lacak beserta
+      // nomor tiketnya; popup ditutup & dikosongkan sebelum navigasi.
       onSuccess: () => {
         reset()
         setBuka(false)

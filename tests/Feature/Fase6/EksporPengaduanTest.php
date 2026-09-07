@@ -98,8 +98,11 @@ class EksporPengaduanTest extends TestCase
 
     public function test_formulir_publik_menawarkan_dan_menerima_kategori_baru(): void
     {
-        $this->get('/pengaduan')->assertOk()->assertInertia(
-            fn ($page) => $page->where('kategori', Complaint::KATEGORI)
+        // Halaman formulirnya sudah tidak ada; kategori kini sampai ke warga
+        // lewat prop bersama yang menyertai SETIAP halaman publik, karena
+        // formulirnya berupa popup mengambang.
+        $this->get('/')->assertOk()->assertInertia(
+            fn ($page) => $page->where('kategori_pengaduan', Complaint::KATEGORI)
         );
 
         $this->post('/pengaduan', [
@@ -110,6 +113,53 @@ class EksporPengaduanTest extends TestCase
         ])->assertSessionHasNoErrors();
 
         $this->assertDatabaseHas('complaints', ['kategori_pengaduan' => 'TRANTIBUM']);
+    }
+
+    public function test_halaman_formulir_pengaduan_sudah_tidak_ada(): void
+    {
+        // Mengadu kini hanya lewat popup mengambang. Alamat lamanya dialihkan,
+        // bukan dibiarkan menjadi 404 — ia sempat beredar dan terindeks.
+        $this->get('/pengaduan')
+            ->assertRedirect('/layanan-mandiri')
+            ->assertStatus(301);
+    }
+
+    public function test_alamat_lacak_lama_dialihkan_beserta_nomor_tiketnya(): void
+    {
+        $this->get('/pengaduan/lacak')
+            ->assertRedirect('/layanan-mandiri/lacak')
+            ->assertStatus(301);
+
+        // Nomor tiket beredar bersama tautannya; membuangnya saat mengalihkan
+        // memaksa warga mengetik ulang tiket yang sudah ada di tangannya.
+        $this->get('/pengaduan/lacak?tiket=PGD-20260101-0001')
+            ->assertRedirect('/layanan-mandiri/lacak?tiket=PGD-20260101-0001');
+    }
+
+    public function test_mengadu_mengarahkan_ke_halaman_lacak_beserta_tanda_terima(): void
+    {
+        // POST /pengaduan HARUS tetap sampai ke controller, bukan tertelan
+        // pengalihan GET yang menempati alamat yang sama. Bila ia tertelan,
+        // popup "Aduan Warga" akan menjawab "berhasil" tanpa pernah menyimpan
+        // apa pun — kegagalan paling buruk yang mungkin terjadi di sini.
+        $this->assertSame(0, Complaint::count());
+
+        $this->post('/pengaduan', [
+            'nama' => 'Warga Uji',
+            'no_telepon_wa' => '081234567890',
+            'kategori_pengaduan' => 'PERUMAHAN',
+            'isi_pengaduan' => 'Atap balai dusun bocor sejak hujan pekan lalu.',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame(1, Complaint::count(), 'Aduan seharusnya benar-benar tersimpan.');
+
+        $pengaduan = Complaint::latest('id')->firstOrFail();
+
+        $this->get("/layanan-mandiri/lacak?tiket={$pengaduan->nomor_tiket}")
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('pengaduan.nomor_tiket', $pengaduan->nomor_tiket)
+            );
     }
 
     public function test_kategori_lama_ditolak_validasi(): void

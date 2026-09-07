@@ -172,13 +172,13 @@ class KontenDemoSeeder extends Seeder
     {
         $penulis = User::where('email', 'admin@desa.test')->first();
 
-        $kategori = collect(['Pengumuman', 'Pembangunan', 'Kegiatan Desa'])
-            ->mapWithKeys(fn ($nama) => [
-                $nama => NewsCategory::updateOrCreate(
-                    ['village_id' => $village->id, 'slug' => Str::slug($nama)],
-                    ['nama' => $nama]
-                ),
-            ]);
+        // Kategori TIDAK dibuat di sini: ia data master milik
+        // `KategoriBeritaSeeder`, yang berjalan lebih dulu dan juga di
+        // produksi. Membuatnya ulang di seeder demo membuat kategori ikut
+        // hilang begitu data contoh dilewati.
+        $kategori = NewsCategory::where('village_id', $village->id)
+            ->get()
+            ->keyBy('nama');
 
         $artikel = [
             [

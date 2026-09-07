@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\News;
+use App\Models\NewsCategory;
 use App\Services\ActivityLogger;
 use App\Services\CurrentVillage;
 use App\Services\MediaService;
@@ -42,6 +43,23 @@ class NewsController extends Controller
             ->paginate($request->integer('per_page', 15));
 
         return ApiResponse::paginated($berita);
+    }
+
+    /**
+     * Daftar kategori untuk dropdown formulir berita.
+     *
+     * Dipisahkan dari endpoint publik `/api/v1/berita/kategori` meski isinya
+     * sama: yang publik berada di bawah middleware `catat.kunjungan`, sehingga
+     * setiap kali operator membuka formulir CMS ia akan tercatat sebagai
+     * kunjungan warga dan mengotori statistik pengunjung situs.
+     */
+    public function kategori(): JsonResponse
+    {
+        return ApiResponse::success(
+            NewsCategory::where('village_id', $this->village->id())
+                ->orderBy('nama')
+                ->get(['id', 'nama', 'slug'])
+        );
     }
 
     public function show(News $news): JsonResponse

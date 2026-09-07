@@ -32,15 +32,6 @@ class PengaduanController extends Controller
         private readonly CaptchaVerifier $captcha,
     ) {}
 
-    public function formulir(Request $request): Response
-    {
-        return Inertia::render('Publik/Pengaduan/Kirim', [
-            'kategori' => Complaint::KATEGORI,
-            // Tanda terima dititipkan lewat flash session, sehingga menyegarkan
-            // halaman tidak mengirim ulang pengaduan yang sama.
-            'tiket' => $request->session()->get('tiket_pengaduan'),
-        ]);
-    }
 
     public function ajukan(Request $request): RedirectResponse
     {
@@ -92,10 +83,18 @@ class PengaduanController extends Controller
             return $pengaduan;
         });
 
-        // Diarahkan eksplisit ke halaman pengaduan (bukan back()) agar tanda
-        // terima tetap tampil meski formulir dikirim dari popup "Aduan Warga"
-        // yang bisa dibuka dari halaman mana pun.
-        return redirect()->route('pengaduan')->with('tiket_pengaduan', [
+        /*
+         * Diarahkan ke halaman PELACAKAN, bukan back().
+         *
+         * Formulirnya kini hanya ada sebagai popup mengambang yang dapat
+         * dibuka dari halaman mana pun, jadi `back()` akan memulangkan warga
+         * ke halaman sembarang — dan tanda terimanya belum tentu terlihat di
+         * sana. Halaman lacak justru tempat yang paling tepat: nomor tiketnya
+         * langsung dipakai, dan warga melihat status aduannya sendiri.
+         */
+        return redirect()
+            ->route('pengaduan.lacak', ['tiket' => $pengaduan->nomor_tiket])
+            ->with('tiket_pengaduan', [
             'nomor_tiket' => $pengaduan->nomor_tiket,
             'status' => $pengaduan->status,
             'tanggal_pengaduan' => $pengaduan->created_at->toIso8601String(),
@@ -123,6 +122,10 @@ class PengaduanController extends Controller
 
         return Inertia::render('Publik/Pengaduan/Lacak', [
             'tiket' => $tiket ?: null,
+            // Tanda terima sesaat setelah mengadu. Dititipkan lewat flash
+            // session, sehingga menyegarkan halaman tidak memunculkannya lagi
+            // seolah-olah aduan baru saja terkirim untuk kedua kalinya.
+            'bukti' => $request->session()->get('tiket_pengaduan'),
             'pengaduan' => $pengaduan ? [
                 'nomor_tiket' => $pengaduan->nomor_tiket,
                 'nama' => $pengaduan->namaTersamar(),

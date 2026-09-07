@@ -273,6 +273,15 @@ class EkonomiController extends Controller
         $this->pastikanMilikDesaIni($product->village_id);
 
         $nama = $product->nama_produk;
+
+        // Berkas dikumpulkan selagi barisnya masih ada — sepola wisataHapus().
+        // Tanpa ini, foto anak lenyap dari basis data lewat cascade sementara
+        // berkasnya tertinggal selamanya di storage/app/public sebagai sampah
+        // yang tidak lagi dapat ditelusuri pemiliknya.
+        foreach ($product->photos as $foto) {
+            $this->media->hapus($foto->path);
+        }
+
         $product->delete();
         $this->bersihkanCacheProduk();
 
@@ -302,6 +311,33 @@ class EkonomiController extends Controller
         );
 
         return ApiResponse::success($hasil, "{$jumlah} foto berhasil diunggah.", 201);
+    }
+
+    public function wisataFotoUbah(Request $request, TourismSpot $tourismSpot, int $photo): JsonResponse
+    {
+        $this->pastikanMilikDesaIni($tourismSpot->village_id);
+
+        $berkas = $tourismSpot->photos()->findOrFail($photo);
+        $data = $this->validasiKeteranganFoto($request);
+
+        $berkas->update([
+            'caption' => $data['caption'],
+            'alt_text' => $data['alt_text'] ?? $data['caption'],
+        ]);
+
+        $this->bersihkanCacheWisata();
+
+        return ApiResponse::success($berkas, 'Keterangan foto berhasil disimpan.');
+    }
+
+    public function wisataFotoGeser(Request $request, TourismSpot $tourismSpot, int $photo): JsonResponse
+    {
+        $this->pastikanMilikDesaIni($tourismSpot->village_id);
+
+        $this->geserFoto($request, fn () => $tourismSpot->photos(), $photo);
+        $this->bersihkanCacheWisata();
+
+        return ApiResponse::success(message: 'Urutan foto diperbarui.');
     }
 
     public function wisataFotoHapus(TourismSpot $tourismSpot, int $photo): JsonResponse
@@ -337,6 +373,33 @@ class EkonomiController extends Controller
         return ApiResponse::success($hasil, "{$jumlah} foto berhasil diunggah.", 201);
     }
 
+    public function produkFotoUbah(Request $request, Product $product, int $photo): JsonResponse
+    {
+        $this->pastikanMilikDesaIni($product->village_id);
+
+        $berkas = $product->photos()->findOrFail($photo);
+        $data = $this->validasiKeteranganFoto($request);
+
+        // `product_photos` tidak punya kolom `caption` — hanya `alt_text`.
+        // Keterangan yang diketik operator disimpan ke sana, sehingga satu
+        // formulir yang sama melayani foto wisata maupun produk.
+        $berkas->update(['alt_text' => $data['alt_text'] ?? $data['caption']]);
+
+        $this->bersihkanCacheProduk();
+
+        return ApiResponse::success($berkas, 'Keterangan foto berhasil disimpan.');
+    }
+
+    public function produkFotoGeser(Request $request, Product $product, int $photo): JsonResponse
+    {
+        $this->pastikanMilikDesaIni($product->village_id);
+
+        $this->geserFoto($request, fn () => $product->photos(), $photo);
+        $this->bersihkanCacheProduk();
+
+        return ApiResponse::success(message: 'Urutan foto diperbarui.');
+    }
+
     public function produkFotoHapus(Product $product, int $photo): JsonResponse
     {
         $this->pastikanMilikDesaIni($product->village_id);
@@ -350,6 +413,84 @@ class EkonomiController extends Controller
         $this->logger->log('deleted', $product, "Menghapus foto produk: {$product->nama_produk}");
 
         return ApiResponse::success(message: 'Foto berhasil dihapus.');
+    }
+
+    /**
+     * @return array{caption: ?string, alt_text: ?string}
+     */
+    private function validasiKeteranganFoto(Request $request): array
+    {
+        $data = $request->validate([
+            'caption' => ['nullable', 'string', 'max:255'],
+            'alt_text' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        return [
+            'caption' => $data['caption'] ?? null,
+            'alt_text' => $data['alt_text'] ?? null,
+        ];
+    }
+
+    /**
+     * Menggeser satu foto satu langkah, dengan MENUKAR urutan dua baris
+     * bertetangga.
+     *
+     * Urutan menentukan foto mana yang menjadi gambar utama destinasi/produk
+     * di situs publik. Tanpa ini, salah urut saat mengunggah hanya dapat
+     * diperbaiki dengan menghapus lalu mengunggah ulang seluruh fotonya.
+     *
+     * Ditukar di server, bukan dengan mengirim ulang seluruh daftar dari
+     * klien: daftar di layar bisa kedaluwarsa, dan menuliskannya utuh akan
+     * menghidupkan kembali baris yang sudah dihapus operator lain.
+     *
+     * Relasinya diminta lewat CALLABLE, bukan dioper sebagai objek.
+     *
+     * `findOrFail()` menambahkan `where id = ?` pada query builder DI DALAM
+     * relasi dan tidak melepasnya kembali, sedangkan `clone` pada objek relasi
+     * bersifat dangkal — builder-nya tetap objek yang sama. Mengoper satu
+     * objek relasi karena itu membuat pencarian tetangga mewarisi batasan
+     * "id = foto yang digeser", tidak pernah menemukan tetangga, dan diam-diam
+     * tidak melakukan apa pun. Memanggil `$relasi()` menghasilkan relasi baru
+     * setiap kali, bebas dari sisa batasan.
+     *
+     * @param  callable(): HasMany<Model, Model>  $relasi
+     */
+    private function geserFoto(Request $request, callable $relasi, int $photo): void
+    {
+        $data = $request->validate(['arah' => ['required', 'in:naik,turun']]);
+        $naik = $data['arah'] === 'naik';
+
+        $berkas = $relasi()->findOrFail($photo);
+
+        $tetangga = $relasi()
+            ->where('id', '!=', $berkas->id)
+            ->when(
+                $naik,
+                fn ($q) => $q->where('urutan_tampil', '<=', $berkas->urutan_tampil)
+                    ->orderByDesc('urutan_tampil')->orderByDesc('id'),
+                fn ($q) => $q->where('urutan_tampil', '>=', $berkas->urutan_tampil)
+                    ->orderBy('urutan_tampil')->orderBy('id'),
+            )
+            ->first();
+
+        // Sudah di ujung daftar: bukan kesalahan, hanya tidak ada yang berubah.
+        if ($tetangga === null) {
+            return;
+        }
+
+        DB::transaction(function () use ($berkas, $tetangga) {
+            $urutanBerkas = $berkas->urutan_tampil;
+            $urutanTetangga = $tetangga->urutan_tampil;
+
+            // Nilai kembar (mis. dua baris warisan bernomor 0) tidak akan
+            // berpindah bila sekadar ditukar — beri jarak tegas.
+            if ($urutanBerkas === $urutanTetangga) {
+                $urutanBerkas = $urutanTetangga + ($berkas->id > $tetangga->id ? 1 : -1);
+            }
+
+            $berkas->update(['urutan_tampil' => $urutanTetangga]);
+            $tetangga->update(['urutan_tampil' => $urutanBerkas]);
+        });
     }
 
     /**

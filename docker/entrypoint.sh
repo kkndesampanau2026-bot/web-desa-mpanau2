@@ -71,6 +71,13 @@ php artisan migrate --force
 echo "==> Menyinkronkan peran & izin"
 php artisan db:seed --force --class='Database\Seeders\RolePermissionSeeder'
 
+# Kategori berita, dengan alasan yang sama seperti peran & izin: data master
+# yang idempoten, tidak menimpa konten apa pun, dan tanpanya modul Berita tidak
+# dapat dipakai — operator tidak punya satu pun kategori untuk dipilih, dan
+# filter kategori di situs publik tidak memunculkan chip apa pun.
+echo "==> Menyinkronkan kategori berita"
+php artisan db:seed --force --class='Database\Seeders\KategoriBeritaSeeder'
+
 # Cache aplikasi dikosongkan pada setiap deploy.
 #
 # Bukan kerapian. Cache memakai driver `database`, jadi isinya BERTAHAN

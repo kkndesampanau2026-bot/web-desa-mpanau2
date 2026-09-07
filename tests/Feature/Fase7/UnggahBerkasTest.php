@@ -2,10 +2,10 @@
 
 namespace Tests\Feature\Fase7;
 
-use App\Models\Gallery;
 use App\Models\News;
 use App\Models\Official;
 use App\Models\Product;
+use App\Models\ProductPhoto;
 use App\Models\User;
 use App\Models\Village;
 use App\Models\VillageProfile;
@@ -183,31 +183,24 @@ class UnggahBerkasTest extends TestCase
     // Galeri
     // ------------------------------------------------------------------
 
-    public function test_unggah_banyak_foto_ke_album_dan_sampul_otomatis(): void
+    public function test_unggah_banyak_foto_produk_tersimpan(): void
     {
         $this->masukSebagai('Operator Konten');
 
-        $album = $this->postJson('/api/v1/admin/galeri', [
-            'nama_album' => 'HUT Desa 2026',
-            'tanggal_kegiatan' => '2026-08-17',
-        ])->assertCreated();
+        $id = $this->postJson('/api/v1/admin/produk', [
+            'nama_produk' => 'Keripik Pisang',
+            'nama_penjual' => 'Ibu Ani',
+        ])->assertCreated()->json('data.id');
 
-        $id = $album->json('data.id');
-        $this->assertNull($album->json('data.cover_image'));
-
-        $this->postJson("/api/v1/admin/galeri/{$id}/foto", [
+        $this->postJson("/api/v1/admin/produk/{$id}/foto", [
             'foto' => [$this->gambar('a.jpg'), $this->gambar('b.jpg'), $this->gambar('c.jpg')],
-            'caption' => ['Upacara', 'Lomba', 'Panggung'],
         ])->assertCreated();
 
-        $galeri = Gallery::with('photos')->findOrFail($id);
+        $produk = Product::with('photos')->findOrFail($id);
 
-        $this->assertCount(3, $galeri->photos);
-        $this->assertSame('Upacara', $galeri->photos[0]->caption);
-        // Album tanpa sampul memakai foto pertama yang diunggah.
-        $this->assertSame($galeri->photos[0]->path, $galeri->cover_image);
+        $this->assertCount(3, $produk->photos);
 
-        foreach ($galeri->photos as $foto) {
+        foreach ($produk->photos as $foto) {
             Storage::disk('public')->assertExists($foto->path);
         }
     }
@@ -216,64 +209,162 @@ class UnggahBerkasTest extends TestCase
     {
         $this->masukSebagai('Operator Konten');
 
-        $id = $this->postJson('/api/v1/admin/galeri', ['nama_album' => 'Posyandu'])
-            ->assertCreated()->json('data.id');
+        $id = $this->postJson('/api/v1/admin/produk', [
+            'nama_produk' => 'Kopi Bubuk',
+            'nama_penjual' => 'Pak Budi',
+        ])->assertCreated()->json('data.id');
 
-        $this->postJson("/api/v1/admin/galeri/{$id}/foto", ['foto' => [$this->gambar()]])
+        $this->postJson("/api/v1/admin/produk/{$id}/foto", ['foto' => [$this->gambar()]])
             ->assertCreated();
-        $this->postJson("/api/v1/admin/galeri/{$id}/foto", ['foto' => [$this->gambar()]])
+        $this->postJson("/api/v1/admin/produk/{$id}/foto", ['foto' => [$this->gambar()]])
             ->assertCreated();
 
-        $urutan = Gallery::findOrFail($id)->photos->pluck('urutan_tampil')->all();
+        $urutan = Product::findOrFail($id)->photos->pluck('urutan_tampil')->all();
 
         // Batch kedua tidak boleh menimpa posisi batch pertama.
         $this->assertSame([1, 2], $urutan);
     }
 
-    public function test_menghapus_album_membuang_seluruh_berkas_fotonya(): void
-    {
-        $this->masukSebagai('Operator Konten');
 
-        $id = $this->postJson('/api/v1/admin/galeri', [
-            'nama_album' => 'Musyawarah Desa',
-            'cover_image' => $this->gambar('sampul.jpg'),
-        ])->assertCreated()->json('data.id');
-
-        $this->postJson("/api/v1/admin/galeri/{$id}/foto", [
-            'foto' => [$this->gambar('a.jpg'), $this->gambar('b.jpg')],
-        ])->assertCreated();
-
-        $galeri = Gallery::with('photos')->findOrFail($id);
-        $berkas = $galeri->photos->pluck('path')->push($galeri->cover_image)->all();
-
-        $this->deleteJson("/api/v1/admin/galeri/{$id}")->assertOk();
-
-        foreach ($berkas as $path) {
-            Storage::disk('public')->assertMissing($path);
-        }
-        $this->assertDatabaseMissing('gallery_photos', ['gallery_id' => $id]);
-    }
-
-    public function test_album_desa_lain_tidak_dapat_diakses(): void
-    {
-        $lain = Village::create([
-            'nama' => 'Desa Lain', 'slug' => 'desa-lain', 'is_active' => true,
-        ]);
-        $album = Gallery::create([
-            'village_id' => $lain->id, 'nama_album' => 'Rahasia', 'slug' => 'rahasia',
-        ]);
-
-        $this->masukSebagai('Operator Konten');
-
-        $this->getJson("/api/v1/admin/galeri/{$album->id}")->assertNotFound();
-        $this->postJson("/api/v1/admin/galeri/{$album->id}/foto", [
-            'foto' => [$this->gambar()],
-        ])->assertNotFound();
-    }
 
     // ------------------------------------------------------------------
     // Produk UMKM
     // ------------------------------------------------------------------
+
+    public function test_foto_yang_salah_unggah_dapat_dihapus_beserta_berkasnya(): void
+    {
+        $this->masukSebagai('Operator Konten');
+
+        $id = $this->postJson('/api/v1/admin/produk', [
+            'nama_produk' => 'Keripik Pisang',
+            'nama_penjual' => 'Ibu Ani',
+        ])->assertCreated()->json('data.id');
+
+        $foto = $this->postJson("/api/v1/admin/produk/{$id}/foto", [
+            'foto' => [$this->gambar('benar.jpg'), $this->gambar('salah.jpg')],
+        ])->assertCreated()->json('data');
+
+        $path = ProductPhoto::findOrFail($foto[1]['id'])->path;
+        Storage::disk('public')->assertExists($path);
+
+        $this->deleteJson("/api/v1/admin/produk/{$id}/foto/{$foto[1]['id']}")->assertOk();
+
+        // Barisnya hilang DAN berkasnya ikut terbuang — foto yang salah unggah
+        // tidak boleh menyisakan berkas yatim di penyimpanan server.
+        $this->assertDatabaseMissing('product_photos', ['id' => $foto[1]['id']]);
+        Storage::disk('public')->assertMissing($path);
+
+        // Foto yang benar tidak ikut terbawa.
+        $this->assertDatabaseHas('product_photos', ['id' => $foto[0]['id']]);
+    }
+
+    public function test_keterangan_foto_dapat_diperbaiki_tanpa_unggah_ulang(): void
+    {
+        $this->masukSebagai('Operator Konten');
+
+        $wisata = $this->postJson('/api/v1/admin/wisata', ['nama' => 'Air Terjun'])
+            ->assertCreated()->json('data.id');
+
+        $foto = $this->postJson("/api/v1/admin/wisata/{$wisata}/foto", [
+            'foto' => [$this->gambar()],
+            'caption' => ['Keterangn slah ketik'],
+        ])->assertCreated()->json('data.0.id');
+
+        $this->putJson("/api/v1/admin/wisata/{$wisata}/foto/{$foto}", [
+            'caption' => 'Air Terjun Mpanau dari sisi timur',
+        ])->assertOk();
+
+        $this->assertDatabaseHas('tourism_spot_photos', [
+            'id' => $foto,
+            'caption' => 'Air Terjun Mpanau dari sisi timur',
+            // Tanpa alt_text tersendiri, keterangannya dipakai sekaligus
+            // sebagai teks alternatif — bukan dibiarkan kosong.
+            'alt_text' => 'Air Terjun Mpanau dari sisi timur',
+        ]);
+    }
+
+    public function test_urutan_foto_dapat_digeser_untuk_mengganti_gambar_utama(): void
+    {
+        $this->masukSebagai('Operator Konten');
+
+        $id = $this->postJson('/api/v1/admin/produk', [
+            'nama_produk' => 'Kopi Bubuk',
+            'nama_penjual' => 'Pak Budi',
+        ])->assertCreated()->json('data.id');
+
+        $foto = $this->postJson("/api/v1/admin/produk/{$id}/foto", [
+            'foto' => [$this->gambar('a.jpg'), $this->gambar('b.jpg')],
+        ])->assertCreated()->json('data');
+
+        [$pertama, $kedua] = [$foto[0]['id'], $foto[1]['id']];
+
+        // Foto kedua dinaikkan menjadi gambar utama.
+        $this->putJson("/api/v1/admin/produk/{$id}/foto/{$kedua}/geser", ['arah' => 'naik'])
+            ->assertOk();
+
+        $urut = ProductPhoto::whereIn('id', [$pertama, $kedua])
+            ->orderBy('urutan_tampil')->pluck('id')->all();
+
+        $this->assertSame([$kedua, $pertama], $urut);
+
+        // Sudah di ujung: bukan galat, hanya tidak ada yang berubah.
+        $this->putJson("/api/v1/admin/produk/{$id}/foto/{$kedua}/geser", ['arah' => 'naik'])
+            ->assertOk();
+
+        $this->assertSame(
+            [$kedua, $pertama],
+            ProductPhoto::whereIn('id', [$pertama, $kedua])
+                ->orderBy('urutan_tampil')->pluck('id')->all()
+        );
+    }
+
+    public function test_foto_produk_lain_tidak_dapat_disunting_atau_digeser(): void
+    {
+        $this->masukSebagai('Operator Konten');
+
+        $buat = fn (string $nama) => $this->postJson('/api/v1/admin/produk', [
+            'nama_produk' => $nama,
+            'nama_penjual' => 'Ibu Ani',
+        ])->assertCreated()->json('data.id');
+
+        $a = $buat('Keripik');
+        $b = $buat('Kopi');
+
+        $foto = $this->postJson("/api/v1/admin/produk/{$a}/foto", ['foto' => [$this->gambar()]])
+            ->assertCreated()->json('data.0.id');
+
+        // Menebak id foto lewat produk lain harus gagal pada SEMUA aksinya,
+        // bukan hanya pada penghapusan.
+        $this->putJson("/api/v1/admin/produk/{$b}/foto/{$foto}", ['caption' => 'Dibajak'])
+            ->assertNotFound();
+        $this->putJson("/api/v1/admin/produk/{$b}/foto/{$foto}/geser", ['arah' => 'naik'])
+            ->assertNotFound();
+    }
+
+    public function test_menghapus_produk_ikut_membuang_berkas_fotonya(): void
+    {
+        $this->masukSebagai('Operator Konten');
+
+        $id = $this->postJson('/api/v1/admin/produk', [
+            'nama_produk' => 'Gula Aren',
+            'nama_penjual' => 'Pak Karta',
+        ])->assertCreated()->json('data.id');
+
+        $this->postJson("/api/v1/admin/produk/{$id}/foto", [
+            'foto' => [$this->gambar('a.jpg'), $this->gambar('b.jpg')],
+        ])->assertCreated();
+
+        $berkas = ProductPhoto::where('product_id', $id)->pluck('path')->all();
+        $this->assertCount(2, $berkas);
+
+        $this->deleteJson("/api/v1/admin/produk/{$id}")->assertOk();
+
+        // Barisnya lenyap lewat cascade; berkasnya harus ikut, kalau tidak ia
+        // tertinggal selamanya tanpa pemilik yang dapat ditelusuri.
+        foreach ($berkas as $path) {
+            Storage::disk('public')->assertMissing($path);
+        }
+    }
 
     public function test_foto_produk_milik_produk_lain_tidak_dapat_dihapus(): void
     {
@@ -358,10 +449,12 @@ class UnggahBerkasTest extends TestCase
     {
         $this->masukSebagai('Operator Konten');
 
-        $id = $this->postJson('/api/v1/admin/galeri', ['nama_album' => 'Uji'])
-            ->assertCreated()->json('data.id');
+        $id = $this->postJson('/api/v1/admin/produk', [
+            'nama_produk' => 'Uji',
+            'nama_penjual' => 'Uji',
+        ])->assertCreated()->json('data.id');
 
-        $this->postJson("/api/v1/admin/galeri/{$id}/foto", [
+        $this->postJson("/api/v1/admin/produk/{$id}/foto", [
             'foto' => [UploadedFile::fake()->create('jahat.php', 10, 'application/x-php')],
         ])->assertStatus(422)->assertJsonValidationErrors('foto.0');
 

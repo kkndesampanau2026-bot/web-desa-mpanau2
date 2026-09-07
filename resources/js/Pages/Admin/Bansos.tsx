@@ -35,11 +35,6 @@ interface Penerima {
   nominal_publik: boolean
 }
 
-interface PantauPencarian {
-  periode: string
-  total_pencarian: number
-  ip_mencurigakan: { ip: string; jumlah_pencarian: number; gagal: number }[]
-}
 
 const FORMAT_RUPIAH = new Intl.NumberFormat('id-ID', {
   style: 'currency',
@@ -51,11 +46,15 @@ const FORMAT_RUPIAH = new Intl.NumberFormat('id-ID', {
  * CMS Bantuan Sosial — PRD 5.8.
  *
  * Seperti modul Kependudukan, NIK di halaman ini selalu tampil TERSAMAR.
- * Halaman juga memuat panel pemantauan pencarian publik, karena fitur Cek
- * Penerima terbuka bagi siapa pun dan perlu diawasi dari upaya enumerasi.
+ *
+ * Panel "Pantau Pencarian" sudah ditarik dari layar ini. Pencatatannya di
+ * server TIDAK ikut dimatikan: `bansos_search_logs` tetap terisi, dan endpoint
+ * `/admin/bansos/pantau-pencarian` tetap hidup. Log itu jejak penyalahgunaan
+ * yang dituntut PRD 6.6 & 15 — membuangnya berarti kehilangan satu-satunya
+ * cara mengetahui bila daftar penerima bantuan sedang dienumerasi.
  */
 export default function BansosAdminPage() {
-  const [tab, setTab] = useState<'penerima' | 'jenis' | 'pantau'>('penerima')
+  const [tab, setTab] = useState<'penerima' | 'jenis'>('penerima')
 
   return (
     <div className="max-w-4xl space-y-6">
@@ -72,7 +71,6 @@ export default function BansosAdminPage() {
           [
             ['penerima', 'Data Penerima'],
             ['jenis', 'Jenis Bantuan'],
-            ['pantau', 'Pantau Pencarian'],
           ] as const
         ).map(([kunci, label]) => (
           <button
@@ -93,7 +91,6 @@ export default function BansosAdminPage() {
 
       {tab === 'penerima' && <DaftarPenerima />}
       {tab === 'jenis' && <DaftarJenis />}
-      {tab === 'pantau' && <PanelPantau />}
     </div>
   )
 }
@@ -526,83 +523,5 @@ function DaftarJenis() {
   )
 }
 
-/**
- * Panel pemantauan pencarian publik — PRD 6.6 & 15.
- *
- * Satu IP dengan puluhan pencarian gagal adalah pola enumerasi, bukan warga
- * yang mengecek statusnya sendiri.
- */
-function PanelPantau() {
-  const { data, isPending } = useQuery({
-    queryKey: ['admin', 'bansos', 'pantau'],
-    queryFn: async () => {
-      const r = await api.get<ApiSuccess<PantauPencarian>>('/admin/bansos/pantau-pencarian')
-      return r.data.data
-    },
-  })
-
-  if (isPending) return <p className="text-slate-500">Memuat…</p>
-
-  return (
-    <div className="space-y-6">
-      <Kartu
-        judul="Aktivitas Pencarian Publik"
-        anak={
-          <div>
-            <p className="text-sm text-slate-600">
-              Ringkasan {data?.periode}. Formulir Cek Penerima sudah ditarik dari situs, jadi
-              angka di bawah hanya terisi bila endpoint lama masih dipanggil dari luar —
-              lonjakan dari satu sumber justru perlu diperhatikan.
-            </p>
-
-            <p className="mt-4 text-2xl font-semibold text-slate-900">
-              {data?.total_pencarian.toLocaleString('id-ID')}
-              <span className="ml-2 text-base font-normal text-slate-500">pencarian</span>
-            </p>
-          </div>
-        }
-      />
-
-      <Kartu
-        judul="Sumber Perlu Diperhatikan"
-        anak={
-          !data?.ip_mencurigakan.length ? (
-            <p className="py-6 text-center text-sm text-slate-500">
-              Tidak ada pola pencarian mencurigakan pada periode ini.
-            </p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200 text-left text-slate-500">
-                    <th scope="col" className="pb-2 font-medium">Sumber (ter-hash)</th>
-                    <th scope="col" className="pb-2 text-right font-medium">Pencarian</th>
-                    <th scope="col" className="pb-2 text-right font-medium">Gagal</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.ip_mencurigakan.map((b) => (
-                    <tr key={b.ip} className="border-b border-slate-100">
-                      <td className="py-2.5 font-mono text-xs text-slate-600">{b.ip}</td>
-                      <td className="py-2.5 text-right tabular-nums text-slate-800">
-                        {b.jumlah_pencarian}
-                      </td>
-                      <td className="py-2.5 text-right tabular-nums text-slate-800">{b.gagal}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              <p className="mt-4 text-xs text-slate-500">
-                Alamat IP tidak disimpan — yang tercatat hanya sidik hash-nya, cukup untuk
-                membedakan satu sumber dari yang lain tanpa menyimpan identitas jaringan.
-              </p>
-            </div>
-          )
-        }
-      />
-    </div>
-  )
-}
 
 BansosAdminPage.layout = (page: ReactNode) => <LayoutAdmin judul="Bantuan Sosial">{page}</LayoutAdmin>

@@ -49,7 +49,6 @@ class RuteHalamanTest extends TestCase
             'profil' => ['/profil', 'Publik/Profil'],
             'pemerintah' => ['/pemerintah', 'Publik/Pemerintah'],
             'berita' => ['/berita', 'Publik/Berita/Index'],
-            'galeri' => ['/galeri', 'Publik/Galeri/Index'],
             'infografis penduduk' => ['/infografis/penduduk', 'Publik/Infografis/Penduduk'],
             'infografis apbdes' => ['/infografis/apbdes', 'Publik/Infografis/Apbdes'],
             'infografis stunting' => ['/infografis/stunting', 'Publik/Infografis/Stunting'],
@@ -68,8 +67,7 @@ class RuteHalamanTest extends TestCase
             'ppid setiap-saat' => ['/ppid/setiap-saat', 'Publik/Ppid/Informasi'],
             'ppid permohonan' => ['/ppid/permintaan', 'Publik/Ppid/Permohonan'],
             'ppid lacak' => ['/ppid/permintaan/lacak', 'Publik/Ppid/Lacak'],
-            'pengaduan' => ['/pengaduan', 'Publik/Pengaduan/Kirim'],
-            'pengaduan lacak' => ['/pengaduan/lacak', 'Publik/Pengaduan/Lacak'],
+            'lacak aduan' => ['/layanan-mandiri/lacak', 'Publik/Pengaduan/Lacak'],
             'peta' => ['/listing', 'Publik/Peta/Listing'],
         ];
     }
@@ -105,7 +103,6 @@ class RuteHalamanTest extends TestCase
             'profil' => ['/admin/profil'],
             'sotk' => ['/admin/sotk-bpd'],
             'berita' => ['/admin/berita'],
-            'galeri' => ['/admin/galeri'],
             'penduduk' => ['/admin/penduduk'],
             'ekonomi' => ['/admin/ekonomi'],
             'peta' => ['/admin/peta'],
@@ -136,7 +133,6 @@ class RuteHalamanTest extends TestCase
 
         // Modul yang memang menjadi tanggung jawabnya.
         $this->actingAs($operator)->get('/admin/berita')->assertOk();
-        $this->actingAs($operator)->get('/admin/galeri')->assertOk();
 
         // Menyembunyikan menu di sidebar bukan kontrol akses (PRD 12.2):
         // route-nya sendiri yang harus menolak.

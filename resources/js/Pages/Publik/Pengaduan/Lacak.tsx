@@ -11,13 +11,23 @@ import { GAYA_INPUT_PENGADUAN, LABEL_STATUS_PENGADUAN } from './status'
  * Nomor tiket hidup di query string, bukan state komponen, sehingga tautan
  * "Lacak Pengaduan" pada tanda terima langsung menampilkan hasilnya.
  */
+interface BuktiPengaduan {
+  nomor_tiket: string
+  status: string
+  tanggal_pengaduan: string
+  jumlah_lampiran: number
+}
+
 export default function LacakPengaduan({
   tiket,
   pengaduan,
+  bukti,
   tidak_ditemukan: tidakDitemukan,
 }: {
   tiket: string | null
   pengaduan: StatusPengaduan | null
+  /** Terisi hanya sesaat setelah aduan dikirim — lihat PengaduanController. */
+  bukti: BuktiPengaduan | null
   tidak_ditemukan: boolean
 }) {
   const [masukan, setMasukan] = useState(tiket ?? '')
@@ -26,16 +36,44 @@ export default function LacakPengaduan({
     <div className="mx-auto w-full max-w-baca px-5 py-10 sm:px-6 sm:py-12">
       <Head title="Lacak Pengaduan" />
 
-      <h1 className="font-heading text-2xl font-bold text-navy">Lacak Pengaduan</h1>
+      <h1 className="font-heading text-2xl font-bold text-navy">Lacak Aduan Warga</h1>
       <p className="mt-2 text-slate-600">
         Masukkan nomor tiket yang Anda terima saat mengirim pengaduan.
       </p>
+
+      {/*
+        Tanda terima sesaat setelah mengadu.
+        
+        Halaman ini menggantikan halaman pengaduan yang dulu menampilkannya:
+        formulirnya kini hanya berupa popup mengambang, sehingga tidak ada
+        halaman lain yang dapat memastikan nomor tiket benar-benar terlihat
+        sebelum warga menutup jendelanya.
+      */}
+      {bukti && (
+        <div
+          role="status"
+          className="mt-6 rounded-xl border-2 border-emerald-200 bg-emerald-50 px-5 py-4"
+        >
+          <p className="font-heading font-bold text-emerald-900">Pengaduan Anda terkirim.</p>
+          <p className="mt-1 text-sm text-emerald-800">
+            Simpan nomor tiket ini — hanya inilah kunci untuk memantau tindak lanjutnya.
+          </p>
+          <p className="font-heading mt-2 font-mono text-lg font-bold text-emerald-900">
+            {bukti.nomor_tiket}
+          </p>
+          {bukti.jumlah_lampiran > 0 && (
+            <p className="mt-1 text-xs text-emerald-700">
+              {bukti.jumlah_lampiran} lampiran ikut terkirim.
+            </p>
+          )}
+        </div>
+      )}
 
       <form
         onSubmit={(e: FormEvent) => {
           e.preventDefault()
           router.get(
-            '/pengaduan/lacak',
+            '/layanan-mandiri/lacak',
             { tiket: masukan.trim() },
             { preserveState: true, preserveScroll: true },
           )
