@@ -387,6 +387,11 @@ export interface TitikLokasi {
   icon_marker: string | null
   /** Tautan internal bila titik ini destinasi wisata / produk terdaftar. */
   tautan: string | null
+  /**
+   * Tautan Google Maps. Tidak pernah null: server membangkitkannya dari
+   * koordinat titik bila perangkat desa tidak mengisinya sendiri.
+   */
+  tautan_maps: string
 }
 
 export interface DataPeta {

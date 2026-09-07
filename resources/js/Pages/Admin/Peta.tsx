@@ -21,6 +21,7 @@ interface TitikLokasi {
   kategori: string
   deskripsi: string | null
   alamat: string | null
+  tautan_maps: string | null
   foto: string | null
   latitude: string | number
   longitude: string | number
@@ -41,6 +42,7 @@ export default function PetaAdminPage() {
     kategori: '',
     deskripsi: '',
     alamat: '',
+    tautan_maps: '',
     latitude: '',
     longitude: '',
   }
@@ -88,6 +90,7 @@ export default function PetaAdminPage() {
       kategori: t.kategori,
       deskripsi: t.deskripsi ?? '',
       alamat: t.alamat ?? '',
+      tautan_maps: t.tautan_maps ?? '',
       latitude: String(t.latitude),
       longitude: String(t.longitude),
     })
@@ -199,6 +202,25 @@ export default function PetaAdminPage() {
                     id="alamat-poi"
                     value={form.alamat}
                     onChange={(e) => setForm({ ...form, alamat: e.target.value })}
+                  />
+                </Kolom>
+              </div>
+
+              <div className="sm:col-span-2">
+                <Kolom
+                  label="Tautan Google Maps"
+                  htmlFor="tautan-maps-poi"
+                  petunjuk="Opsional. Bila dikosongkan, tautan dibuat otomatis dari koordinat di atas. Isi bila lokasi ini sudah punya halaman Google Maps sendiri — salin dari tombol Bagikan di Google Maps."
+                  galat={galat?.fieldError('tautan_maps')}
+                >
+                  <Input
+                    id="tautan-maps-poi"
+                    type="url"
+                    inputMode="url"
+                    placeholder="https://maps.app.goo.gl/…"
+                    value={form.tautan_maps}
+                    onChange={(e) => setForm({ ...form, tautan_maps: e.target.value })}
+                    galat={galat?.fieldError('tautan_maps')}
                   />
                 </Kolom>
               </div>

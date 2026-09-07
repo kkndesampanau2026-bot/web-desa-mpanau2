@@ -44,6 +44,12 @@ class PetaController extends Controller
                     'kategori' => $p->kategori,
                     'deskripsi' => $p->deskripsi,
                     'alamat' => $p->alamat,
+                    // Selalu terisi: bila perangkat desa tidak menyetel tautan
+                    // sendiri, tautan pencarian dibangkitkan dari koordinat
+                    // titik ini. Koordinat wajib ada, jadi popup peta tidak
+                    // pernah kehilangan tombol "buka di Google Maps".
+                    'tautan_maps' => $p->tautan_maps ?: 'https://www.google.com/maps/search/?api=1&query='
+                        .$p->latitude.','.$p->longitude,
                     'dusun' => $p->dusun?->nama,
                     // Dikirim sebagai angka, bukan string, agar Leaflet dapat
                     // langsung memakainya tanpa konversi di sisi klien.

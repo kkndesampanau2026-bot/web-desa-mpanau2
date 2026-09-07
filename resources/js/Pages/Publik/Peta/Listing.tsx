@@ -262,11 +262,30 @@ function IsiPopup({ titik }: { titik: TitikLokasi }) {
       <p className="font-semibold text-navy">{titik.nama}</p>
       <p className="text-xs text-slate-500">{titik.kategori}</p>
       {titik.deskripsi && <p className="mt-1 text-xs text-slate-700">{titik.deskripsi}</p>}
-      {titik.tautan && (
-        <Link href={titik.tautan} className="mt-2 inline-block text-xs underline">
-          Lihat halaman
-        </Link>
-      )}
+
+      <div className="mt-2 flex flex-col gap-1">
+        {titik.tautan && (
+          <Link href={titik.tautan} className="text-xs underline">
+            Lihat halaman
+          </Link>
+        )}
+
+        {/*
+          Tautan navigasi, bukan sekadar pemanis: koordinat pada marker hanya
+          menunjukkan DI MANA lokasinya, sedangkan pengunjung yang hendak
+          berangkat butuh rute. Dibuka di tab baru supaya peta desa yang sedang
+          dijelajahi tidak hilang, dengan `rel` pengaman karena tujuannya
+          ditentukan operator lewat CMS.
+        */}
+        <a
+          href={titik.tautan_maps}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs font-medium text-navy underline"
+        >
+          Buka di Google Maps &rarr;
+        </a>
+      </div>
     </div>
   )
 }

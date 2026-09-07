@@ -31,7 +31,7 @@ class PointOfInterest extends Model
 
     protected $fillable = [
         'village_id', 'dusun_id', 'nama', 'kategori', 'deskripsi',
-        'latitude', 'longitude', 'alamat', 'foto', 'icon_marker',
+        'latitude', 'longitude', 'alamat', 'tautan_maps', 'foto', 'icon_marker',
         'tourism_spot_id', 'product_id', 'status_tampil',
     ];
 

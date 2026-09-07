@@ -113,6 +113,10 @@ class PetaController extends Controller
             'latitude' => ['required', 'numeric', 'between:-90,90'],
             'longitude' => ['required', 'numeric', 'between:-180,180'],
             'alamat' => ['nullable', 'string', 'max:500'],
+            // Skema dibatasi http/https: nilainya dirender sebagai href
+            // pada popup peta publik, sehingga 'javascript:' di sini akan
+            // menjadi celah XSS bagi setiap pengunjung yang mengkliknya.
+            'tautan_maps' => ['nullable', 'url:http,https', 'max:500'],
             'icon_marker' => ['nullable', 'string', 'max:50'],
             'dusun_id' => [
                 'nullable',
@@ -134,6 +138,7 @@ class PetaController extends Controller
             'longitude.required' => 'Koordinat bujur (longitude) wajib diisi.',
             'latitude.between' => 'Latitude berada pada rentang -90 sampai 90.',
             'longitude.between' => 'Longitude berada pada rentang -180 sampai 180.',
+            'tautan_maps.url' => 'Tautan lokasi harus berupa URL lengkap yang diawali https://.',
         ]);
     }
 
