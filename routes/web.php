@@ -3,7 +3,6 @@
 use App\Http\Controllers\Admin\AkunController;
 use App\Http\Controllers\Admin\BannerController;
 use App\Http\Controllers\Admin\EksporPengaduanController;
-use App\Http\Controllers\Admin\LampiranPengaduanController;
 use App\Http\Controllers\Admin\PenggunaController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Publik\BerandaController;
@@ -326,15 +325,9 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     | memuat nama, nomor WhatsApp, dan isi aduan warga, jadi tidak boleh lebih
     | longgar daripada layar yang menampilkannya satu per satu.
     */
-    Route::middleware('permission:respond-complaint')->group(function () {
-        Route::get('/pengaduan/ekspor', EksporPengaduanController::class)
-            ->name('pengaduan.ekspor');
-
-        // Didaftarkan SESUDAH /ekspor: segmen literal harus menang atas
-        // parameter {pengaduan}, kalau tidak "ekspor" tertelan sebagai id.
-        Route::get('/pengaduan/{pengaduan}/lampiran/{lampiran}', LampiranPengaduanController::class)
-            ->name('pengaduan.lampiran');
-    });
+    Route::get('/pengaduan/ekspor', EksporPengaduanController::class)
+        ->middleware('permission:respond-complaint')
+        ->name('pengaduan.ekspor');
 
     /*
     | Banner hero beranda.

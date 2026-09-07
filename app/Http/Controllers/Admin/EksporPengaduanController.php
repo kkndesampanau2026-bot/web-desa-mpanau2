@@ -46,7 +46,7 @@ class EksporPengaduanController extends Controller
 
         $ekspor = new RekapPengaduanExport($villageId, $status, $kategori);
 
-        $jumlah = $ekspor->collection()->count();
+        $jumlah = $ekspor->query()->count();
 
         $this->logger->log(
             'exported',
