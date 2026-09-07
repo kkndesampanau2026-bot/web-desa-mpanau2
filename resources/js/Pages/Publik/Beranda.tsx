@@ -143,9 +143,15 @@ export default function Beranda({
           </picture>
         )}
 
+        {/*
+          `pointer-events-none`: lapisan ini murni hiasan dan menutupi seluruh
+          hero. Tanpa itu ia menelan setiap sentuhan kursor di area hero,
+          sehingga carousel di belakangnya tidak pernah tahu kapan kursor
+          berada di atasnya — dan putar otomatisnya tidak pernah berhenti.
+        */}
         <div
           aria-hidden="true"
-          className="absolute inset-0 -z-10 bg-navy/80"
+          className="pointer-events-none absolute inset-0 -z-10 bg-navy/80"
         />
 
         <div className={`${GAYA_WADAH} py-14 sm:py-16`}>

@@ -35,20 +35,31 @@ export interface PenggunaAuth {
 }
 
 /** Satu baris pratinjau pada dropdown lonceng notifikasi. */
-export interface NotifikasiPengaduanItem {
-  id: number
-  nomor_tiket: string
-  nama: string
-  kategori_pengaduan: string
-  isi_ringkas: string
+export interface NotifikasiItem {
+  judul: string
+  ringkas: string
   /** Sudah berbentuk teks relatif ("5 menit yang lalu"), bukan tanggal mentah. */
-  dibuat: string
+  waktu: string
+  ke: string
 }
 
-export interface NotifikasiPengaduan {
+/** Antrean satu layanan warga. */
+export interface NotifikasiGrup {
+  kunci: 'pengaduan' | 'ppid' | 'surat'
+  label: string
+  /** Menjelaskan APA yang ditunggu, mis. "Menunggu diverifikasi". */
+  keterangan: string
+  /** Halaman layanannya, untuk tautan "Lihat semua". */
+  ke: string
   jumlah: number
-  /** 5 pengaduan "baru" teratas — pratinjau, bukan daftar lengkap. */
-  daftar: NotifikasiPengaduanItem[]
+  /** Maksimal 5 teratas — pratinjau, bukan daftar kerja. */
+  item: NotifikasiItem[]
+}
+
+export interface Notifikasi {
+  /** Jumlah SELURUH grup yang boleh dilihat operator ini. */
+  jumlah: number
+  grup: NotifikasiGrup[]
 }
 
 export interface PropsBersama {
@@ -63,9 +74,9 @@ export interface PropsBersama {
   kategori_pengaduan: string[] | null
   /**
    * Untuk lonceng notifikasi di `LayoutAdmin`. Null di luar dashboard CMS
-   * atau bila operator tidak berwenang menanggapi pengaduan.
+   * atau bila operator tidak berwenang atas SATU pun layanan warga.
    */
-  notifikasi_pengaduan: NotifikasiPengaduan | null
+  notifikasi: Notifikasi | null
   flash: { sukses: string | null; galat: string | null }
   errors: Record<string, string>
   [key: string]: unknown

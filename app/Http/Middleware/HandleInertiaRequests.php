@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\Complaint;
 use App\Services\CurrentVillage;
+use App\Services\NotifikasiAdmin;
 use App\Services\PengaturanSitus;
 use App\Services\VisitorTracker;
 use Illuminate\Http\Request;
@@ -90,14 +91,19 @@ class HandleInertiaRequests extends Middleware
             'kategori_pengaduan' => $diAreaAdmin ? null : Complaint::KATEGORI,
 
             /*
-             * Pengaduan berstatus "baru" — dibagikan ke SELURUH layar dashboard
-             * (bukan hanya halaman Pengaduan) agar lonceng notifikasi pada
-             * `LayoutAdmin` tetap terisi ke mana pun operator bernavigasi, tanpa
-             * permintaan tambahan per halaman. Hanya dihitung untuk operator
-             * yang berwenang menanggapi pengaduan.
+             * Antrean SELURUH layanan warga — pengaduan, permohonan informasi
+             * PPID, dan pengajuan surat pengantar. Dibagikan ke seluruh layar
+             * dashboard (bukan hanya halaman layanannya) agar lonceng
+             * notifikasi pada `LayoutAdmin` tetap terisi ke mana pun operator
+             * bernavigasi, tanpa permintaan tambahan per halaman.
+             *
+             * Penyaringan izinnya ada DI DALAM `NotifikasiAdmin`, per layanan —
+             * bukan satu pemeriksaan di sini untuk semuanya, sebab seorang
+             * Operator PPID berhak melihat antrean permohonan tetapi tidak
+             * berhak mengetahui isi pengaduan warga.
              */
-            'notifikasi_pengaduan' => $diAreaAdmin && $request->user()?->can('respond-complaint')
-                ? fn () => $this->notifikasiPengaduan()
+            'notifikasi' => $diAreaAdmin
+                ? fn () => app(NotifikasiAdmin::class)->untuk($request->user())
                 : null,
 
             /*
@@ -112,35 +118,4 @@ class HandleInertiaRequests extends Middleware
         ];
     }
 
-    /**
-     * Ringkasan pengaduan belum ditanggapi untuk dropdown lonceng notifikasi.
-     *
-     * Daftarnya dibatasi 5 teratas — cukup untuk pratinjau, dan menghindari
-     * membawa seluruh isi pengaduan (yang bisa panjang) pada SETIAP respons
-     * halaman dashboard. Daftar lengkapnya tetap ada di /admin/pengaduan.
-     *
-     * @return array{jumlah: int, daftar: array<int, array<string, mixed>>}
-     */
-    private function notifikasiPengaduan(): array
-    {
-        $baru = Complaint::where('village_id', app(CurrentVillage::class)->id())
-            ->where('status', 'baru');
-
-        return [
-            'jumlah' => (clone $baru)->count(),
-            'daftar' => (clone $baru)
-                ->orderByDesc('created_at')
-                ->limit(5)
-                ->get(['id', 'nomor_tiket', 'nama', 'kategori_pengaduan', 'isi_pengaduan', 'created_at'])
-                ->map(fn (Complaint $p) => [
-                    'id' => $p->id,
-                    'nomor_tiket' => $p->nomor_tiket,
-                    'nama' => $p->nama,
-                    'kategori_pengaduan' => $p->kategori_pengaduan,
-                    'isi_ringkas' => mb_substr($p->isi_pengaduan, 0, 80),
-                    'dibuat' => $p->created_at->diffForHumans(),
-                ])
-                ->all(),
-        ];
-    }
 }

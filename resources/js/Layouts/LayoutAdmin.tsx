@@ -134,8 +134,11 @@ export function LayoutAdmin({
 }) {
   const { props, url } = useHalaman()
   const pengguna = props.auth.user
-  const notifikasi = props.notifikasi_pengaduan
-  const jumlahPengaduanBaru = notifikasi?.jumlah ?? 0
+  const notifikasi = props.notifikasi
+  const jumlahMenunggu = notifikasi?.jumlah ?? 0
+  // Grup kosong tidak ditampilkan: "Permohonan Informasi — 0" hanya menambah
+  // baris yang harus dilewati mata setiap kali lonceng dibuka.
+  const grupBerisi = notifikasi?.grup.filter((g) => g.jumlah > 0) ?? []
 
   const [notifikasiTerbuka, setNotifikasiTerbuka] = useState(false)
   const notifikasiRef = useRef<HTMLDivElement>(null)
@@ -244,85 +247,122 @@ export function LayoutAdmin({
             </div>
 
             <div className="flex shrink-0 items-center gap-3">
-              <div ref={notifikasiRef} className="relative hidden sm:block">
-                <button
-                  type="button"
-                  onClick={() => setNotifikasiTerbuka((t) => !t)}
-                  aria-expanded={notifikasiTerbuka}
-                  aria-haspopup="true"
-                  className="relative inline-flex rounded-full p-2 text-slate-500 hover:bg-slate-100"
-                  aria-label={
-                    jumlahPengaduanBaru > 0
-                      ? `${jumlahPengaduanBaru} pengaduan baru belum ditanggapi`
-                      : 'Tidak ada pengaduan baru'
-                  }
-                >
-                  <Bell className="size-5" />
-                  {jumlahPengaduanBaru > 0 && (
-                    <span
-                      aria-hidden="true"
-                      className="absolute top-0.5 right-0.5 grid h-4.5 min-w-4.5 place-items-center rounded-full bg-rose-600 px-1 text-[10px] leading-none font-semibold text-white"
-                    >
-                      {jumlahPengaduanBaru > 99 ? '99+' : jumlahPengaduanBaru}
-                    </span>
-                  )}
-                </button>
+              {/*
+                Lonceng menampilkan antrean SELURUH layanan warga, dikelompokkan
+                per layanan. Isinya sudah disaring per izin di server
+                (`NotifikasiAdmin`), jadi apa pun yang sampai ke sini memang
+                boleh dilihat operator ini.
 
-                {notifikasiTerbuka && (
-                  <div
-                    role="menu"
-                    aria-label="Notifikasi pengaduan"
-                    className="absolute top-full right-0 z-20 mt-2 w-80 rounded-xl border border-slate-200 bg-white py-2 shadow-lg"
+                Loncengnya sendiri hilang bila operator tidak berwenang atas
+                satu layanan pun — lonceng yang selamanya kosong hanya mengajak
+                ditekan berulang tanpa hasil.
+              */}
+              {notifikasi && (
+                <div ref={notifikasiRef} className="relative hidden sm:block">
+                  <button
+                    type="button"
+                    onClick={() => setNotifikasiTerbuka((t) => !t)}
+                    aria-expanded={notifikasiTerbuka}
+                    aria-haspopup="true"
+                    className="relative inline-flex rounded-full p-2 text-slate-500 hover:bg-slate-100"
+                    aria-label={
+                      jumlahMenunggu > 0
+                        ? `${jumlahMenunggu} permintaan warga menunggu ditangani`
+                        : 'Tidak ada permintaan warga yang menunggu'
+                    }
                   >
-                    <div className="flex items-center justify-between px-4 py-1.5">
-                      <p className="text-sm font-semibold text-slate-900">Pengaduan Baru</p>
-                      {jumlahPengaduanBaru > 0 && (
-                        <span className="text-xs text-slate-500">
-                          {jumlahPengaduanBaru} belum ditanggapi
-                        </span>
-                      )}
-                    </div>
-
-                    {!notifikasi || notifikasi.daftar.length === 0 ? (
-                      <p className="px-4 py-6 text-center text-sm text-slate-500">
-                        Tidak ada pengaduan baru.
-                      </p>
-                    ) : (
-                      <ul className="max-h-80 overflow-y-auto">
-                        {notifikasi.daftar.map((p) => (
-                          <li key={p.id} className="border-t border-slate-100 first:border-t-0">
-                            <Link
-                              href={`/admin/pengaduan?buka=${p.id}`}
-                              onClick={() => setNotifikasiTerbuka(false)}
-                              className="block px-4 py-2.5 hover:bg-slate-50"
-                            >
-                              <div className="flex items-center justify-between gap-2">
-                                <p className="truncate text-sm font-medium text-slate-900">
-                                  {p.nama}
-                                </p>
-                                <span className="shrink-0 text-xs text-slate-400">{p.dibuat}</span>
-                              </div>
-                              <p className="truncate text-xs text-slate-500">
-                                {p.kategori_pengaduan} · {p.isi_ringkas}
-                              </p>
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-
-                    <div className="border-t border-slate-100 px-4 pt-2">
-                      <Link
-                        href="/admin/pengaduan"
-                        onClick={() => setNotifikasiTerbuka(false)}
-                        className="block py-1.5 text-center text-sm font-medium text-teal-700 hover:underline"
+                    <Bell className="size-5" />
+                    {jumlahMenunggu > 0 && (
+                      <span
+                        aria-hidden="true"
+                        className="absolute top-0.5 right-0.5 grid h-4.5 min-w-4.5 place-items-center rounded-full bg-rose-600 px-1 text-[10px] leading-none font-semibold text-white"
                       >
-                        Lihat semua pengaduan
-                      </Link>
+                        {jumlahMenunggu > 99 ? '99+' : jumlahMenunggu}
+                      </span>
+                    )}
+                  </button>
+
+                  {notifikasiTerbuka && (
+                    <div
+                      role="menu"
+                      aria-label="Antrean layanan warga"
+                      className="absolute top-full right-0 z-20 mt-2 w-96 rounded-xl border border-slate-200 bg-white py-2 shadow-lg"
+                    >
+                      <p className="px-4 py-1.5 text-sm font-semibold text-slate-900">
+                        Menunggu Ditangani
+                      </p>
+
+                      {grupBerisi.length === 0 ? (
+                        <p className="px-4 py-6 text-center text-sm text-slate-500">
+                          Tidak ada permintaan warga yang menunggu.
+                        </p>
+                      ) : (
+                        <div className="max-h-96 overflow-y-auto">
+                          {grupBerisi.map((grup) => (
+                            <section key={grup.kunci} aria-label={grup.label}>
+                              <div className="flex items-baseline justify-between gap-2 border-t border-slate-100 bg-slate-50 px-4 py-1.5">
+                                <p className="text-xs font-semibold tracking-wide text-slate-600 uppercase">
+                                  {grup.label}
+                                </p>
+                                <span className="shrink-0 text-xs text-slate-500">
+                                  {grup.jumlah} · {grup.keterangan}
+                                </span>
+                              </div>
+
+                              <ul>
+                                {grup.item.map((item, i) => (
+                                  <li
+                                    key={`${grup.kunci}-${i}`}
+                                    className="border-t border-slate-100 first:border-t-0"
+                                  >
+                                    <Link
+                                      href={item.ke}
+                                      onClick={() => setNotifikasiTerbuka(false)}
+                                      className="block px-4 py-2.5 hover:bg-slate-50"
+                                    >
+                                      <div className="flex items-center justify-between gap-2">
+                                        <p className="truncate text-sm font-medium text-slate-900">
+                                          {item.judul}
+                                        </p>
+                                        <span className="shrink-0 text-xs text-slate-400">
+                                          {item.waktu}
+                                        </span>
+                                      </div>
+                                      <p className="truncate text-xs text-slate-500">
+                                        {item.ringkas}
+                                      </p>
+                                    </Link>
+                                  </li>
+                                ))}
+                              </ul>
+
+                              {/* Pratinjau dibatasi 5; sisanya ada di layarnya. */}
+                              {grup.jumlah > grup.item.length && (
+                                <p className="px-4 py-1.5 text-xs text-slate-400">
+                                  dan {grup.jumlah - grup.item.length} lainnya
+                                </p>
+                              )}
+                            </section>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="space-y-0.5 border-t border-slate-100 px-4 pt-2">
+                        {(notifikasi.grup.length > 0 ? notifikasi.grup : []).map((grup) => (
+                          <Link
+                            key={grup.kunci}
+                            href={grup.ke}
+                            onClick={() => setNotifikasiTerbuka(false)}
+                            className="block py-1 text-center text-sm font-medium text-teal-700 hover:underline"
+                          >
+                            Lihat semua {grup.label.toLowerCase()}
+                          </Link>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              )}
 
               {/*
                 Nama & avatar sekaligus menjadi jalan ke "Akun Saya" — tempat

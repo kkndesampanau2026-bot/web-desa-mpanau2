@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import { Head, Link, router } from '@inertiajs/react'
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet'
 import L from 'leaflet'
@@ -57,6 +57,26 @@ export default function Listing({
   filter: { kategori: string | null }
 }) {
   const [dipilih, setDipilih] = useState<number | null>(null)
+
+  /*
+   * Instance Leaflet dipegang lewat ref, bukan state: memilih satu titik dari
+   * daftar adalah perintah imperatif ("geser peta ke sini, buka popupnya"),
+   * bukan perubahan data yang perlu memicu render ulang seluruh peta.
+   */
+  const peta = useRef<L.Map | null>(null)
+  const marker = useRef<Record<number, L.Marker | null>>({})
+
+  /** Memusatkan peta ke satu titik dan membuka popupnya. */
+  function fokusKe(titik: TitikLokasi) {
+    setDipilih(titik.id)
+
+    // Zoom hanya DINAIKKAN, tidak pernah diturunkan: pengunjung yang sudah
+    // memperbesar peta untuk melihat satu lingkungan tidak boleh terlempar
+    // mundur hanya karena menekan satu nama di daftar.
+    peta.current?.flyTo([titik.latitude, titik.longitude], Math.max(peta.current.getZoom(), 17))
+
+    marker.current[titik.id]?.openPopup()
+  }
 
   function gantiKategori(pilihan?: string) {
     router.get(
@@ -122,6 +142,7 @@ export default function Listing({
                 tidak ada ruang bagi daftar lokasi di bawahnya.
               */}
               <MapContainer
+                ref={peta}
                 center={pusat}
                 zoom={15}
                 scrollWheelZoom={false}
@@ -137,6 +158,9 @@ export default function Listing({
                 {data.titik.map((t) => (
                   <Marker
                     key={t.id}
+                    ref={(m) => {
+                      marker.current[t.id] = m
+                    }}
                     position={[t.latitude, t.longitude]}
                     icon={ikonUntuk(t.kategori)}
                     eventHandlers={{ click: () => setDipilih(t.id) }}
@@ -177,7 +201,20 @@ export default function Listing({
                         style={{ backgroundColor: WARNA_KATEGORI[t.kategori] ?? WARNA_LAINNYA }}
                       />
                       <div className="min-w-0">
-                        <p className="font-semibold text-navy">{t.nama}</p>
+                        {/*
+                          Namanya BERUPA TOMBOL, bukan seluruh kartunya.
+                          Menjadikan kartunya satu tombol akan menyarangkan
+                          tautan "Lihat halaman" di dalam tombol — markup yang
+                          tidak sah dan membingungkan pembaca layar.
+                        */}
+                        <button
+                          type="button"
+                          onClick={() => fokusKe(t)}
+                          aria-current={dipilih === t.id ? 'true' : undefined}
+                          className="text-left font-semibold text-navy underline-offset-4 hover:underline"
+                        >
+                          {t.nama}
+                        </button>
                         <p className="text-xs text-slate-500">{t.kategori}</p>
                         {t.alamat && <p className="mt-1 text-xs text-slate-600">{t.alamat}</p>}
                         {t.tautan && (
@@ -204,6 +241,24 @@ export default function Listing({
 function IsiPopup({ titik }: { titik: TitikLokasi }) {
   return (
     <div className="min-w-40">
+      {/*
+        Foto diunggah perangkat desa lewat CMS -> Titik Lokasi. Sudah lama ikut
+        dikirim controller sebagai URL, tetapi tidak pernah dirender di mana
+        pun — popup ini tempat yang paling masuk akal untuknya.
+
+        `w-full` mengikuti lebar popup Leaflet (maks 300px), dan tingginya
+        dibatasi supaya foto potret tidak membuat popup memanjang menutupi
+        hampir seluruh peta.
+      */}
+      {titik.foto && (
+        <img
+          src={titik.foto}
+          alt={titik.nama}
+          loading="lazy"
+          decoding="async"
+          className="mb-2 h-32 w-full rounded-md bg-slate-100 object-cover"
+        />
+      )}
       <p className="font-semibold text-navy">{titik.nama}</p>
       <p className="text-xs text-slate-500">{titik.kategori}</p>
       {titik.deskripsi && <p className="mt-1 text-xs text-slate-700">{titik.deskripsi}</p>}

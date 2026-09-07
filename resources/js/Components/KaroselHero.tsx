@@ -94,46 +94,59 @@ export function KaroselHero({ gambar }: { gambar: GambarHero[] }) {
   }
 
   return (
-    <div
-      ref={wadah}
-      onMouseEnter={() => setBerhenti(true)}
-      onMouseLeave={() => setBerhenti(false)}
-      onFocusCapture={() => setBerhenti(true)}
-      onBlurCapture={(e) => {
-        if (!wadah.current?.contains(e.relatedTarget as Node)) setBerhenti(false)
-      }}
-      onKeyDown={tanganiTombol}
-      className="absolute inset-0 -z-10"
-      /*
-       * `aria-roledescription="carousel"` sengaja TIDAK dipasang. Gambar-gambar
-       * ini murni latar dekoratif — isi halaman yang sesungguhnya (nama desa)
-       * tidak berubah saat foto berganti, jadi mengumumkannya sebagai carousel
-       * hanya menyuruh pembaca layar menelusuri sesuatu yang tidak berisi apa
-       * pun.
-       */
-    >
-      {gambar.map((g, i) => (
-        <img
-          key={g.url}
-          src={g.url}
-          alt=""
-          aria-hidden="true"
-          fetchPriority={i === 0 ? 'high' : 'low'}
-          loading={i === 0 ? 'eager' : 'lazy'}
-          decoding="async"
-          className={`absolute inset-0 size-full object-cover object-center transition-opacity duration-700 ${
-            i === aktif ? 'opacity-100' : 'opacity-0'
-          }`}
-        />
-      ))}
+    <>
+      {/*
+        DUA saudara sejajar, bukan kendali yang bersarang di dalam lapisan
+        gambar.
+
+        Lapisan gambar wajib berada di `-z-10` agar berada di belakang lapisan
+        navy dan teks hero. Tetapi `position:absolute` bersama `z-index`
+        negatif MEMBUAT STACKING CONTEXT: apa pun di dalamnya — betapa pun
+        tinggi z-index-nya — tetap ikut terkubur di lapisan −10 itu. Kendali
+        yang dulu bersarang di sana karena itu tertimbun lapisan navy dan tidak
+        pernah dapat ditekan, meski tetap samar terlihat menembusnya.
+
+        Sebagai saudara sejajar, keduanya diukur terhadap `<section>` hero yang
+        sama, sehingga kendali benar-benar naik ke atas lapisan navy.
+      */}
+      <div
+        onMouseEnter={() => setBerhenti(true)}
+        onMouseLeave={() => setBerhenti(false)}
+        className="absolute inset-0 -z-10"
+      >
+        {gambar.map((g, i) => (
+          <img
+            key={g.url}
+            src={g.url}
+            alt=""
+            aria-hidden="true"
+            fetchPriority={i === 0 ? 'high' : 'low'}
+            loading={i === 0 ? 'eager' : 'lazy'}
+            decoding="async"
+            className={`absolute inset-0 size-full object-cover object-center transition-opacity duration-700 ${
+              i === aktif ? 'opacity-100' : 'opacity-0'
+            }`}
+          />
+        ))}
+      </div>
 
       {banyak && (
-        <>
-          {/*
-            Kendali diletakkan DI ATAS lapisan navy (z-10) — wadahnya sendiri
-            berada di -z-10 bersama gambar — supaya tetap dapat ditekan.
-          */}
-          <div className="pointer-events-none absolute inset-0 z-10">
+        <div
+          ref={wadah}
+          onMouseEnter={() => setBerhenti(true)}
+          onMouseLeave={() => setBerhenti(false)}
+          onFocusCapture={() => setBerhenti(true)}
+          onBlurCapture={(e) => {
+            if (!wadah.current?.contains(e.relatedTarget as Node)) setBerhenti(false)
+          }}
+          onKeyDown={tanganiTombol}
+          /*
+            `pointer-events-none` pada wadahnya, `pointer-events-auto` pada
+            tombolnya: lapisan ini menutupi seluruh hero, dan tanpa itu ia akan
+            menelan setiap klik maupun sorotan teks pada judul di bawahnya.
+          */
+          className="pointer-events-none absolute inset-0 z-20"
+        >
             <button
               type="button"
               onClick={() => ke(aktif - 1)}
@@ -177,9 +190,8 @@ export function KaroselHero({ gambar }: { gambar: GambarHero[] }) {
                 </button>
               ))}
             </div>
-          </div>
-        </>
+        </div>
       )}
-    </div>
+    </>
   )
 }
