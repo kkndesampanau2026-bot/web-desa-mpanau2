@@ -118,7 +118,21 @@ class TelegramBot
             // balasan alasan penolakan. Membatasinya mengurangi lalu lintas
             // sekaligus permukaan yang harus divalidasi.
             'allowed_updates' => ['callback_query', 'message'],
-            'drop_pending_updates' => true,
+            /*
+             * Pembaruan yang tertunda TIDAK dibuang.
+             *
+             * Perintah ini kini dijalankan ulang pada setiap boot kontainer
+             * (lihat docker/entrypoint.sh), dan setiap deploy berarti satu
+             * boot. Membuang antrean di situ berarti setiap penekanan tombol
+             * APPROVE yang belum sempat terkirim — termasuk yang menumpuk
+             * justru karena webhook-nya sedang salah — lenyap tanpa jejak,
+             * sementara pejabatnya sudah merasa menekan.
+             *
+             * Memutarnya kembali aman: setiap pembaruan diverifikasi ulang
+             * dari chat ID pengirim dan status pengajuan saat itu, sehingga
+             * yang sudah kedaluwarsa ditolak dengan sendirinya.
+             */
+            'drop_pending_updates' => false,
         ]) !== null;
     }
 

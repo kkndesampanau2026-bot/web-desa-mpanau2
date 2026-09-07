@@ -131,11 +131,48 @@ alamat situs disebarkan ke warga, lalu setel `APP_ENV=production` dan
   *fail-closed*: begitu `TURNSTILE_SECRET_KEY` diisi, formulir cek bansos,
   permohonan PPID, dan pengaduan akan menolak (422) setiap kiriman tanpa token
   Turnstile yang sah — widget di sisi frontend harus terpasang lebih dulu.
-- **Notifikasi Telegram Surat Pengantar.** `TELEGRAM_BOT_TOKEN` kosong;
-  pengajuan surat tetap tersimpan dan tercatat, hanya notifikasi ke Ketua RT
-  yang tidak terkirim. Setelah token diisi, jalankan
-  `php artisan telegram:webhook` (lihat `PasangWebhookTelegram`).
 - **Surel.** `MAIL_MAILER=log`; tidak ada surel keluar.
+
+## Webhook Telegram (persetujuan Surat Pengantar)
+
+Bot Surat Pengantar punya dua arah, dan **keduanya harus hidup**:
+
+| Arah | Kebutuhan | Gejala bila mati |
+|---|---|---|
+| Keluar — pesan ke ponsel RT/Kadus | `TELEGRAM_BOT_TOKEN` saja | Pejabat tidak menerima apa pun |
+| Masuk — penekanan APPROVE/TOLAK | Webhook terdaftar di Bot API | Notifikasi masuk, **tombolnya tidak berbuat apa-apa** |
+
+Arah masuk itulah yang sempat mati di produksi. Mendaftarkan webhook bukan
+urusan berkas konfigurasi melainkan satu panggilan HTTP ke Bot API, sehingga
+mengisi `TELEGRAM_BOT_TOKEN` di Railway saja tidak pernah cukup — dan layanan
+ini tidak punya shell untuk menjalankan perintahnya sekali dengan tangan.
+
+Karena itu `docker/entrypoint.sh` kini memasangnya ulang pada **setiap boot**,
+memakai `RAILWAY_PUBLIC_DOMAIN` (bukan `APP_URL`, yang dapat tertinggal salah
+saat domain berganti). Kegagalannya tidak menghentikan boot — situs tidak boleh
+mati hanya karena Telegram sedang tidak dapat dihubungi.
+
+Dua variabel yang harus terisi:
+
+- `TELEGRAM_BOT_TOKEN` — dari @BotFather.
+- `TELEGRAM_WEBHOOK_SECRET` — hanya `A-Z a-z 0-9 _ -`. Hasil
+  `php artisan key:generate --show` **tidak dapat dipakai** (memuat `:` dan
+  `=`); buat dengan `php -r "echo bin2hex(random_bytes(24)), PHP_EOL;"`.
+
+Log deploy mencetak hasil `surat:telegram-webhook info` setiap boot. Dua baris
+yang perlu dibaca saat bot bermasalah:
+
+- `pending_update_count` — penekanan tombol yang menumpuk karena belum pernah
+  sampai. Angka besar berarti webhook-nya memang tidak berjalan.
+- `last_error_message` — alasan penolakan dari sisi Telegram, mis. rahasia yang
+  tidak cocok.
+
+Bila `url` terisi benar tetapi pejabat tetap dijawab "Akun Telegram Anda tidak
+terdaftar", yang salah bukan webhook-nya melainkan Chat ID pejabat di
+`/admin/surat` → **Pejabat**. Chat ID harus persis angka dari akun yang menekan
+tombol, dan pejabat itu wajib pernah menekan **/start** pada bot — Telegram
+tidak mengizinkan bot menyapa lebih dulu orang yang belum membuka percakapan
+dengannya.
 
 ## Memeriksa keadaan
 

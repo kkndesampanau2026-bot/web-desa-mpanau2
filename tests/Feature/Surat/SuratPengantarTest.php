@@ -12,6 +12,7 @@ use App\Services\PdfSuratPengantar;
 use App\Services\TelegramBot;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request;
 use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\RateLimiter;
@@ -869,6 +870,34 @@ class SuratPengantarTest extends TestCase
 
         $this->assertTrue($bot->setWebhook('https://contoh.test/telegram/webhook', 'rahasia'));
         $this->assertTrue($bot->hapusWebhook());
+    }
+
+    public function test_pemasangan_webhook_tidak_membuang_pembaruan_yang_tertunda(): void
+    {
+        /*
+         * `drop_pending_updates` HARUS false.
+         *
+         * Perintah ini dijalankan ulang pada setiap boot kontainer
+         * (docker/entrypoint.sh), dan setiap deploy berarti satu boot. Dengan
+         * nilai true, setiap penekanan APPROVE yang belum sempat terkirim
+         * dibuang diam-diam — termasuk yang menumpuk justru karena webhook-nya
+         * sedang salah, yakni keadaan yang membuat perintah ini dijalankan.
+         * Pejabatnya sudah merasa menekan, tetapi pengajuannya tetap
+         * menggantung tanpa satu pun jejak yang menjelaskan sebabnya.
+         */
+        $this->responsTelegram = Http::response(['ok' => true, 'result' => true]);
+
+        app(TelegramBot::class)->setWebhook('https://contoh.test/telegram/webhook', 'rahasia');
+
+        Http::assertSent(function (Request $permintaan) {
+            if (! str_contains($permintaan->url(), '/setWebhook')) {
+                return false;
+            }
+
+            return $permintaan['drop_pending_updates'] === false
+                && $permintaan['secret_token'] === 'rahasia'
+                && $permintaan['allowed_updates'] === ['callback_query', 'message'];
+        });
     }
 
     public function test_rahasia_webhook_dengan_karakter_terlarang_ditolak_lebih_awal(): void

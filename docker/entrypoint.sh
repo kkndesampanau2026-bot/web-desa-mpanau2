@@ -111,5 +111,47 @@ if [ -n "${AKUN_DEMO_NONAKTIF}" ]; then
     php artisan tinker --execute="\App\Models\User::whereIn('email', array_map('trim', explode(',', '${AKUN_DEMO_NONAKTIF}')))->update(['status_aktif' => false]);"
 fi
 
+# Webhook Telegram dipasang ulang pada SETIAP boot.
+#
+# Pemasangannya berupa panggilan HTTP ke Bot API, bukan berkas konfigurasi —
+# jadi ia tidak ikut terbawa citra maupun repo, dan tidak pernah terjadi hanya
+# karena TELEGRAM_BOT_TOKEN sudah diisi di Railway. Selama langkah ini tidak
+# ada, pengajuan surat TETAP sampai ke ponsel Ketua RT (itu panggilan keluar,
+# cukup bermodal token) tetapi penekanan APPROVE/TOLAK tidak menuju ke mana
+# pun: Telegram tidak tahu alamat mana yang harus dihubungi. Gejalanya persis
+# "notifikasinya masuk, tombolnya tidak berfungsi".
+#
+# Diletakkan di sini karena layanan Railway ini tidak punya shell, sehingga
+# perintahnya tidak dapat dijalankan sekali dengan tangan. Efek sampingnya
+# menguntungkan: webhook ikut pulih sendiri setiap kali domain berganti.
+#
+# Alamatnya diambil dari RAILWAY_PUBLIC_DOMAIN, bukan APP_URL — Railway sendiri
+# yang menetapkannya, sehingga ia tidak dapat tertinggal salah saat domain
+# berubah.
+#
+# Kegagalannya TIDAK menghentikan boot: seluruh situs tidak boleh gagal menyala
+# hanya karena Telegram sedang tidak dapat dihubungi.
+if [ -n "${TELEGRAM_BOT_TOKEN}" ]; then
+    echo "==> Memasang webhook Telegram"
+
+    if [ -n "${RAILWAY_PUBLIC_DOMAIN}" ]; then
+        alamat="--url=https://${RAILWAY_PUBLIC_DOMAIN}"
+    else
+        alamat=""
+    fi
+
+    if ! php artisan surat:telegram-webhook pasang ${alamat}; then
+        echo "PERINGATAN: webhook Telegram gagal dipasang. Persetujuan surat lewat bot TIDAK akan berjalan sampai ini berhasil."
+    fi
+
+    # Dicetak apa adanya supaya sebab kegagalan berikutnya terbaca langsung
+    # dari log deploy: `last_error_message` menyebut persis apa yang ditolak
+    # Telegram (mis. rahasia tidak cocok), dan `pending_update_count`
+    # menunjukkan penekanan tombol yang menumpuk karena belum pernah sampai.
+    php artisan surat:telegram-webhook info || true
+else
+    echo "==> Webhook Telegram dilewati: TELEGRAM_BOT_TOKEN belum diisi."
+fi
+
 echo "==> Aplikasi siap. Menjalankan nginx, php-fpm, dan pekerja antrean."
 exec supervisord -c /etc/supervisor/supervisord.conf
