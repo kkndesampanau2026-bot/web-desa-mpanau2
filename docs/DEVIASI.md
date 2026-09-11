@@ -145,6 +145,13 @@ Yang berubah:
   `KepalaHalaman` menerima prop `lebar` yang HARUS sama dengan `IsiHalaman`
   di halaman itu, sehingga judul ikut terpusat dan keduanya berbagi satu tepi
   kiri. Tanpa itu, judul menempel kiri sementara isinya di tengah.
+- **Pengecualian: detail berita memakai lebar `lebar`** (11 September 2026).
+  Atas permintaan pemilik produk — mengacu pada situs desa lain — artikel
+  berita kini tampil dalam kartu selebar kerangka dengan sidebar "Berita
+  Terbaru" (enam berita tayang lain) di kanan mulai `lg`, dan turun ke bawah
+  artikel pada layar lebih sempit. Konsekuensinya baris teks artikel lebih
+  panjang dari ±736px; itu diterima demi tata letak dua kolom. Kepala navy
+  tetap dipakai dan diberi `lebar` yang sama.
 - **`KepalaHalaman` dipakai SETIAP halaman publik**, termasuk yang dulu
   memakai judul terpusat (Profil, Infografis, Informasi PPID) atau `<h1>`
   polos (Galeri, Listing). Ia mendapat dua slot baru: `kembali` (tautan ke

@@ -97,7 +97,30 @@ class BeritaController extends Controller
 
         return Inertia::render('Publik/Berita/Detail', [
             'berita' => NewsResource::detail($berita)->resolve(),
+            'berita_terbaru' => $this->beritaTerbaru($berita->id),
         ]);
+    }
+
+    /**
+     * Berita lain untuk sidebar "Berita Terbaru" di halaman detail.
+     *
+     * Artikel yang sedang dibuka dikecualikan — menautkan halaman ke dirinya
+     * sendiri hanya membuang satu slot. Relasi sengaja tidak dimuat: sidebar
+     * cukup menampilkan gambar, judul, tanggal, dan jumlah dilihat.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function beritaTerbaru(int $kecualiId): array
+    {
+        return News::query()
+            ->where('village_id', $this->village->id())
+            ->where('id', '!=', $kecualiId)
+            ->tayang()
+            ->terbaru()
+            ->limit(6)
+            ->get()
+            ->map(fn ($item) => (new NewsResource($item))->resolve())
+            ->all();
     }
 
     /**

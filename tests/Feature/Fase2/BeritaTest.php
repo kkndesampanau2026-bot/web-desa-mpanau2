@@ -59,6 +59,22 @@ class BeritaTest extends TestCase
         ], $atribut));
     }
 
+    public function test_halaman_detail_berita_menyertakan_berita_terbaru_tanpa_artikel_itu_sendiri(): void
+    {
+        $dibuka = $this->buatBerita(['judul' => 'Sedang Dibuka', 'tanggal_publish' => now()->subHour()]);
+        $this->buatBerita(['judul' => 'Berita Lain', 'tanggal_publish' => now()->subDays(2)]);
+        $this->buatBerita(['judul' => 'Masih Draft', 'status' => 'draft', 'tanggal_publish' => null]);
+
+        $this->get("/berita/{$dibuka->slug}")
+            ->assertOk()
+            ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page
+                ->component('Publik/Berita/Detail')
+                ->where('berita.judul', 'Sedang Dibuka')
+                ->has('berita_terbaru', 1)
+                ->where('berita_terbaru.0.judul', 'Berita Lain')
+            );
+    }
+
     public function test_daftar_berita_publik_hanya_menampilkan_yang_sudah_tayang(): void
     {
         $this->buatBerita(['judul' => 'Sudah Tayang']);
