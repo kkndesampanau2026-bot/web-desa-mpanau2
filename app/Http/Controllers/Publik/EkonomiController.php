@@ -72,20 +72,36 @@ class EkonomiController extends Controller
     {
         $this->validasiJelajah($request);
 
-        return match ($request->string('kategori')->toString() ?: null) {
-            self::KATEGORI_WISATA => Inertia::render('Publik/Ekonomi/WisataDetail', [
+        $kategori = $request->string('kategori')->toString() ?: null;
+        $kembali = $this->tautanKembali($request);
+
+        // Isi utama selalu diambil lebih dulu daripada isi sidebar-nya, supaya
+        // slug yang tidak ada berakhir 404 sebelum kueri sidebar dijalankan.
+        if ($kategori === self::KATEGORI_WISATA) {
+            return Inertia::render('Publik/Ekonomi/WisataDetail', [
                 'wisata' => $this->ekonomi->wisataDetail($slug),
-                'kembali' => $this->tautanKembali($request),
-            ]),
-            self::KATEGORI_EKONOMI => Inertia::render('Publik/Ekonomi/ProdukDetail', [
-                'produk' => $this->ekonomi->produkDetail($slug),
-                'kembali' => $this->tautanKembali($request),
-            ]),
-            default => Inertia::render('Publik/Ekonomi/PotensiDetail', [
-                'potensi' => $this->ekonomi->potensiDetail($slug),
-                'kembali' => $this->tautanKembali($request),
-            ]),
-        };
+                'wisata_lainnya' => $this->ekonomi->wisataLainnya($slug),
+                'kembali' => $kembali,
+            ]);
+        }
+
+        if ($kategori === self::KATEGORI_EKONOMI) {
+            $produk = $this->ekonomi->produkDetail($slug);
+
+            return Inertia::render('Publik/Ekonomi/ProdukDetail', [
+                'produk' => $produk,
+                'produk_lainnya' => $this->ekonomi->produkLainnya($slug, $produk['kategori']),
+                'kembali' => $kembali,
+            ]);
+        }
+
+        $potensi = $this->ekonomi->potensiDetail($slug);
+
+        return Inertia::render('Publik/Ekonomi/PotensiDetail', [
+            'potensi' => $potensi,
+            'potensi_lainnya' => $this->ekonomi->potensiLainnya($slug, $potensi['kategori']),
+            'kembali' => $kembali,
+        ]);
     }
 
     /**

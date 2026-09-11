@@ -373,6 +373,70 @@ class EkonomiTest extends TestCase
         $this->get('/potensi/draf')->assertNotFound();
     }
 
+    /**
+     * Sidebar halaman detail menawarkan isi lain dari jenis yang sama: tanpa
+     * isi yang sedang dibuka, tanpa isi yang disembunyikan, dan dengan isi
+     * sekategori didahulukan.
+     */
+    public function test_detail_potensi_wisata_dan_produk_menyertakan_isi_lainnya(): void
+    {
+        foreach ([
+            ['Pertanian', 'Sawah Irigasi', 'sawah-irigasi', true],
+            ['Pariwisata', 'Air Terjun', 'air-terjun', true],
+            ['Pertanian', 'Kebun Kakao', 'kebun-kakao', true],
+            ['Pertanian', 'Draf', 'draf', false],
+        ] as [$kategori, $judul, $slug, $tampil]) {
+            Potential::create([
+                'village_id' => $this->village->id,
+                'kategori' => $kategori, 'judul' => $judul, 'slug' => $slug,
+                'status_tampil' => $tampil,
+            ]);
+        }
+
+        $this->get('/potensi/sawah-irigasi')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('potensi_lainnya', 2)
+                ->where('potensi_lainnya.0.judul', 'Kebun Kakao')
+                ->where('potensi_lainnya.1.judul', 'Air Terjun')
+            );
+
+        foreach ([
+            ['Air Terjun Mpanau', 'air-terjun-mpanau', true],
+            ['Bukit Panorama', 'bukit-panorama', true],
+            ['Belum Siap', 'belum-siap', false],
+        ] as [$nama, $slug, $tampil]) {
+            TourismSpot::create([
+                'village_id' => $this->village->id,
+                'nama' => $nama, 'slug' => $slug, 'status_tampil' => $tampil,
+            ]);
+        }
+
+        $this->get('/potensi/air-terjun-mpanau?kategori=Pariwisata')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('wisata_lainnya', 1)
+                ->where('wisata_lainnya.0.nama', 'Bukit Panorama')
+            );
+
+        $this->buatProduk([
+            'nama_produk' => 'Keripik Pisang', 'slug' => 'keripik-pisang', 'kategori' => 'Makanan',
+        ]);
+        $this->buatProduk(['nama_produk' => 'Air Nira', 'kategori' => 'Minuman']);
+        $this->buatProduk(['nama_produk' => 'Sambal Roa', 'kategori' => 'Makanan']);
+        $this->buatProduk([
+            'nama_produk' => 'Belum Dimoderasi', 'kategori' => 'Makanan', 'status_tampil' => false,
+        ]);
+
+        $this->get('/potensi/keripik-pisang?kategori=Ekonomi')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('produk_lainnya', 2)
+                ->where('produk_lainnya.0.nama_produk', 'Sambal Roa')
+                ->where('produk_lainnya.1.nama_produk', 'Air Nira')
+            );
+    }
+
     // ------------------------------------------------------------------
     // Wisata
     // ------------------------------------------------------------------

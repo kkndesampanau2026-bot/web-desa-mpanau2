@@ -255,6 +255,70 @@ class DataEkonomi
         );
     }
 
+    // ------------------------------------------------------------------
+    // Isi lainnya — sidebar halaman detail
+    // ------------------------------------------------------------------
+
+    /**
+     * Potensi lain untuk sidebar detail potensi.
+     *
+     * Disaring dari cache daftar yang sama dengan /potensi, bukan kueri baru.
+     * Potensi sekategori didahulukan: pengunjung yang membuka satu potensi
+     * pertanian lebih mungkin mencari potensi pertanian lainnya. Deskripsi
+     * sengaja dibuang — sidebar hanya menampilkan foto, judul, dan kategori.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function potensiLainnya(string $slug, ?string $kategori, int $batas = 6): array
+    {
+        return $this->potensiTampil()
+            ->where('slug', '!=', $slug)
+            ->sortBy(fn ($p) => $p['kategori'] === $kategori ? 0 : 1)
+            ->take($batas)
+            ->map(fn ($p) => collect($p)->only(['id', 'kategori', 'judul', 'slug', 'foto'])->all())
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Destinasi lain untuk sidebar detail wisata, dari cache daftar wisata.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function wisataLainnya(string $slug, int $batas = 6): array
+    {
+        return collect($this->wisata() ?? [])
+            ->where('slug', '!=', $slug)
+            ->take($batas)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Produk lain untuk sidebar detail produk.
+     *
+     * Urutannya mengikuti katalog (tersedia dulu, lalu nama) dengan produk
+     * sekategori didahulukan. `kategori = ? DESC` menaruh produk tanpa
+     * kategori di belakang, karena perbandingan dengan NULL menghasilkan NULL.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function produkLainnya(string $slug, ?string $kategori, int $batas = 6): array
+    {
+        return Product::query()
+            ->where('village_id', $this->village->id())
+            ->where('slug', '!=', $slug)
+            ->tampil()
+            ->with('photos')
+            ->when($kategori, fn ($q, $k) => $q->orderByRaw('kategori = ? DESC', [$k]))
+            ->orderByDesc('tersedia')
+            ->orderBy('nama_produk')
+            ->limit($batas)
+            ->get()
+            ->map(fn ($p) => $this->bentukProduk($p))
+            ->all();
+    }
+
     /** @return array<string, mixed> */
     private function bentukProduk(Product $produk): array
     {
