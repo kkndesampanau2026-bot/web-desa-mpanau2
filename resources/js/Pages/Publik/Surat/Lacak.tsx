@@ -1,6 +1,7 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
-import { Head, router } from '@inertiajs/react'
+import { router } from '@inertiajs/react'
 import { Check, Circle, Download, Eye, Search, TicketCheck } from 'lucide-react'
+import { SeoMeta } from '@/Components/SeoMeta'
 import {
   GAYA_INPUT,
   IsiHalaman,
@@ -61,7 +62,11 @@ export default function Lacak({
 
   return (
     <>
-      <Head title="Cek Status Surat" />
+      <SeoMeta
+        title="Cek Status Surat"
+        description="Pelacakan status pengajuan Surat Pengantar RT/Dusun Desa Mpanau."
+        noIndex={true}
+      />
 
       <KepalaHalaman
         lebar="sempit"

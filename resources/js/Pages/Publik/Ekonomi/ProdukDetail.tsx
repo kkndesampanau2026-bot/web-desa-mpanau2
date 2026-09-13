@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
-import { Head } from '@inertiajs/react'
 import { ShoppingBag, Store, Tag } from 'lucide-react'
 import { DetailDenganSidebar } from '@/Components/DetailDenganSidebar'
+import { SeoMeta } from '@/Components/SeoMeta'
 import { TombolHubungi } from '@/Components/TombolHubungi'
 import { IsiHalaman, KepalaHalaman, Lencana } from '@/Components/ui'
 import { LayoutPublik } from '@/Layouts/LayoutPublik'
@@ -25,7 +25,29 @@ export default function ProdukDetail({
 
   return (
     <>
-      <Head title={produk.nama_produk} />
+      <SeoMeta
+        title={produk.nama_produk}
+        description={produk.deskripsi ?? `Produk UMKM ${produk.nama_produk} oleh ${produk.penjual.nama} di Desa Mpanau. Harga ${formatRupiah(produk.harga)}.`}
+        ogImage={produk.foto[0]?.url}
+        schema={{
+          '@context': 'https://schema.org',
+          '@type': 'Product',
+          name: produk.nama_produk,
+          description: produk.deskripsi ?? undefined,
+          image: produk.foto.length > 0 ? produk.foto.map((f) => f.url) : undefined,
+          category: produk.kategori ?? undefined,
+          offers: {
+            '@type': 'Offer',
+            price: produk.harga,
+            priceCurrency: 'IDR',
+            availability: produk.tersedia ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+            seller: {
+              '@type': 'Person',
+              name: produk.penjual.nama,
+            },
+          },
+        }}
+      />
       <KepalaHalaman
         lebar="lebar"
         kembali={{ ke: kembali, label: 'Kembali ke katalog' }}

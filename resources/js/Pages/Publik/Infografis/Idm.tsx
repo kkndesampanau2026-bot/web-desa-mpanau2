@@ -1,5 +1,5 @@
-import { Head } from '@inertiajs/react'
 import { EmptyState } from '@/Components/EmptyState'
+import { SeoMeta } from '@/Components/SeoMeta'
 import { IsiHalaman } from '@/Components/ui'
 import { BatangKategori, KartuAngka } from '@/Components/viz/Grafik'
 import { bungkusInfografis } from '@/Layouts/LayoutInfografis'
@@ -13,7 +13,7 @@ export default function Idm({ data }: { data: InfografisIdm | null }) {
   if (!data) {
     return (
       <>
-        <Head title="Indeks Desa Membangun (IDM)" />
+        <SeoMeta title="Indeks Desa Membangun (IDM)" description={DESKRIPSI} />
         <EmptyState judul="Indeks Desa Membangun (IDM)" deskripsi={DESKRIPSI} />
       </>
     )
@@ -29,7 +29,16 @@ export default function Idm({ data }: { data: InfografisIdm | null }) {
 
   return (
     <IsiHalaman lebar="lebar">
-      <Head title={`Indeks Desa Membangun ${data.tahun}`} />
+      <SeoMeta
+        title={`Indeks Desa Membangun ${data.tahun}`}
+        description={`Indeks Desa Membangun (IDM) Desa Mpanau Tahun ${data.tahun}: Skor ${data.skor.idm?.toFixed(4)}, Status ${data.status_idm}.`}
+        schema={{
+          '@context': 'https://schema.org',
+          '@type': 'Dataset',
+          name: `IDM Desa Mpanau ${data.tahun}`,
+          description: DESKRIPSI,
+        }}
+      />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KartuAngka label="Skor IDM" nilai={data.skor.idm?.toFixed(4).replace('.', ',') ?? '—'} />

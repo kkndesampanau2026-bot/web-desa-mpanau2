@@ -1,9 +1,10 @@
 import { useRef, useState, type ReactNode } from 'react'
-import { Head, Link, router } from '@inertiajs/react'
+import { Link, router } from '@inertiajs/react'
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { EmptyState } from '@/Components/EmptyState'
+import { SeoMeta } from '@/Components/SeoMeta'
 import { IsiHalaman, KepalaHalaman } from '@/Components/ui'
 import { ChipFilter } from '@/Components/ui'
 import { LayoutPublik } from '@/Layouts/LayoutPublik'
@@ -89,7 +90,7 @@ export default function Listing({
   if (!data && !filter.kategori) {
     return (
       <>
-        <Head title="Peta Desa & Titik Lokasi" />
+        <SeoMeta title="Peta Desa & Titik Lokasi" description={DESKRIPSI} />
         <EmptyState judul="Peta Desa & Titik Lokasi" deskripsi={DESKRIPSI} />
       </>
     )
@@ -102,7 +103,21 @@ export default function Listing({
 
   return (
     <>
-      <Head title="Peta Desa & Titik Lokasi" />
+      <SeoMeta
+        title="Peta Desa & Titik Lokasi"
+        description={DESKRIPSI}
+        schema={{
+          '@context': 'https://schema.org',
+          '@type': 'Place',
+          name: 'Peta Lokasi & Fasilitas Desa Mpanau',
+          description: DESKRIPSI,
+          geo: {
+            '@type': 'GeoCoordinates',
+            latitude: pusat[0],
+            longitude: pusat[1],
+          },
+        }}
+      />
 
       <KepalaHalaman
         eyebrow="Peta Desa"

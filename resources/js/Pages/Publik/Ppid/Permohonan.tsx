@@ -1,6 +1,7 @@
 import type { FormEvent, ReactNode } from 'react'
-import { Head, Link, useForm } from '@inertiajs/react'
+import { Link, useForm } from '@inertiajs/react'
 import { CheckCircle2, Search, Send, ShieldCheck } from 'lucide-react'
+import { SeoMeta } from '@/Components/SeoMeta'
 import {
   GAYA_INPUT,
   IsiHalaman,
@@ -32,7 +33,7 @@ export default function Permohonan({ bukti }: { bukti: PermohonanPpid | null }) 
   if (bukti) {
     return (
       <>
-        <Head title="Permohonan Terkirim" />
+        <SeoMeta title="Permohonan Terkirim" description="Tanda terima permohonan informasi publik PPID Desa Mpanau." noIndex={true} />
 
         <KepalaHalaman eyebrow="PPID" judul="Permohonan Terkirim" lebar="sempit" />
 
@@ -90,7 +91,20 @@ export default function Permohonan({ bukti }: { bukti: PermohonanPpid | null }) 
 
   return (
     <>
-      <Head title="Permohonan Informasi Publik" />
+      <SeoMeta
+        title="Permohonan Informasi Publik"
+        description="Formulir pengajuan permohonan informasi publik kepada PPID Desa Mpanau."
+        schema={{
+          '@context': 'https://schema.org',
+          '@type': 'GovernmentService',
+          name: 'Permohonan Informasi Publik Desa Mpanau',
+          serviceType: 'Layanan PPID Desa',
+          provider: {
+            '@type': 'GovernmentOrganization',
+            name: 'Pemerintah Desa Mpanau',
+          },
+        }}
+      />
 
       <KepalaHalaman
         lebar="sempit"

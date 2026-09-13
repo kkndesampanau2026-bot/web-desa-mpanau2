@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
-import { Head } from '@inertiajs/react'
 import { CalendarRange, User } from 'lucide-react'
 import { EmptyState } from '@/Components/EmptyState'
+import { SeoMeta } from '@/Components/SeoMeta'
 import { IsiHalaman, Kartu, KepalaHalaman } from '@/Components/ui'
 import { LayoutPublik } from '@/Layouts/LayoutPublik'
 import { formatTanggal } from '@/lib/format'
@@ -13,7 +13,7 @@ export default function Pemerintah({ aparat }: { aparat: Official[] }) {
   if (aparat.length === 0) {
     return (
       <>
-        <Head title="Pemerintah Desa" />
+        <SeoMeta title="Pemerintah Desa" description={DESKRIPSI} />
         <EmptyState
           eyebrow="Struktur Organisasi"
           judul="Pemerintah Desa"
@@ -25,7 +25,21 @@ export default function Pemerintah({ aparat }: { aparat: Official[] }) {
 
   return (
     <>
-      <Head title="Pemerintah Desa" />
+      <SeoMeta
+        title="Pemerintah Desa"
+        description={DESKRIPSI}
+        schema={{
+          '@context': 'https://schema.org',
+          '@type': 'GovernmentOrganization',
+          name: 'Pemerintah Desa Mpanau',
+          employee: aparat.map((a) => ({
+            '@type': 'Person',
+            name: a.nama,
+            jobTitle: a.jabatan,
+            image: a.foto ?? undefined,
+          })),
+        }}
+      />
 
       <KepalaHalaman
         eyebrow="Struktur Organisasi"

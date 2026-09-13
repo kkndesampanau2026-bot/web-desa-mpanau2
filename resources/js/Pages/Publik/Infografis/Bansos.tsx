@@ -1,5 +1,5 @@
-import { Head } from '@inertiajs/react'
 import { EmptyState } from '@/Components/EmptyState'
+import { SeoMeta } from '@/Components/SeoMeta'
 import { IsiHalaman } from '@/Components/ui'
 import { BatangKategori, KartuAngka } from '@/Components/viz/Grafik'
 import { bungkusInfografis } from '@/Layouts/LayoutInfografis'
@@ -21,7 +21,7 @@ export default function Bansos({ data }: { data: InfografisBansos | null }) {
   if (!data) {
     return (
       <>
-        <Head title="Bantuan Sosial" />
+        <SeoMeta title="Bantuan Sosial" description={DESKRIPSI} />
         <EmptyState judul="Bantuan Sosial" deskripsi={DESKRIPSI} />
       </>
     )
@@ -29,7 +29,16 @@ export default function Bansos({ data }: { data: InfografisBansos | null }) {
 
   return (
     <IsiHalaman lebar="lebar">
-      <Head title={`Bantuan Sosial ${data.tahun_anggaran}`} />
+      <SeoMeta
+        title={`Bantuan Sosial ${data.tahun_anggaran}`}
+        description={`Rekapitulasi Bantuan Sosial Desa Mpanau Tahun ${data.tahun_anggaran}: Total ${data.total_penerima} Penerima Manfaat.`}
+        schema={{
+          '@context': 'https://schema.org',
+          '@type': 'Dataset',
+          name: `Bantuan Sosial Desa Mpanau ${data.tahun_anggaran}`,
+          description: DESKRIPSI,
+        }}
+      />
 
       {/*
         Kartu angka disandingkan dengan keterangannya, bukan berdiri sendiri

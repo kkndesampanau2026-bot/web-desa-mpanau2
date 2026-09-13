@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Head, Link } from '@inertiajs/react'
+import { Link } from '@inertiajs/react'
 import {
   ArrowRight,
   FileSearch,
@@ -9,6 +9,7 @@ import {
   TicketCheck,
   type LucideIcon,
 } from 'lucide-react'
+import { SeoMeta } from '@/Components/SeoMeta'
 import { IsiHalaman, Kartu, KepalaHalaman } from '@/Components/ui'
 import { LayoutPublik } from '@/Layouts/LayoutPublik'
 
@@ -88,7 +89,20 @@ const LAYANAN: Layanan[] = [
 export default function LayananMandiri() {
   return (
     <>
-      <Head title="Layanan Mandiri" />
+      <SeoMeta
+        title="Layanan Mandiri Warga"
+        description={DESKRIPSI}
+        schema={{
+          '@context': 'https://schema.org',
+          '@type': 'GovernmentService',
+          name: 'Layanan Mandiri Desa Mpanau',
+          serviceType: 'Pelayanan Publik Digital Desa',
+          provider: {
+            '@type': 'GovernmentOrganization',
+            name: 'Pemerintah Desa Mpanau',
+          },
+        }}
+      />
 
       <KepalaHalaman eyebrow="Pusat Layanan Warga" judul="Layanan Mandiri" deskripsi={DESKRIPSI} />
 

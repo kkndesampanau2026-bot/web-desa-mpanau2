@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
-import { Head } from '@inertiajs/react'
 import { CalendarDays, Eye, Newspaper, User } from 'lucide-react'
 import { DetailDenganSidebar } from '@/Components/DetailDenganSidebar'
 import { KontenKaya } from '@/Components/KontenKaya'
+import { SeoMeta } from '@/Components/SeoMeta'
 import { IsiHalaman, KepalaHalaman } from '@/Components/ui'
 import { LayoutPublik } from '@/Layouts/LayoutPublik'
 import { formatAngka, formatTanggal } from '@/lib/format'
@@ -14,24 +14,35 @@ interface Props {
 }
 
 export default function BeritaDetailHalaman({ berita, berita_terbaru }: Props) {
+  const metaJudul = berita.meta.title ?? berita.judul
+  const metaDeskripsi = berita.meta.description ?? berita.ringkasan ?? undefined
+
   return (
     <>
-      {/*
-        Meta tag per artikel — PRD 6.10 & 12.4.
-        Dulu disetel lewat useEffect yang menulis langsung ke document.title
-        dan meta[name=description], lengkap dengan fungsi pembersih untuk
-        mengembalikan nilai semula saat pengunjung berpindah halaman. Inertia
-        mengurus siklus itu sendiri, jadi yang tersisa tinggal menyatakan
-        isinya.
-      */}
-      <Head title={berita.meta.title ?? berita.judul}>
-        {berita.meta.description && (
-          <meta name="description" content={berita.meta.description} head-key="description" />
-        )}
-        {berita.meta.og_image && (
-          <meta property="og:image" content={berita.meta.og_image} head-key="og:image" />
-        )}
-      </Head>
+      <SeoMeta
+        title={metaJudul}
+        description={metaDeskripsi}
+        ogImage={berita.meta.og_image ?? berita.gambar_utama ?? undefined}
+        ogType="article"
+        schema={{
+          '@context': 'https://schema.org',
+          '@type': 'NewsArticle',
+          headline: berita.judul,
+          description: metaDeskripsi,
+          image: berita.gambar_utama ? [berita.gambar_utama] : undefined,
+          datePublished: berita.tanggal_publish,
+          author: {
+            '@type': 'Person',
+            name: berita.penulis ?? 'Pemerintah Desa Mpanau',
+          },
+          publisher: {
+            '@type': 'GovernmentOrganization',
+            name: 'Pemerintah Desa Mpanau',
+            url: window?.location?.origin ?? 'https://mpanau.desa.id',
+          },
+          articleSection: berita.kategori?.nama,
+        }}
+      />
 
       {/*
         Kepala artikel memakai komponen yang sama dengan seluruh halaman lain

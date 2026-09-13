@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Head, Link } from '@inertiajs/react'
+import { Link } from '@inertiajs/react'
 import {
   ArrowRight,
   FileText,
@@ -13,6 +13,7 @@ import {
 import { formatTanggal } from '@/lib/format'
 import { GAYA_WADAH, IsiHalaman, JudulSeksi, Kartu } from '@/Components/ui'
 import { KaroselHero } from '@/Components/KaroselHero'
+import { SeoMeta } from '@/Components/SeoMeta'
 import { LayoutPublik } from '@/Layouts/LayoutPublik'
 import { useHalaman } from '@/types/inertia'
 import type { BeritaRingkas } from '@/types/api'
@@ -84,7 +85,27 @@ export default function Beranda({
 
   return (
     <div>
-      <Head title={namaDesa} />
+      <SeoMeta
+        title={namaDesa}
+        description={`Website Resmi ${namaDesa}, ${wilayah}. Portal transparansi APBDes, statistik kependudukan, berita desa, dan layanan mandiri digital.`}
+        keywords={`${namaDesa}, Sigi Biromaru, Kabupaten Sigi, Layanan Desa, Berita Desa Mpanau`}
+        schema={{
+          '@context': 'https://schema.org',
+          '@type': 'GovernmentOrganization',
+          name: namaDesa,
+          url: window?.location?.origin ?? 'https://mpanau.desa.id',
+          description: `Pemerintah ${namaDesa}, ${wilayah}.`,
+          address: {
+            '@type': 'PostalAddress',
+            addressLocality: pengaturan?.wilayah.kecamatan ?? 'Sigi Biromaru',
+            addressRegion: pengaturan?.wilayah.provinsi ?? 'Sulawesi Tengah',
+            postalCode: pengaturan?.wilayah.kode_pos ?? '94364',
+            streetAddress: pengaturan?.alamat_kantor ?? '',
+          },
+          telephone: pengaturan?.kontak.telepon ?? undefined,
+          email: pengaturan?.kontak.email ?? undefined,
+        }}
+      />
 
       {/*
         Hero: foto desa sebagai latar, di bawah lapisan navy.

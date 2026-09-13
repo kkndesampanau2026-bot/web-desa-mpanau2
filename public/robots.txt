@@ -1,2 +1,59 @@
+# Robots.txt — Website Profil & Pelayanan Desa Digital Desa Mpanau
+# Mendukung perayap mesin pencari (Googlebot, Bingbot) dan Answer Engine AI (GPTBot, PerplexityBot, ClaudeBot, Google-Extended).
+
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /telegram/
+Disallow: /layanan-mandiri/surat-pengantar/lacak
+Disallow: /layanan-mandiri/surat-pengantar/*/unduh
+Disallow: /layanan-mandiri/surat-pengantar/*/lihat
+Disallow: /layanan-mandiri/lacak
+Disallow: /ppid/permintaan/lacak
+
+# AI Answer Engines / LLM Crawlers (AEO Optimization)
+User-agent: GPTBot
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /telegram/
+Disallow: /layanan-mandiri/surat-pengantar/lacak
+Disallow: /layanan-mandiri/lacak
+Disallow: /ppid/permintaan/lacak
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /telegram/
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /telegram/
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: Amazonbot
+Allow: /
+
+User-agent: Bytespider
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+# Sitemap Index
+Sitemap: /sitemap.xml

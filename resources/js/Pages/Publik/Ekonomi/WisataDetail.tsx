@@ -1,8 +1,8 @@
 import { useState, type ReactNode } from 'react'
-import { Head } from '@inertiajs/react'
 import { MapPin, Mountain, Ticket } from 'lucide-react'
 import { DetailDenganSidebar } from '@/Components/DetailDenganSidebar'
 import { Lightbox } from '@/Components/Lightbox'
+import { SeoMeta } from '@/Components/SeoMeta'
 import { IsiHalaman, KepalaHalaman } from '@/Components/ui'
 import { LayoutPublik } from '@/Layouts/LayoutPublik'
 import { labelHari } from '@/lib/format'
@@ -26,7 +26,27 @@ export default function WisataDetail({
 
   return (
     <>
-      <Head title={wisata.nama} />
+      <SeoMeta
+        title={wisata.nama}
+        description={wisata.deskripsi ?? `Destinasi Wisata ${wisata.nama} di Desa Mpanau. ${wisata.alamat ?? ''}`}
+        ogImage={wisata.foto[0]?.url}
+        schema={{
+          '@context': 'https://schema.org',
+          '@type': 'TouristAttraction',
+          name: wisata.nama,
+          description: wisata.deskripsi ?? undefined,
+          image: wisata.foto.length > 0 ? wisata.foto.map((f) => f.url) : undefined,
+          address: wisata.alamat ? {
+            '@type': 'PostalAddress',
+            streetAddress: wisata.alamat,
+          } : undefined,
+          geo: wisata.koordinat ? {
+            '@type': 'GeoCoordinates',
+            latitude: wisata.koordinat.latitude,
+            longitude: wisata.koordinat.longitude,
+          } : undefined,
+        }}
+      />
       <KepalaHalaman
         lebar="lebar"
         kembali={{ ke: kembali, label: 'Kembali ke daftar wisata' }}

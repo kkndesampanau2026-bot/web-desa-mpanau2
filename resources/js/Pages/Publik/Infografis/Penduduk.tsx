@@ -1,5 +1,5 @@
-import { Head } from '@inertiajs/react'
 import { EmptyState } from '@/Components/EmptyState'
+import { SeoMeta } from '@/Components/SeoMeta'
 import { IsiHalaman } from '@/Components/ui'
 import { BatangKategori, GarisTren, KartuAngka, Lingkaran } from '@/Components/viz/Grafik'
 import { bungkusInfografis } from '@/Layouts/LayoutInfografis'
@@ -13,7 +13,7 @@ export default function Penduduk({ data }: { data: InfografisPenduduk | null }) 
   if (!data) {
     return (
       <>
-        <Head title="Infografis Kependudukan" />
+        <SeoMeta title="Infografis Kependudukan" description={DESKRIPSI} />
         <EmptyState judul="Infografis Kependudukan" deskripsi={DESKRIPSI} />
       </>
     )
@@ -21,7 +21,20 @@ export default function Penduduk({ data }: { data: InfografisPenduduk | null }) 
 
   return (
     <IsiHalaman lebar="lebar">
-      <Head title="Infografis Kependudukan" />
+      <SeoMeta
+        title="Infografis Kependudukan"
+        description={`Statistik Kependudukan Desa Mpanau: Total ${data.ringkasan.total_penduduk} Jiwa, ${data.ringkasan.total_kk} Kepala Keluarga.`}
+        schema={{
+          '@context': 'https://schema.org',
+          '@type': 'Dataset',
+          name: 'Statistik Kependudukan Desa Mpanau',
+          description: DESKRIPSI,
+          creator: {
+            '@type': 'GovernmentOrganization',
+            name: 'Pemerintah Desa Mpanau',
+          },
+        }}
+      />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KartuAngka label="Total Penduduk" nilai={data.ringkasan.total_penduduk} satuan="jiwa" />

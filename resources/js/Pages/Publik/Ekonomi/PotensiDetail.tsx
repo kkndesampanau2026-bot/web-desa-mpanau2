@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
-import { Head } from '@inertiajs/react'
 import { MapPin, Sprout, Tag } from 'lucide-react'
 import { DetailDenganSidebar } from '@/Components/DetailDenganSidebar'
+import { SeoMeta } from '@/Components/SeoMeta'
 import { IsiHalaman, KepalaHalaman } from '@/Components/ui'
 import { LayoutPublik } from '@/Layouts/LayoutPublik'
 import { useJelajahPotensi } from '@/lib/tautan'
@@ -29,7 +29,25 @@ export default function PotensiDetail({
 
   return (
     <>
-      <Head title={potensi.judul} />
+      <SeoMeta
+        title={potensi.judul}
+        description={potensi.deskripsi ?? `Potensi ${potensi.kategori} Desa Mpanau: ${potensi.judul}`}
+        ogImage={potensi.foto ?? undefined}
+        schema={{
+          '@context': 'https://schema.org',
+          '@type': 'Place',
+          name: potensi.judul,
+          description: potensi.deskripsi ?? undefined,
+          image: potensi.foto ?? undefined,
+          geo: potensi.koordinat
+            ? {
+                '@type': 'GeoCoordinates',
+                latitude: potensi.koordinat.latitude,
+                longitude: potensi.koordinat.longitude,
+              }
+            : undefined,
+        }}
+      />
       <KepalaHalaman
         lebar="lebar"
         kembali={{ ke: kembali, label: 'Kembali ke daftar potensi desa' }}

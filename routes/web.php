@@ -14,6 +14,7 @@ use App\Http\Controllers\Publik\PengaduanController;
 use App\Http\Controllers\Publik\PetaController;
 use App\Http\Controllers\Publik\PpidController;
 use App\Http\Controllers\Publik\ProfilController;
+use App\Http\Controllers\Publik\SitemapController;
 use App\Http\Controllers\Publik\SuratPengantarController;
 use App\Http\Controllers\Publik\TelegramWebhookController;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
@@ -206,6 +207,14 @@ Route::middleware('catat.kunjungan')->group(function () {
         ->middleware('throttle:cek-surat')
         ->name('surat.lacak');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Peta Situs (Sitemap XML) & Perayapan Mesin Pencari
+|--------------------------------------------------------------------------
+| Disajikan untuk Google Search Console, Bingbot, dan AI Answer Engines.
+*/
+Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 
 /*
 |--------------------------------------------------------------------------
