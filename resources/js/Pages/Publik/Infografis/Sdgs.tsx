@@ -1,5 +1,5 @@
-import { Head } from '@inertiajs/react'
 import { EmptyState } from '@/Components/EmptyState'
+import { SeoMeta } from '@/Components/SeoMeta'
 import { IsiHalaman } from '@/Components/ui'
 import { KartuAngka } from '@/Components/viz/Grafik'
 import { bungkusInfografis } from '@/Layouts/LayoutInfografis'
@@ -19,7 +19,7 @@ export default function Sdgs({ data }: { data: InfografisSdgs | null }) {
   if (!data) {
     return (
       <>
-        <Head title="SDGs Desa" />
+        <SeoMeta title="SDGs Desa" description={DESKRIPSI} />
         <EmptyState judul="SDGs Desa" deskripsi={DESKRIPSI} />
       </>
     )
@@ -27,7 +27,16 @@ export default function Sdgs({ data }: { data: InfografisSdgs | null }) {
 
   return (
     <IsiHalaman lebar="lebar">
-      <Head title={`SDGs Desa ${data.tahun}`} />
+      <SeoMeta
+        title={`SDGs Desa ${data.tahun}`}
+        description={`Capaian SDGs Desa Mpanau Tahun ${data.tahun}: Skor Rata-rata ${data.skor_rata_rata.toFixed(2)} dari 18 tujuan pembangunan.`}
+        schema={{
+          '@context': 'https://schema.org',
+          '@type': 'Dataset',
+          name: `SDGs Desa Mpanau ${data.tahun}`,
+          description: DESKRIPSI,
+        }}
+      />
 
       <div className="max-w-xs">
         <KartuAngka

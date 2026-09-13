@@ -33,6 +33,68 @@
     --}}
     <title inertia>{{ config('app.name') }}</title>
 
+    {{-- Meta Dasar SEO & Perayapan --}}
+    <link rel="canonical" href="{{ url()->current() }}">
+    <meta name="description" content="Website Resmi Profil dan Pelayanan Digital Desa Mpanau, Kecamatan Sigi Biromaru, Kabupaten Sigi, Provinsi Sulawesi Tengah.">
+    <meta name="keywords" content="Desa Mpanau, Sigi Biromaru, Kabupaten Sigi, Sulawesi Tengah, Profil Desa, APBDes, Informasi Desa, Layanan Mandiri Desa">
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+    <meta name="author" content="Pemerintah Desa Mpanau">
+
+    {{-- Verifikasi Google Search Console --}}
+    @if (config('services.google.site_verification'))
+        <meta name="google-site-verification" content="{{ config('services.google.site_verification') }}">
+    @endif
+
+    {{-- Open Graph / Facebook --}}
+    <meta property="og:locale" content="id_ID">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Desa Mpanau">
+    <meta property="og:title" content="{{ config('app.name') }}">
+    <meta property="og:description" content="Portal Informasi Publik, Statistik Desa, dan Layanan Mandiri Digital Desa Mpanau, Kec. Sigi Biromaru, Kab. Sigi.">
+    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:image" content="{{ asset('favicon-32.png') }}">
+
+    {{-- Twitter Card --}}
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ config('app.name') }}">
+    <meta name="twitter:description" content="Portal Informasi Publik, Statistik Desa, dan Layanan Mandiri Digital Desa Mpanau, Kec. Sigi Biromaru, Kab. Sigi.">
+    <meta name="twitter:image" content="{{ asset('favicon-32.png') }}">
+
+    {{-- Structured Data (JSON-LD) Global untuk AEO & Rich Snippets --}}
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@graph": [
+            {
+                "@type": "GovernmentOrganization",
+                "@id": "{{ url('/') }}/#organization",
+                "name": "Pemerintah Desa Mpanau",
+                "alternateName": "Desa Mpanau",
+                "url": "{{ url('/') }}",
+                "logo": "{{ asset('logo_desa.png') }}",
+                "image": "{{ asset('favicon-32.png') }}",
+                "description": "Pemerintah Desa Mpanau, Kecamatan Sigi Biromaru, Kabupaten Sigi, Provinsi Sulawesi Tengah.",
+                "address": {
+                    "@type": "PostalAddress",
+                    "addressLocality": "Sigi Biromaru",
+                    "addressRegion": "Sulawesi Tengah",
+                    "addressCountry": "ID"
+                }
+            },
+            {
+                "@type": "WebSite",
+                "@id": "{{ url('/') }}/#website",
+                "url": "{{ url('/') }}",
+                "name": "Website Resmi Desa Mpanau",
+                "publisher": {
+                    "@id": "{{ url('/') }}/#organization"
+                },
+                "inLanguage": "id-ID"
+            }
+        ]
+    }
+    </script>
+
     @routes
     @viteReactRefresh
     @vite(['resources/css/app.css', 'resources/js/app.tsx'])

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
-import { Head, Link } from '@inertiajs/react'
+import { Link } from '@inertiajs/react'
 import { ArrowRight, CalendarClock, FileText, Scale, Send, Siren } from 'lucide-react'
+import { SeoMeta } from '@/Components/SeoMeta'
 import { IsiHalaman, JudulSeksi, Kartu, KepalaHalaman, TombolTautan } from '@/Components/ui'
 import { LayoutPublik } from '@/Layouts/LayoutPublik'
 
@@ -29,7 +30,20 @@ const KATEGORI = [
 export default function PpidBeranda() {
   return (
     <>
-      <Head title="PPID" />
+      <SeoMeta
+        title="PPID Desa"
+        description="Layanan Keterbukaan Informasi Publik (PPID) Desa Mpanau sesuai UU No. 14 Tahun 2008. Informasi Berkala, Serta-Merta, dan Setiap Saat."
+        schema={{
+          '@context': 'https://schema.org',
+          '@type': 'GovernmentService',
+          name: 'PPID Desa Mpanau',
+          serviceType: 'Keterbukaan Informasi Publik',
+          provider: {
+            '@type': 'GovernmentOrganization',
+            name: 'Pemerintah Desa Mpanau',
+          },
+        }}
+      />
 
       <KepalaHalaman
         eyebrow="Keterbukaan Informasi Publik"

@@ -1,6 +1,7 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
-import { Head, router } from '@inertiajs/react'
+import { router } from '@inertiajs/react'
 import { ClipboardCheck, Search } from 'lucide-react'
+import { SeoMeta } from '@/Components/SeoMeta'
 import {
   AksiBerkasPdf,
   GAYA_INPUT,
@@ -46,7 +47,11 @@ export default function Lacak({
 
   return (
     <>
-      <Head title="Lacak Permohonan Informasi" />
+      <SeoMeta
+        title="Lacak Permohonan Informasi"
+        description="Pelacakan status permohonan informasi publik PPID Desa Mpanau."
+        noIndex={true}
+      />
 
       <KepalaHalaman
         lebar="sempit"

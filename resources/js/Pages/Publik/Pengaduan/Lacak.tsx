@@ -1,5 +1,6 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
-import { Head, router } from '@inertiajs/react'
+import { router } from '@inertiajs/react'
+import { SeoMeta } from '@/Components/SeoMeta'
 import { LayoutPublik } from '@/Layouts/LayoutPublik'
 import { formatTanggal } from '@/lib/format'
 import type { StatusPengaduan } from '@/types/api'
@@ -34,7 +35,11 @@ export default function LacakPengaduan({
 
   return (
     <div className="mx-auto w-full max-w-baca px-5 py-10 sm:px-6 sm:py-12">
-      <Head title="Lacak Pengaduan" />
+      <SeoMeta
+        title="Lacak Pengaduan Warga"
+        description="Pelacakan status pengaduan warga Desa Mpanau."
+        noIndex={true}
+      />
 
       <h1 className="font-heading text-2xl font-bold text-navy">Lacak Aduan Warga</h1>
       <p className="mt-2 text-slate-600">

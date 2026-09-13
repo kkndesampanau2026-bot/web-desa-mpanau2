@@ -1,5 +1,5 @@
-import { Head } from '@inertiajs/react'
 import { EmptyState } from '@/Components/EmptyState'
+import { SeoMeta } from '@/Components/SeoMeta'
 import { IsiHalaman } from '@/Components/ui'
 import { GarisTren, KartuAngka } from '@/Components/viz/Grafik'
 import { bungkusInfografis } from '@/Layouts/LayoutInfografis'
@@ -19,7 +19,7 @@ export default function Stunting({ data }: { data: InfografisStunting | null }) 
   if (!data) {
     return (
       <>
-        <Head title="Data Stunting" />
+        <SeoMeta title="Data Stunting" description={DESKRIPSI} />
         <EmptyState judul="Data Stunting" deskripsi={DESKRIPSI} />
       </>
     )
@@ -37,7 +37,16 @@ export default function Stunting({ data }: { data: InfografisStunting | null }) 
 
   return (
     <IsiHalaman lebar="lebar">
-      <Head title="Data Stunting" />
+      <SeoMeta
+        title="Data Stunting"
+        description={`Statistik Penanganan Stunting Desa Mpanau: ${data.ringkasan.jumlah_balita_diukur} balita diukur, prevalensi ${formatPersen(data.ringkasan.persentase_prevalensi)}.`}
+        schema={{
+          '@context': 'https://schema.org',
+          '@type': 'Dataset',
+          name: 'Data Penanganan Stunting Desa Mpanau',
+          description: DESKRIPSI,
+        }}
+      />
 
       <div className="grid gap-4 sm:grid-cols-3">
         <KartuAngka

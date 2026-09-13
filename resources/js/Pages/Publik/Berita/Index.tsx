@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react'
-import { Head, Link, router } from '@inertiajs/react'
+import { Link, router } from '@inertiajs/react'
 import { CalendarDays, ChevronLeft, ChevronRight, Newspaper } from 'lucide-react'
 import { EmptyState } from '@/Components/EmptyState'
+import { SeoMeta } from '@/Components/SeoMeta'
 import { ChipFilter, IsiHalaman, Kartu, KepalaHalaman } from '@/Components/ui'
 import { LayoutPublik } from '@/Layouts/LayoutPublik'
 import { formatTanggal } from '@/lib/format'
@@ -40,7 +41,7 @@ export default function BeritaIndex({ berita, kategori, filter }: Props) {
   if (berita.items.length === 0 && !filter.kategori && !filter.cari) {
     return (
       <>
-        <Head title="Berita Desa" />
+        <SeoMeta title="Berita Desa" description={DESKRIPSI} />
         <EmptyState eyebrow="Informasi Desa" judul="Berita Desa" deskripsi={DESKRIPSI} />
       </>
     )
@@ -48,7 +49,16 @@ export default function BeritaIndex({ berita, kategori, filter }: Props) {
 
   return (
     <>
-      <Head title="Berita Desa" />
+      <SeoMeta
+        title="Berita Desa"
+        description={DESKRIPSI}
+        schema={{
+          '@context': 'https://schema.org',
+          '@type': 'CollectionPage',
+          name: 'Berita & Pengumuman Desa Mpanau',
+          description: DESKRIPSI,
+        }}
+      />
 
       <KepalaHalaman eyebrow="Informasi Desa" judul="Berita Desa" deskripsi={DESKRIPSI} />
 

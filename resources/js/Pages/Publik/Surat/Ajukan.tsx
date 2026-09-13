@@ -1,6 +1,7 @@
 import { useMemo, useState, type FormEvent, type ReactNode } from 'react'
-import { Head, Link, useForm } from '@inertiajs/react'
+import { Link, useForm } from '@inertiajs/react'
 import { Check, ClipboardCopy, FileText, Search } from 'lucide-react'
+import { SeoMeta } from '@/Components/SeoMeta'
 import {
   GAYA_INPUT,
   IsiHalaman,
@@ -84,7 +85,20 @@ export default function Ajukan({ daftar_rt: daftarRt, pilihan, tiket }: Props) {
 
   return (
     <>
-      <Head title="Surat Pengantar" />
+      <SeoMeta
+        title="Pengajuan Surat Pengantar"
+        description="Layanan pengajuan Surat Pengantar RT/Dusun secara daring untuk warga Desa Mpanau."
+        schema={{
+          '@context': 'https://schema.org',
+          '@type': 'GovernmentService',
+          name: 'Pengajuan Surat Pengantar Desa Mpanau',
+          serviceType: 'Layanan Surat Pengantar',
+          provider: {
+            '@type': 'GovernmentOrganization',
+            name: 'Pemerintah Desa Mpanau',
+          },
+        }}
+      />
 
       <KepalaHalaman
         lebar="sempit"
@@ -342,7 +356,11 @@ function TandaTerima({ tiket }: { tiket: TandaTerimaSurat }) {
 
   return (
     <>
-      <Head title="Pengajuan Berhasil" />
+      <SeoMeta
+        title="Pengajuan Berhasil"
+        description="Pengajuan Surat Pengantar Berhasil."
+        noIndex={true}
+      />
 
       <KepalaHalaman
         lebar="sempit"

@@ -1,6 +1,7 @@
 import { useId } from 'react'
-import { Head, router } from '@inertiajs/react'
+import { router } from '@inertiajs/react'
 import { EmptyState } from '@/Components/EmptyState'
+import { SeoMeta } from '@/Components/SeoMeta'
 import { IsiHalaman, Pilihan } from '@/Components/ui'
 import { GarisTren, KartuAngka, Lingkaran } from '@/Components/viz/Grafik'
 import { bungkusInfografis } from '@/Layouts/LayoutInfografis'
@@ -15,7 +16,7 @@ export default function Apbdes({ data }: { data: InfografisApbdes | null }) {
   if (!data) {
     return (
       <>
-        <Head title="APBDes" />
+        <SeoMeta title="APBDes" description={DESKRIPSI} />
         <EmptyState judul="APBDes" deskripsi={DESKRIPSI} />
       </>
     )
@@ -35,7 +36,20 @@ export default function Apbdes({ data }: { data: InfografisApbdes | null }) {
 
   return (
     <IsiHalaman lebar="lebar">
-      <Head title={`APBDes ${data.tahun}`} />
+      <SeoMeta
+        title={`APBDes ${data.tahun}`}
+        description={`Transparansi APBDes Desa Mpanau Tahun Anggaran ${data.tahun}: Total Pendapatan ${formatRupiah(data.ringkasan.total_pendapatan)}, Total Belanja ${formatRupiah(data.ringkasan.total_belanja)}.`}
+        schema={{
+          '@context': 'https://schema.org',
+          '@type': 'Dataset',
+          name: `APBDes Desa Mpanau ${data.tahun}`,
+          description: DESKRIPSI,
+          creator: {
+            '@type': 'GovernmentOrganization',
+            name: 'Pemerintah Desa Mpanau',
+          },
+        }}
+      />
 
       <PemilihTahun tahun={data.tahun} tersedia={data.tahun_tersedia} />
 

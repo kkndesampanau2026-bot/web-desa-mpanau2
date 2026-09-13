@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
-import { Head } from '@inertiajs/react'
 import { Gavel } from 'lucide-react'
 import { EmptyState } from '@/Components/EmptyState'
+import { SeoMeta } from '@/Components/SeoMeta'
 import { AksiBerkasPdf, IsiHalaman, Kartu, KepalaHalaman } from '@/Components/ui'
 import { LayoutPublik } from '@/Layouts/LayoutPublik'
 import type { DasarHukumPpid } from '@/types/api'
@@ -12,7 +12,7 @@ export default function DasarHukum({ dasar_hukum: daftar }: { dasar_hukum: Dasar
   if (daftar.length === 0) {
     return (
       <>
-        <Head title="Dasar Hukum PPID" />
+        <SeoMeta title="Dasar Hukum PPID" description={DESKRIPSI} />
         <EmptyState eyebrow="PPID" judul="Dasar Hukum" deskripsi={DESKRIPSI} />
       </>
     )
@@ -20,7 +20,16 @@ export default function DasarHukum({ dasar_hukum: daftar }: { dasar_hukum: Dasar
 
   return (
     <>
-      <Head title="Dasar Hukum PPID" />
+      <SeoMeta
+        title="Dasar Hukum PPID"
+        description={DESKRIPSI}
+        schema={{
+          '@context': 'https://schema.org',
+          '@type': 'Legislation',
+          name: 'Dasar Hukum Keterbukaan Informasi Publik Desa Mpanau',
+          description: DESKRIPSI,
+        }}
+      />
 
       <KepalaHalaman eyebrow="PPID" judul="Dasar Hukum" deskripsi={DESKRIPSI} lebar="sedang" />
 

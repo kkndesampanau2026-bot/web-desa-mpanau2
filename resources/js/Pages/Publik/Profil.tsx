@@ -1,5 +1,4 @@
 import { useState, type ReactNode } from 'react'
-import { Head } from '@inertiajs/react'
 import { MapContainer, Marker, TileLayer } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -7,6 +6,7 @@ import { BookOpen, Eye, MapPin, Maximize2, Quote, Target, Users } from 'lucide-r
 import { KontenKaya } from '@/Components/KontenKaya'
 import { EmptyState } from '@/Components/EmptyState'
 import { Lightbox, type FotoLightbox } from '@/Components/Lightbox'
+import { SeoMeta } from '@/Components/SeoMeta'
 import { IsiHalaman, Kartu, KepalaHalaman } from '@/Components/ui'
 import { LayoutPublik } from '@/Layouts/LayoutPublik'
 import { formatAngka } from '@/lib/format'
@@ -41,7 +41,10 @@ export default function Profil({ profil }: { profil: ProfilDesa | null }) {
   if (!profil) {
     return (
       <>
-        <Head title="Profil Desa" />
+        <SeoMeta
+          title={`Profil ${namaDesa}`}
+          description={DESKRIPSI}
+        />
         <EmptyState eyebrow="Tentang Kami" judul={`Profil ${namaDesa}`} deskripsi={DESKRIPSI} />
       </>
     )
@@ -53,7 +56,26 @@ export default function Profil({ profil }: { profil: ProfilDesa | null }) {
 
   return (
     <>
-      <Head title="Profil Desa" />
+      <SeoMeta
+        title={`Profil ${namaDesa}`}
+        description={`Profil resmi ${namaDesa}: Visi & Misi, Sejarah, Struktur Pemerintahan, dan Data Geografis.`}
+        schema={{
+          '@context': 'https://schema.org',
+          '@type': 'AboutPage',
+          name: `Profil ${namaDesa}`,
+          description: DESKRIPSI,
+          mainEntity: {
+            '@type': 'AdministrativeArea',
+            name: namaDesa,
+            description: profil.visi ?? undefined,
+            geo: pusatPeta ? {
+              '@type': 'GeoCoordinates',
+              latitude: pusatPeta[0],
+              longitude: pusatPeta[1],
+            } : undefined,
+          },
+        }}
+      />
 
       {/*
         Kepala halaman navy yang sama dengan seluruh halaman publik. Versi

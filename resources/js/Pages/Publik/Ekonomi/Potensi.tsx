@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react'
-import { Head, router } from '@inertiajs/react'
+import { router } from '@inertiajs/react'
 import { DaftarDestinasi } from '@/Components/DaftarDestinasi'
 import { KartuPotensi, KisiPotensi } from '@/Components/KartuPotensi'
 import { KatalogUmkm } from '@/Components/KatalogUmkm'
+import { SeoMeta } from '@/Components/SeoMeta'
 import { ChipFilter, IsiHalaman, KepalaHalaman } from '@/Components/ui'
 import { LayoutPublik } from '@/Layouts/LayoutPublik'
 import { useJelajahPotensi } from '@/lib/tautan'
@@ -57,6 +58,7 @@ interface Props {
 export default function Potensi({ kategori, filter, data, wisata, produk, jenisProduk }: Props) {
   const aktif = filter.kategori
   const jelajah = useJelajahPotensi()
+  const deskripsiHalaman = (aktif && DESKRIPSI_KATEGORI[aktif]) || DESKRIPSI_UMUM
 
   function gantiKategori(pilihan?: string) {
     router.get(
@@ -68,11 +70,20 @@ export default function Potensi({ kategori, filter, data, wisata, produk, jenisP
 
   return (
     <>
-      <Head title={aktif ? `Potensi Desa — ${aktif}` : 'Potensi Desa'} />
+      <SeoMeta
+        title={aktif ? `Potensi Desa — ${aktif}` : 'Potensi & Ekonomi Desa'}
+        description={deskripsiHalaman}
+        schema={{
+          '@context': 'https://schema.org',
+          '@type': 'CollectionPage',
+          name: aktif ? `Potensi Desa — ${aktif}` : 'Potensi & Ekonomi Desa Mpanau',
+          description: deskripsiHalaman,
+        }}
+      />
       <KepalaHalaman
         eyebrow="Potensi & Ekonomi"
         judul="Potensi Desa"
-        deskripsi={(aktif && DESKRIPSI_KATEGORI[aktif]) || DESKRIPSI_UMUM}
+        deskripsi={deskripsiHalaman}
       />
 
       <IsiHalaman lebar="lebar">

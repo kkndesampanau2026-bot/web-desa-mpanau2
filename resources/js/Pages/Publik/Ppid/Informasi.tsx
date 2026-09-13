@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
-import { Head } from '@inertiajs/react'
 import { ChevronDown, FileText } from 'lucide-react'
+import { SeoMeta } from '@/Components/SeoMeta'
 import { AksiBerkasPdf, IsiHalaman, KepalaHalaman } from '@/Components/ui'
 import { LayoutPublik } from '@/Layouts/LayoutPublik'
 import { formatTanggal } from '@/lib/format'
@@ -32,7 +32,16 @@ export default function Informasi({
 
   return (
     <>
-      <Head title={judul} />
+      <SeoMeta
+        title={judul}
+        description={`Dokumen ${judul} PPID Desa Mpanau sesuai Undang-Undang Keterbukaan Informasi Publik.`}
+        schema={{
+          '@context': 'https://schema.org',
+          '@type': 'CollectionPage',
+          name: `${judul} - PPID Desa Mpanau`,
+          description: `Koleksi dokumen ${judul} PPID Desa Mpanau.`,
+        }}
+      />
 
       <KepalaHalaman
         lebar="sedang"
