@@ -62,37 +62,37 @@
 
     {{-- Structured Data (JSON-LD) Global untuk AEO & Rich Snippets --}}
     <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@graph": [
-            {
-                "@type": "GovernmentOrganization",
-                "@id": "{{ url('/') }}/#organization",
-                "name": "Pemerintah Desa Mpanau",
-                "alternateName": "Desa Mpanau",
-                "url": "{{ url('/') }}",
-                "logo": "{{ asset('logo_desa.png') }}",
-                "image": "{{ asset('favicon-32.png') }}",
-                "description": "Pemerintah Desa Mpanau, Kecamatan Sigi Biromaru, Kabupaten Sigi, Provinsi Sulawesi Tengah.",
-                "address": {
-                    "@type": "PostalAddress",
-                    "addressLocality": "Sigi Biromaru",
-                    "addressRegion": "Sulawesi Tengah",
-                    "addressCountry": "ID"
-                }
-            },
-            {
-                "@type": "WebSite",
-                "@id": "{{ url('/') }}/#website",
-                "url": "{{ url('/') }}",
-                "name": "Website Resmi Desa Mpanau",
-                "publisher": {
-                    "@id": "{{ url('/') }}/#organization"
-                },
-                "inLanguage": "id-ID"
-            }
-        ]
-    }
+    {!! json_encode([
+        '@context' => 'https://schema.org',
+        '@graph' => [
+            [
+                '@type' => 'GovernmentOrganization',
+                '@id' => url('/') . '/#organization',
+                'name' => 'Pemerintah Desa Mpanau',
+                'alternateName' => 'Desa Mpanau',
+                'url' => url('/'),
+                'logo' => asset('logo_desa.png'),
+                'image' => asset('favicon-32.png'),
+                'description' => 'Pemerintah Desa Mpanau, Kecamatan Sigi Biromaru, Kabupaten Sigi, Provinsi Sulawesi Tengah.',
+                'address' => [
+                    '@type' => 'PostalAddress',
+                    'addressLocality' => 'Sigi Biromaru',
+                    'addressRegion' => 'Sulawesi Tengah',
+                    'addressCountry' => 'ID',
+                ],
+            ],
+            [
+                '@type' => 'WebSite',
+                '@id' => url('/') . '/#website',
+                'url' => url('/'),
+                'name' => 'Website Resmi Desa Mpanau',
+                'publisher' => [
+                    '@id' => url('/') . '/#organization',
+                ],
+                'inLanguage' => 'id-ID',
+            ],
+        ],
+    ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
     </script>
 
     @routes
