@@ -10,6 +10,7 @@ import {
   Pilihan,
   TextArea,
   Tombol,
+  useGulirKeForm,
 } from '@/Components/Admin/Form'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 
@@ -91,6 +92,8 @@ export default function StuntingAdminPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'stunting'] }),
   })
 
+  const formulir = useGulirKeForm()
+
   /**
    * Memuat satu baris kembali ke formulir.
    *
@@ -110,7 +113,7 @@ export default function StuntingAdminPage() {
     })
     setGalat(null)
     setSukses(null)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    formulir.gulir()
   }
 
   function kirim(e: FormEvent) {
@@ -131,6 +134,7 @@ export default function StuntingAdminPage() {
 
       <Kartu
         judul="Tambah / Perbarui Data"
+        wadahRef={formulir.ref}
         anak={
           <form onSubmit={kirim} className="space-y-4">
             {galat && !galat.errors && <Pemberitahuan jenis="galat" pesan={galat.message} />}

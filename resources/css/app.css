@@ -178,6 +178,45 @@ h3 {
 }
 
 /*
+ * Gerak masuk dialog konfirmasi & toast dashboard.
+ *
+ * Ditulis sebagai kelas, bukan utilitas arbitrer Tailwind, karena keduanya
+ * butuh @keyframes — dan keyframes yang dideklarasikan sekali di sini tidak
+ * dapat tertinggal saat komponennya dipakai ulang di layar lain.
+ */
+@keyframes dialog-masuk {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+}
+
+/* Turun dari tepi atas — searah dengan tempat toast muncul. */
+@keyframes toast-masuk {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+.animasi-dialog {
+  animation: dialog-masuk 0.15s ease-out;
+}
+
+.animasi-toast {
+  animation: toast-masuk 0.18s ease-out;
+}
+
+/* Pengunjung yang meminta gerak dikurangi tetap melihat keduanya muncul,
+   hanya tanpa perpindahan posisi. */
+@media (prefers-reduced-motion: reduce) {
+  .animasi-dialog,
+  .animasi-toast {
+    animation: none;
+  }
+}
+
+/*
  * Mode kontras tinggi — dinyalakan dari menu aksesibilitas mengambang.
  *
  * Menaikkan kontras teks terhadap latar: krem dijadikan putih murni, teks

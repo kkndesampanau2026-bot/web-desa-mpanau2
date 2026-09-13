@@ -10,6 +10,7 @@ import {
   Pemberitahuan,
   Pilihan,
   Tombol,
+  useGulirKeForm,
 } from '@/Components/Admin/Form'
 import { InputBerkas } from '@/Components/Admin/Berkas'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
@@ -127,6 +128,8 @@ function DaftarAnggota({ jenis }: { jenis: 'officials' | 'bpd-members' }) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: kunciQuery }),
   })
 
+  const formulir = useGulirKeForm()
+
   function mulaiSunting(a: Anggota) {
     setSunting(a)
     setForm({
@@ -139,7 +142,7 @@ function DaftarAnggota({ jenis }: { jenis: 'officials' | 'bpd-members' }) {
     // mengganti, membiarkannya kosong berarti mempertahankan yang tersimpan.
     setFoto(null)
     setGalat(null)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    formulir.gulir()
   }
 
   function batalSunting() {
@@ -164,6 +167,7 @@ function DaftarAnggota({ jenis }: { jenis: 'officials' | 'bpd-members' }) {
               ? 'Tambah Anggota BPD'
               : 'Tambah Aparat Desa'
         }
+        wadahRef={formulir.ref}
         anak={
           <form onSubmit={kirim} className="space-y-4">
             {galat && !galat.errors && <Pemberitahuan jenis="galat" pesan={galat.message} />}

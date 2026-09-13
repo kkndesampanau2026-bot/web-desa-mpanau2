@@ -10,6 +10,7 @@ import {
   Pemberitahuan,
   TextArea,
   Tombol,
+  useGulirKeForm,
 } from '@/Components/Admin/Form'
 import { InputBerkas } from '@/Components/Admin/Berkas'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
@@ -83,6 +84,8 @@ export default function PetaAdminPage() {
       setGalat(e instanceof ApiRequestError ? e : new ApiRequestError('Gagal menyimpan.', 0)),
   })
 
+  const formulir = useGulirKeForm()
+
   function mulaiSunting(t: TitikLokasi) {
     setSunting(t)
     setForm({
@@ -96,7 +99,7 @@ export default function PetaAdminPage() {
     })
     setFoto(null)
     setGalat(null)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    formulir.gulir()
   }
 
   function batalSunting() {
@@ -124,6 +127,7 @@ export default function PetaAdminPage() {
 
       <Kartu
         judul={sunting ? `Ubah Titik: ${sunting.nama}` : 'Tambah Titik Lokasi'}
+        wadahRef={formulir.ref}
         anak={
           <form
             onSubmit={(e: FormEvent) => {

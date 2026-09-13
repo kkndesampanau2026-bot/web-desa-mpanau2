@@ -1,9 +1,21 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { FileSignature, Inbox, MapPinned, RefreshCw, Send, Signature } from 'lucide-react'
+import { Download, FileSignature, Inbox, MapPinned, RefreshCw, Send, Signature } from 'lucide-react'
 import { api, ApiRequestError, type ApiSuccess } from '@/lib/api'
 import { keFormData } from '@/lib/berkas'
-import { Input, Kartu, Kolom, Pemberitahuan, Pilihan, Tombol } from '@/Components/Admin/Form'
+import {
+  AksiBaris,
+  Input,
+  Kartu,
+  Kolom,
+  Pemberitahuan,
+  Pilihan,
+  TautanIkon,
+  Tombol,
+  TombolIkon,
+  useGulirKeForm,
+} from '@/Components/Admin/Form'
+import { tampilkanToast } from '@/Components/Admin/Toast'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 
 // ---------------------------------------------------------------------------
@@ -34,7 +46,12 @@ interface Pejabat {
   dusun_id: number | null
   dusun: string | null
   is_active: boolean
-  punya_telegram: boolean
+  /**
+   * Nilai apa adanya, bukan sekadar penanda terisi/kosong — operator perlu
+   * mencocokkannya dengan chat ID milik pejabat yang bersangkutan
+   * (docs/DEVIASI.md §C19). Null berarti belum diisi.
+   */
+  telegram_chat_id: string | null
   punya_ttd: boolean
 }
 
@@ -142,8 +159,12 @@ function TabPengajuan() {
   // belakangan tanpa meminta warga mengajukan ulang.
   const buatUlang = useMutation({
     mutationFn: (id: number) => api.post(`/admin/surat/pengajuan/${id}/pdf`),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ['admin', 'surat', 'pengajuan'] }),
+    onSuccess: () => {
+      tampilkanToast('Berkas PDF dibuat ulang.')
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'surat', 'pengajuan'] })
+    },
+    onError: () =>
+      tampilkanToast('Berkas PDF masih gagal dibuat. Periksa log aplikasi.', 'galat'),
   })
 
   return (
@@ -208,23 +229,24 @@ function TabPengajuan() {
                       </td>
                       <td className="py-2.5">
                         {p.pdf_tersedia ? (
-                          <a
+                          <TautanIkon
+                            ikon={Download}
+                            gaya="utama"
+                            judul="Unduh PDF"
+                            label={`Unduh PDF surat ${p.ticket_number}`}
                             href={`/api/v1/admin/surat/pengajuan/${p.id}/unduh`}
-                            className="text-teal-700 hover:underline"
-                          >
-                            Unduh
-                          </a>
+                          />
                         ) : p.status === 'DITOLAK' ? (
                           <span className="text-xs text-slate-400">—</span>
                         ) : (
-                          <button
+                          <TombolIkon
+                            ikon={RefreshCw}
+                            gaya="peringatan"
+                            judul="Buat ulang PDF"
+                            label={`Buat ulang PDF surat ${p.ticket_number}`}
                             onClick={() => buatUlang.mutate(p.id)}
                             disabled={buatUlang.isPending}
-                            className="inline-flex items-center gap-1 text-xs text-amber-700 hover:underline"
-                          >
-                            <RefreshCw className="size-3" aria-hidden="true" />
-                            Buat ulang PDF
-                          </button>
+                          />
                         )}
                       </td>
                     </tr>
@@ -261,7 +283,8 @@ function TabPejabat() {
   const [ttd, setTtd] = useState<File | null>(null)
   const [sunting, setSunting] = useState<number | null>(null)
   const [galat, setGalat] = useState<ApiRequestError | null>(null)
-  const [sukses, setSukses] = useState<string | null>(null)
+
+  const formulir = useGulirKeForm()
 
   const { data: pejabat, isPending } = useQuery({
     queryKey: kunci,
@@ -292,7 +315,7 @@ function TabPejabat() {
     setTtd(null)
     setSunting(null)
     setGalat(null)
-    setSukses(pesan)
+    tampilkanToast(pesan)
     void queryClient.invalidateQueries({ queryKey: kunci })
   }
 
@@ -317,36 +340,39 @@ function TabPejabat() {
         ? api.post(`/admin/surat/pejabat/${sunting}`, muatan)
         : api.post('/admin/surat/pejabat', muatan)
     },
-    onSuccess: () => bereskan(sunting ? 'Pejabat diperbarui.' : 'Pejabat ditambahkan.'),
-    onError: (e) => {
-      setSukses(null)
-      setGalat(e instanceof ApiRequestError ? e : new ApiRequestError('Gagal menyimpan.', 0))
-    },
+    onSuccess: () => bereskan(sunting ? 'Perubahan pejabat tersimpan.' : 'Pejabat ditambahkan.'),
+    onError: (e) =>
+      setGalat(e instanceof ApiRequestError ? e : new ApiRequestError('Gagal menyimpan.', 0)),
   })
 
   const hapus = useMutation({
     mutationFn: (id: number) => api.delete(`/admin/surat/pejabat/${id}`),
     onSuccess: () => bereskan('Pejabat dihapus atau dinonaktifkan.'),
+    onError: () => tampilkanToast('Pejabat gagal dihapus. Coba lagi.', 'galat'),
   })
 
   function mulaiSunting(p: Pejabat) {
     setSunting(p.id)
     setGalat(null)
-    setSukses(null)
     setForm({
       role: p.role,
       nama: p.nama,
       jabatan_teks: p.jabatan_teks ?? '',
       rt_id: p.rt_id ? String(p.rt_id) : '',
       dusun_id: p.dusun_id ? String(p.dusun_id) : '',
-      // Chat ID TIDAK pernah dikirim balik dari server (lihat
-      // daftarPejabat), jadi kolomnya selalu mulai kosong. Dibiarkan kosong
-      // saat menyimpan berarti chat ID lama dihapus — karena itu kolomnya
-      // diberi keterangan tegas di formulir.
-      telegram_chat_id: '',
+      // Chat ID ikut terisi apa adanya, jadi menyimpan tanpa menyentuh kolom
+      // ini mempertahankan nilainya. Sebelumnya server tidak pernah
+      // mengirimnya balik: kolomnya selalu mulai kosong, dan operator yang
+      // sekadar memperbaiki ejaan nama ikut menghapus chat ID pejabat tanpa
+      // menyadarinya — pengajuan berikutnya lalu tertahan tanpa notifikasi.
+      telegram_chat_id: p.telegram_chat_id ?? '',
       is_active: p.is_active,
     })
     setTtd(null)
+
+    // Formulirnya ada di atas daftar; tanpa ini, menekan "Ubah" pada baris
+    // paling bawah tidak memperlihatkan perubahan apa pun di layar.
+    formulir.gulir()
   }
 
   const perluRt = form.role === 'KETUA_RT'
@@ -356,6 +382,8 @@ function TabPejabat() {
       <Kartu
         judul={sunting ? 'Ubah Pejabat' : 'Tambah Pejabat'}
         ikon={Signature}
+        // Sasaran gulir tombol "Ubah" pada daftar di bawah.
+        wadahRef={formulir.ref}
         anak={
           <form
             onSubmit={(e: FormEvent) => {
@@ -364,7 +392,6 @@ function TabPejabat() {
             }}
             className="space-y-4"
           >
-            {sukses && <Pemberitahuan jenis="sukses" pesan={sukses} />}
             {galat && !galat.errors && <Pemberitahuan jenis="galat" pesan={galat.message} />}
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -443,8 +470,8 @@ function TabPejabat() {
               htmlFor="telegram_chat_id"
               petunjuk={
                 sunting
-                  ? 'Demi keamanan, chat ID tersimpan tidak ditampilkan kembali. Isi hanya bila ingin MENGGANTINYA; dikosongkan berarti chat ID lama dihapus.'
-                  : 'Angka saja. Pejabat mendapatkannya dengan mengirim /start ke bot desa, atau lewat @userinfobot.'
+                  ? 'Chat ID tersimpan ditampilkan apa adanya. Dikosongkan berarti pejabat ini berhenti menerima notifikasi.'
+                  : 'Angka saja. Pejabat mendapatkannya dengan mengirim /start ke bot desa, atau lewat @userinfobot. Boleh sama dengan pejabat lain bila orangnya memang sama.'
               }
               galat={galat?.fieldError('telegram_chat_id')}
             >
@@ -524,7 +551,7 @@ function TabPejabat() {
                     <th className="py-2 pr-3">Telegram</th>
                     <th className="py-2 pr-3">TTD</th>
                     <th className="py-2 pr-3">Status</th>
-                    <th className="py-2">Aksi</th>
+                    <th className="py-2 text-right">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -538,7 +565,13 @@ function TabPejabat() {
                       </td>
                       <td className="py-2.5 pr-3">{p.nama}</td>
                       <td className="py-2.5 pr-3">
-                        <Penanda ada={p.punya_telegram} kosong="Belum diisi" />
+                        {p.telegram_chat_id ? (
+                          <span className="font-mono text-xs text-slate-700">
+                            {p.telegram_chat_id}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-amber-700">Belum diisi</span>
+                        )}
                       </td>
                       <td className="py-2.5 pr-3">
                         <Penanda ada={p.punya_ttd} kosong="Belum ada" />
@@ -555,24 +588,17 @@ function TabPejabat() {
                         </span>
                       </td>
                       <td className="py-2.5">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => mulaiSunting(p)}
-                            className="text-xs text-teal-700 hover:underline"
-                          >
-                            Ubah
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (window.confirm(`Hapus/nonaktifkan ${p.nama}?`)) {
-                                hapus.mutate(p.id)
-                              }
-                            }}
-                            className="text-xs text-red-600 hover:underline"
-                          >
-                            Hapus
-                          </button>
-                        </div>
+                        <AksiBaris
+                          nama={p.nama}
+                          onSunting={() => mulaiSunting(p)}
+                          onHapus={() => hapus.mutate(p.id)}
+                          sedangProses={hapus.isPending}
+                          pesanHapus={
+                            'Pejabat yang pernah menandatangani surat tidak dihapus, ' +
+                            'melainkan dinonaktifkan — riwayat surat yang sudah terbit ' +
+                            'tetap dapat ditelusuri.'
+                          }
+                        />
                       </td>
                     </tr>
                   ))}
@@ -583,6 +609,13 @@ function TabPejabat() {
                 Pejabat tanpa Telegram Chat ID tetap tercatat, namun tidak akan menerima
                 notifikasi — pengajuan warga akan tertahan pada tahapnya. Isi chat ID
                 sebelum mengaktifkan pejabat.
+              </p>
+
+              <p className="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                Satu chat ID boleh muncul pada beberapa baris sekaligus, untuk orang yang
+                menjabat Ketua RT pada lebih dari satu RT. Buat satu baris per RT dengan
+                chat ID yang sama; notifikasi kedua RT masuk ke akun Telegram itu, dan
+                yang menentukan wewenangnya tetap RT pada masing-masing baris.
               </p>
             </div>
           )
@@ -639,6 +672,7 @@ function TabRt() {
     onSuccess: () => {
       setForm({ nomor: '', dusun_id: '', urutan_tampil: '' })
       setGalat(null)
+      tampilkanToast('RT ditambahkan.')
       void segarkan()
     },
     onError: (e) =>
@@ -655,14 +689,27 @@ function TabRt() {
         dusun_id: dusunId || null,
         urutan_tampil: rt.urutan_tampil,
       }),
-    onSuccess: () => segarkan(),
+    onSuccess: () => {
+      tampilkanToast('Pemetaan dusun diperbarui.')
+      void segarkan()
+    },
+    onError: () => tampilkanToast('Pemetaan dusun gagal disimpan. Coba lagi.', 'galat'),
   })
 
   const hapus = useMutation({
     mutationFn: (id: number) => api.delete(`/admin/surat/rt/${id}`),
-    onSuccess: () => segarkan(),
+    onSuccess: () => {
+      tampilkanToast('RT dihapus.')
+      void segarkan()
+    },
+    // Penolakan paling sering di sini — "RT sudah dipakai pengajuan" — dulu
+    // muncul di kotak galat pada formulir TAMBAH di puncak halaman, jauh dari
+    // baris yang barusan ditekan tombol hapusnya.
     onError: (e) =>
-      setGalat(e instanceof ApiRequestError ? e : new ApiRequestError('Gagal menghapus.', 0)),
+      tampilkanToast(
+        e instanceof ApiRequestError ? e.message : 'RT gagal dihapus. Coba lagi.',
+        'galat',
+      ),
   })
 
   return (
@@ -746,7 +793,7 @@ function TabRt() {
                     <tr>
                       <th className="py-2 pr-3">RT</th>
                       <th className="py-2 pr-3">Dusun</th>
-                      <th className="py-2">Aksi</th>
+                      <th className="py-2 text-right">Aksi</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -769,14 +816,16 @@ function TabRt() {
                           />
                         </td>
                         <td className="py-2.5">
-                          <button
-                            onClick={() => {
-                              if (window.confirm(`Hapus RT ${rt.nomor}?`)) hapus.mutate(rt.id)
-                            }}
-                            className="text-xs text-red-600 hover:underline"
-                          >
-                            Hapus
-                          </button>
+                          <AksiBaris
+                            nama={`RT ${rt.nomor}`}
+                            onHapus={() => hapus.mutate(rt.id)}
+                            sedangProses={hapus.isPending}
+                            pesanHapus={
+                              'RT yang sudah dipakai pada pengajuan surat tidak dapat ' +
+                              'dihapus. Warga juga tidak akan dapat memilihnya lagi pada ' +
+                              'formulir surat pengantar.'
+                            }
+                          />
                         </td>
                       </tr>
                     ))}

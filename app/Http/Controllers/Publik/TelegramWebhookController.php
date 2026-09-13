@@ -107,8 +107,11 @@ class TelegramWebhookController extends Controller
 
         [$aksi, $tahap, $uuid] = $terurai;
 
-        $pejabat = $this->otorisasi->pejabat($chatId);
+        // Pengajuannya dicari lebih dulu: satu chat ID dapat memiliki beberapa
+        // baris pejabat (mis. Ketua RT untuk dua RT), dan baris yang tepat
+        // hanya dapat dipilih bila pengajuan yang dituju sudah diketahui.
         $permohonan = $this->otorisasi->permohonan($uuid);
+        $pejabat = $this->otorisasi->pejabat($chatId, $permohonan, $tahap);
 
         $penolakan = $this->otorisasi->tolakDengan($pejabat, $permohonan, $tahap);
 
@@ -258,9 +261,9 @@ class TelegramWebhookController extends Controller
         // halaman yang dapat dilihat orang lain.
         $alasan = mb_substr($teks, 0, 500);
 
-        $pejabat = $this->otorisasi->pejabat($chatId);
         $permohonan = $this->otorisasi->permohonan((string) $konteks['uuid']);
         $tahap = (string) $konteks['tahap'];
+        $pejabat = $this->otorisasi->pejabat($chatId, $permohonan, $tahap);
 
         $penolakan = $this->otorisasi->tolakDengan($pejabat, $permohonan, $tahap);
 

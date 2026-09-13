@@ -24,6 +24,7 @@ import {
   Wallet,
   type LucideIcon,
 } from 'lucide-react'
+import { WadahToast } from '@/Components/Admin/Toast'
 import { punyaIzin, useHalaman } from '@/types/inertia'
 
 /**
@@ -428,6 +429,12 @@ export function LayoutAdmin({
 
         <main className="flex-1 p-6">{children}</main>
       </div>
+
+      {/*
+        Satu-satunya pemasangan wadah toast di seluruh dashboard; halaman
+        cukup memanggil `tampilkanToast()` tanpa menyiapkan apa pun.
+      */}
+      <WadahToast />
     </div>
   )
 }

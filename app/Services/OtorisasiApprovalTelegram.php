@@ -30,14 +30,48 @@ class OtorisasiApprovalTelegram
     public function __construct(private readonly CurrentVillage $village) {}
 
     /**
-     * Memetakan chat ID ke pejabat. Null berarti pengirim tidak berhak
-     * menyentuh apa pun — termasuk membaca detail pengajuan.
+     * Memilih baris pejabat yang tepat bagi chat ID pengirim.
+     *
+     * Satu chat ID dapat menunjuk LEBIH DARI SATU baris pejabat: seseorang
+     * dapat menjabat Ketua RT pada dua RT sekaligus, dan karena `rt_id` tunggal
+     * per baris, ia terdaftar dua kali dengan akun Telegram yang sama (lihat
+     * migrasi 2026_09_13 yang melepas keunikan kolom itu). Karena itu yang
+     * dicari di sini bukan "pejabat milik chat ID ini", melainkan **baris milik
+     * chat ID ini yang berwenang atas pengajuan INI**.
+     *
+     * Null berarti pengirim tidak terdaftar sama sekali — tidak berhak
+     * menyentuh apa pun, termasuk membaca detail pengajuan.
+     *
+     * Urutan pemilihannya penting justru ketika tidak ada baris yang cocok
+     * sepenuhnya, sebab baris yang terpilihlah yang menentukan bunyi pesan
+     * penolakan di `tolakDengan()`:
+     *
+     *   1. role sesuai tahap + aktif + wilayah cocok  → diizinkan
+     *   2. role sesuai tahap + wilayah cocok          → "akun tidak aktif"
+     *   3. role sesuai tahap                          → "bukan wilayah Anda"
+     *   4. baris apa pun miliknya                     → "bukan kewenangan Anda"
+     *
+     * Tanpa urutan ini, seorang Ketua RT yang memegang dua RT dan menekan
+     * tombol untuk RT keduanya akan dibalas "pengajuan ini bukan dari wilayah
+     * Anda" — hanya karena baris yang kebetulan terambil lebih dulu adalah
+     * RT yang satunya.
      */
-    public function pejabat(string $chatId): ?LetterOfficial
+    public function pejabat(string $chatId, ?LetterRequest $permohonan, string $tahap): ?LetterOfficial
     {
-        return LetterOfficial::with(['rt.dusun', 'dusun'])
+        $kandidat = LetterOfficial::with(['rt.dusun', 'dusun'])
             ->where('telegram_chat_id', $chatId)
-            ->first();
+            ->get();
+
+        if ($kandidat->isEmpty() || $permohonan === null) {
+            return $kandidat->first();
+        }
+
+        $seRole = $kandidat->where('role', $this->roleUntuk($tahap));
+
+        return $seRole->first(fn (LetterOfficial $o) => $o->berwenangAtas($permohonan))
+            ?? $seRole->first(fn (LetterOfficial $o) => $o->wilayahSesuai($permohonan))
+            ?? $seRole->first()
+            ?? $kandidat->first();
     }
 
     public function permohonan(string $uuid): ?LetterRequest
@@ -72,11 +106,7 @@ class OtorisasiApprovalTelegram
             return 'Pengajuan tidak ditemukan atau sudah dihapus.';
         }
 
-        $roleDiharap = $tahap === 'RT'
-            ? LetterOfficial::ROLE_KETUA_RT
-            : LetterOfficial::ROLE_KEPALA_DUSUN;
-
-        if ($pejabat->role !== $roleDiharap) {
+        if ($pejabat->role !== $this->roleUntuk($tahap)) {
             return 'Tahap ini bukan kewenangan Anda.';
         }
 
@@ -101,6 +131,14 @@ class OtorisasiApprovalTelegram
         }
 
         return null;
+    }
+
+    /** Role yang berwenang pada sebuah tahap. */
+    private function roleUntuk(string $tahap): string
+    {
+        return $tahap === 'RT'
+            ? LetterOfficial::ROLE_KETUA_RT
+            : LetterOfficial::ROLE_KEPALA_DUSUN;
     }
 
     /**

@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, Check, Pencil, X } from 'lucide-react'
 import { api, ApiRequestError, urlBerkas } from '@/lib/api'
 import { keFormData } from '@/lib/berkas'
 import { Pemberitahuan, Tombol } from '@/Components/Admin/Form'
+import { useKonfirmasi } from '@/Components/Admin/Dialog'
 import { InputBanyakGambar } from '@/Components/Admin/Berkas'
 
 export interface Foto {
@@ -56,6 +57,8 @@ export function PengelolaFoto({
   const [galat, setGalat] = useState<string | null>(null)
   const [suntingId, setSuntingId] = useState<number | null>(null)
   const [caption, setCaption] = useState('')
+
+  const konfirmasi = useKonfirmasi()
 
   const unggah = useMutation({
     mutationFn: () => api.post(urlUnggah, keFormData({ foto: pilihan })),
@@ -144,11 +147,13 @@ export function PengelolaFoto({
                   disabled={hapus.isPending}
                   title="Hapus foto"
                   aria-label={`Hapus foto ${f.caption ?? f.id}`}
-                  onClick={() => {
-                    if (confirm('Hapus foto ini? Berkasnya ikut terhapus dari server.')) {
-                      hapus.mutate(f.id)
-                    }
-                  }}
+                  onClick={() =>
+                    konfirmasi.minta({
+                      judul: 'Hapus foto ini?',
+                      pesan: 'Berkasnya ikut terhapus dari server dan tidak dapat dikembalikan.',
+                      onKonfirmasi: () => hapus.mutate(f.id),
+                    })
+                  }
                   className="rounded-full bg-white/90 p-1 text-red-600 shadow-sm transition hover:bg-white disabled:opacity-50"
                 >
                   <X className="size-3.5" aria-hidden="true" />
@@ -234,6 +239,8 @@ export function PengelolaFoto({
           </Tombol>
         </div>
       )}
+
+      {konfirmasi.dialog}
     </div>
   )
 }

@@ -1,9 +1,17 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { BookOpen, Compass, IdCard, Map, Network, Save } from 'lucide-react'
+import { BookOpen, Compass, IdCard, Map, Network, Save, Trash2 } from 'lucide-react'
 import { api, ApiRequestError, getData, urlBerkas } from '@/lib/api'
 import { keFormData } from '@/lib/berkas'
-import { Kartu, Kolom, Input, Pemberitahuan, TextArea, Tombol } from '@/Components/Admin/Form'
+import {
+  Kartu,
+  Kolom,
+  Input,
+  Pemberitahuan,
+  TextArea,
+  Tombol,
+  TombolIkon,
+} from '@/Components/Admin/Form'
 import { InputBerkas } from '@/Components/Admin/Berkas'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 import type { ReactNode } from 'react'
@@ -200,14 +208,13 @@ export default function ProfilPage() {
                             ubah('misi', baru)
                           }}
                         />
-                        <Tombol
-                          type="button"
-                          variasi="sekunder"
+                        <TombolIkon
+                          ikon={Trash2}
+                          gaya="bahaya"
+                          judul="Hapus poin misi"
+                          label={`Hapus misi poin ${i + 1}`}
                           onClick={() => ubah('misi', form.misi.filter((_, n) => n !== i))}
-                          aria-label={`Hapus misi poin ${i + 1}`}
-                        >
-                          Hapus
-                        </Tombol>
+                        />
                       </div>
                     ))}
                     <Tombol

@@ -10,6 +10,7 @@ import {
   Pemberitahuan,
   Pilihan,
   Tombol,
+  useGulirKeForm,
 } from '@/Components/Admin/Form'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 import type { ReactNode } from 'react'
@@ -138,6 +139,8 @@ export default function PendudukPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'residents'] }),
   })
 
+  const formulir = useGulirKeForm()
+
   /**
    * Memuat satu baris untuk disunting.
    *
@@ -173,7 +176,7 @@ export default function PendudukPage() {
       setSunting({ id: p.id, nama: p.nama })
       setGalatForm(null)
       setFormTerbuka(true)
-      window.scrollTo({ top: 0, behavior: 'smooth' })
+      formulir.gulir()
     } catch (e) {
       setGalatMuat(
         e instanceof ApiRequestError && e.status === 403
@@ -309,6 +312,7 @@ export default function PendudukPage() {
       {formTerbuka && (
         <Kartu
           judul={sunting ? `Ubah Data: ${sunting.nama}` : 'Tambah Penduduk'}
+          wadahRef={formulir.ref}
           anak={
             <form
               onSubmit={(e: FormEvent) => {

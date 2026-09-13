@@ -9,6 +9,7 @@ import {
   Pemberitahuan,
   Pilihan,
   Tombol,
+  useGulirKeForm,
 } from '@/Components/Admin/Form'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 import { useHalaman } from '@/types/inertia'
@@ -65,11 +66,14 @@ export default function PenggunaPage({
 
   const mode = sedangDisunting === null ? 'tutup' : sedangDisunting === 0 ? 'baru' : 'sunting'
 
+  const formulir = useGulirKeForm()
+
   function bukaBaru() {
     reset()
     clearErrors()
     setData({ ...KOSONG, peran: peranTersedia[0] ?? '' })
     setSedangDisunting(0)
+    formulir.gulir()
   }
 
   function bukaSunting(baris: BarisPengguna) {
@@ -85,6 +89,7 @@ export default function PenggunaPage({
       password_confirmation: '',
     })
     setSedangDisunting(baris.id)
+    formulir.gulir()
   }
 
   function tutup() {
@@ -146,6 +151,7 @@ export default function PenggunaPage({
         <Kartu
           judul={mode === 'baru' ? 'Akun Operator Baru' : 'Sunting Akun'}
           ikon={UserPlus}
+          wadahRef={formulir.ref}
           anak={
             <form onSubmit={tanganiSubmit} className="space-y-5" noValidate>
               <div className="grid gap-5 sm:grid-cols-2">

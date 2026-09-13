@@ -229,7 +229,13 @@
 <table class="ttd">
     <tr>
         <td>
-            {{-- Blok kiri baru terisi setelah Kepala Dusun menyetujui. --}}
+            {{-- Blok kiri baru terisi setelah Kepala Dusun menyetujui.
+                 Dua baris kosong menyamai tinggi header blok kanan (tanggal,
+                 "Hormat Kami", "Ketua RT ..." = 3 baris) — tanpanya kotak
+                 tanda tangan kiri mulai lebih tinggi daripada kanan karena
+                 headernya cuma 1 baris. --}}
+            <div>&nbsp;</div>
+            <div>&nbsp;</div>
             <div>Ketua Dusun {{ $namaDusun }}</div>
             <div class="ruang-ttd">
                 @if($ttdKadus)

@@ -1,6 +1,18 @@
-import { useEffect, useRef, useState, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type AnchorHTMLAttributes,
+  type ButtonHTMLAttributes,
+  type InputHTMLAttributes,
+  type Ref,
+  type ReactNode,
+  type TextareaHTMLAttributes,
+} from 'react'
 import { createPortal } from 'react-dom'
 import { Check, ChevronDown, Pencil, Trash2, type LucideIcon } from 'lucide-react'
+import { DialogKonfirmasi } from '@/Components/Admin/Dialog'
 
 /**
  * Elemen formulir bersama untuk seluruh halaman CMS.
@@ -310,6 +322,84 @@ export function Tombol({
   )
 }
 
+// ---------------------------------------------------------------------------
+// Aksi berbentuk ikon
+// ---------------------------------------------------------------------------
+
+/**
+ * Bentuk baku seluruh aksi berikon di dashboard.
+ *
+ * Ukurannya (ikon 16px + padding 6px) disamakan supaya deretan aksi pada dua
+ * layar berbeda tetap sebaris tinggi, dan cukup lebar untuk disentuh di
+ * tablet — perangkat yang dipakai sebagian operator desa.
+ */
+const DASAR_IKON =
+  'inline-flex shrink-0 items-center justify-center rounded-md p-1.5 transition disabled:cursor-not-allowed disabled:opacity-50'
+
+const WARNA_IKON = {
+  netral: 'text-slate-500 hover:bg-slate-100 hover:text-teal-700',
+  utama: 'text-teal-700 hover:bg-teal-50',
+  peringatan: 'text-amber-700 hover:bg-amber-50',
+  bahaya: 'text-slate-500 hover:bg-red-50 hover:text-red-600',
+} as const
+
+interface PropsIkon {
+  ikon: LucideIcon
+  /**
+   * Nama aksi bagi pembaca layar. WAJIB, dan sebaiknya memuat nama barisnya:
+   * tombol tanpa teks tidak punya nama lain, dan "Hapus" tanpa objek tidak
+   * memberi tahu apa yang akan terhapus (PRD 12.4).
+   */
+  label: string
+  /** Tooltip, bila `label` terlalu panjang untuk ditampilkan apa adanya. */
+  judul?: string
+  gaya?: keyof typeof WARNA_IKON
+  className?: string
+}
+
+/** Aksi berikon — pengganti tautan teks "Ubah"/"Hapus"/"Unduh" di tiap layar. */
+export function TombolIkon({
+  ikon: Ikon,
+  label,
+  judul,
+  gaya = 'netral',
+  className = '',
+  ...props
+}: PropsIkon & ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      type="button"
+      {...props}
+      title={judul ?? label}
+      aria-label={label}
+      className={`${DASAR_IKON} ${WARNA_IKON[gaya]} ${className}`}
+    >
+      <Ikon className="size-4" aria-hidden="true" />
+    </button>
+  )
+}
+
+/** Padanan `TombolIkon` untuk aksi yang berupa tautan (unduh berkas, buka tab baru). */
+export function TautanIkon({
+  ikon: Ikon,
+  label,
+  judul,
+  gaya = 'netral',
+  className = '',
+  ...props
+}: PropsIkon & AnchorHTMLAttributes<HTMLAnchorElement>) {
+  return (
+    <a
+      {...props}
+      title={judul ?? label}
+      aria-label={label}
+      className={`${DASAR_IKON} ${WARNA_IKON[gaya]} ${className}`}
+    >
+      <Ikon className="size-4" aria-hidden="true" />
+    </a>
+  )
+}
+
 /**
  * Aksi pada satu baris daftar: sunting & hapus.
  *
@@ -325,62 +415,138 @@ export function AksiBaris({
   onSunting,
   onHapus,
   sedangProses = false,
+  pesanHapus,
+  anak,
 }: {
   /** Nama baris — dipakai pada label aksesibilitas & konfirmasi hapus. */
   nama: string
   onSunting?: () => void
   onHapus?: () => void
   sedangProses?: boolean
+  /**
+   * Keterangan pada dialog konfirmasi hapus. Diisi bila akibatnya tidak
+   * sesederhana "data hilang" — mis. baris yang dinonaktifkan alih-alih
+   * dihapus, atau penghapusan yang dapat ditolak server.
+   */
+  pesanHapus?: string
+  /**
+   * Aksi berikon lain milik baris ini (unduh, buka, lihat di situs publik),
+   * ditempatkan sebelum Sunting. Lewat sini, bukan di samping komponen,
+   * supaya seluruh aksi satu baris berbagi satu jarak antar-ikon.
+   */
+  anak?: ReactNode
 }) {
-  const gaya =
-    'rounded-md p-1.5 transition disabled:opacity-50 disabled:cursor-not-allowed'
+  const [tanyaHapus, setTanyaHapus] = useState(false)
 
   return (
     <div className="flex items-center justify-end gap-1">
+      {anak}
+
       {onSunting && (
-        <button
-          type="button"
+        <TombolIkon
+          ikon={Pencil}
+          label={`Sunting ${nama}`}
+          judul="Sunting"
           onClick={onSunting}
           disabled={sedangProses}
-          title="Sunting"
-          aria-label={`Sunting ${nama}`}
-          className={`${gaya} text-slate-500 hover:bg-slate-100 hover:text-teal-700`}
-        >
-          <Pencil className="size-4" aria-hidden="true" />
-        </button>
+        />
       )}
 
       {onHapus && (
-        <button
-          type="button"
-          onClick={() => {
-            // Konfirmasi dipasang di sini, bukan di tiap pemanggil: penghapusan
-            // pada dashboard ini tidak punya pembatalan.
-            if (confirm(`Hapus ${nama}?`)) onHapus()
-          }}
-          disabled={sedangProses}
-          title="Hapus"
-          aria-label={`Hapus ${nama}`}
-          className={`${gaya} text-slate-500 hover:bg-red-50 hover:text-red-600`}
-        >
-          <Trash2 className="size-4" aria-hidden="true" />
-        </button>
+        <>
+          <TombolIkon
+            ikon={Trash2}
+            gaya="bahaya"
+            label={`Hapus ${nama}`}
+            judul="Hapus"
+            onClick={() => setTanyaHapus(true)}
+            disabled={sedangProses}
+          />
+
+          {/*
+            Konfirmasi dipasang di sini, bukan di tiap pemanggil: penghapusan
+            pada dashboard ini tidak punya pembatalan. Karena komponen ini
+            dipakai hampir seluruh layar CMS, memasangnya di sini pula yang
+            membuat seluruhnya beralih dari `confirm()` bawaan peramban
+            sekaligus.
+          */}
+          <DialogKonfirmasi
+            terbuka={tanyaHapus}
+            judul={`Hapus ${nama}?`}
+            pesan={pesanHapus ?? 'Data yang dihapus tidak dapat dikembalikan.'}
+            onBatal={() => setTanyaHapus(false)}
+            onKonfirmasi={() => {
+              setTanyaHapus(false)
+              onHapus()
+            }}
+          />
+        </>
       )}
     </div>
   )
+}
+
+/**
+ * Menggulirkan formulir ke pandangan saat tombol "Sunting" ditekan.
+ *
+ * Pada layar CMS, formulir berada di ATAS daftarnya. Menekan Sunting pada
+ * baris ke-30 karena itu mengisi formulir yang berada jauh di luar layar:
+ * tidak ada yang berubah di hadapan operator, dan ia menekan tombol itu
+ * berkali-kali menyangka tidak berfungsi.
+ *
+ * `ref` dipasang pada kartu formulir (lewat prop `wadahRef` milik `Kartu`),
+ * `gulir()` dipanggil di dalam penangan Sunting. Dipakai bersama, bukan
+ * disalin sebagai `window.scrollTo({ top: 0 })` seperti layar-layar terdahulu:
+ * menggulir ke PUNCAK halaman hanya kebetulan benar selama formulirnya elemen
+ * pertama.
+ */
+export function useGulirKeForm<T extends HTMLElement = HTMLElement>() {
+  const ref = useRef<T>(null)
+
+  /*
+   * Digulir SATU FRAME setelah dipanggil, bukan seketika.
+   *
+   * Sebagian layar memunculkan formulirnya pada saat yang sama dengan menekan
+   * tombol sunting — `{formTerbuka && <Kartu …>}` pada Penduduk dan Akun
+   * Operator. Pada detik `gulir()` dipanggil, React belum me-render ulang,
+   * sehingga `ref.current` masih null dan gulirnya diam-diam tidak terjadi.
+   * Menunggu satu frame membuat pemanggilnya tetap satu baris, tanpa perlu
+   * menyiapkan useEffect sendiri-sendiri.
+   *
+   * `useCallback` menjaga identitasnya tetap, supaya boleh menjadi dependensi
+   * useEffect — dipakai formulir yang MENGGANTIKAN daftarnya (Berita &
+   * penerima bansos), yang menggulir dirinya sendiri sekali saat muncul.
+   */
+  const gulir = useCallback(() => {
+    requestAnimationFrame(() => {
+      ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+  }, [])
+
+  return { ref, gulir }
 }
 
 export function Kartu({
   judul,
   ikon: Ikon,
   anak,
+  wadahRef,
 }: {
   judul?: string
   ikon?: LucideIcon
   anak: ReactNode
+  /**
+   * Untuk menggulirkan kartu ini ke pandangan — lihat `useGulirKeForm`.
+   * Disediakan di sini supaya pemakainya tidak perlu membungkus kartu dengan
+   * `<div>` tambahan hanya demi menempelkan ref.
+   */
+  wadahRef?: Ref<HTMLElement>
 }) {
   return (
-    <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+    <section
+      ref={wadahRef}
+      className="scroll-mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
+    >
       {judul && (
         <div className="flex items-center gap-2 border-b border-slate-200 bg-slate-100 px-6 py-4">
           {Ikon && <Ikon className="size-5 shrink-0 text-teal-700" aria-hidden="true" />}

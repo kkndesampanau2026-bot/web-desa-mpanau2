@@ -656,6 +656,41 @@ menjalankan permintaan pemanasan lebih dulu untuk menetralkannya.
 Hasil audit: **tidak ada N+1** pada endpoint berita, produk, POI, galeri,
 maupun infografis bansos.
 
+### C19. Satu Chat ID Telegram boleh dipakai beberapa pejabat (13 September 2026)
+
+Modul Surat Pengantar semula menjadikan `letter_officials.telegram_chat_id`
+**unik**, dengan alasan yang benar pada waktunya: otorisasi callback Telegram
+bertumpu pada pemetaan chat ID → pejabat, dan pemetaan itu diasumsikan tunggal.
+
+Kenyataan di desa mematahkan asumsinya — **satu orang dapat menjabat Ketua RT
+pada dua RT sekaligus.** Karena satu baris pejabat hanya memegang satu `rt_id`,
+orang itu membutuhkan dua baris, dan keduanya menunjuk akun Telegram yang sama.
+Atas permintaan pemilik produk, keunikan itu dilepas
+(migrasi `2026_09_13_000000`, menjadi index biasa).
+
+Yang menggantikannya sebagai penjaga wewenang: `OtorisasiApprovalTelegram::
+pejabat()` kini memilih di antara SELURUH baris milik chat ID tersebut — baris
+yang role dan wilayahnya cocok dengan pengajuan yang sedang diproses.
+Pemeriksaan wilayah tidak melemah, ia berpindah pertanyaan: dari "chat ID ini
+milik siapa" menjadi "baris mana milik chat ID ini yang berwenang atas surat
+ini". Urutan pemilihannya sengaja berjenjang (berwenang penuh → wilayah cocok
+tetapi nonaktif → role cocok → baris apa pun), supaya pesan penolakan tetap
+menyebut sebab yang benar; tanpa itu, pemegang dua RT yang menyetujui surat RT
+keduanya dibalas "bukan dari wilayah Anda" hanya karena baris RT satunya
+kebetulan terambil lebih dulu. Diuji pada
+`tests/Feature/Surat/SuratPengantarTest.php` — termasuk bahwa pemegang dua RT
+tetap **tidak** dapat menyentuh RT ketiga.
+
+Perubahan kedua menyertainya: **chat ID kini ditampilkan apa adanya di
+`/admin/surat`**, menggantikan penanda "Terisi/Belum diisi". Alasan lama
+menyembunyikannya (setara kontak pribadi) kalah oleh dua hal di lapangan:
+operator tidak punya cara memastikan chat ID tersimpan memang milik orang yang
+benar, dan formulir sunting yang selalu mulai kosong membuat operator yang
+sekadar memperbaiki ejaan nama ikut **menghapus** chat ID pejabat tanpa
+menyadarinya — pengajuan berikutnya lalu tertahan tanpa notifikasi. Nilainya
+tetap berada di balik permission `manage-letter-official` dan tidak pernah
+menyentuh halaman publik.
+
 
 ---
 

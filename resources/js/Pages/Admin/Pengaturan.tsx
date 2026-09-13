@@ -3,7 +3,16 @@ import { Link } from '@inertiajs/react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiRequestError, type ApiSuccess } from '@/lib/api'
 import { keFormData } from '@/lib/berkas'
-import { Kartu, Kolom, Input, Pemberitahuan, TextArea, Tombol } from '@/Components/Admin/Form'
+import { Trash2 } from 'lucide-react'
+import {
+  Kartu,
+  Kolom,
+  Input,
+  Pemberitahuan,
+  TextArea,
+  Tombol,
+  TombolIkon,
+} from '@/Components/Admin/Form'
 import { InputBerkas } from '@/Components/Admin/Berkas'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 import type { ReactNode } from 'react'
@@ -218,14 +227,13 @@ export default function PengaturanPage() {
                     setNomor(baru)
                   }}
                 />
-                <Tombol
-                  type="button"
-                  variasi="sekunder"
+                <TombolIkon
+                  ikon={Trash2}
+                  gaya="bahaya"
+                  judul="Hapus nomor"
+                  label={`Hapus nomor ${i + 1}`}
                   onClick={() => setNomor(nomor.filter((_, n2) => n2 !== i))}
-                  aria-label={`Hapus nomor ${i + 1}`}
-                >
-                  Hapus
-                </Tombol>
+                />
               </div>
             ))}
             <Tombol
@@ -266,14 +274,13 @@ export default function PengaturanPage() {
                     setSosmed(baru)
                   }}
                 />
-                <Tombol
-                  type="button"
-                  variasi="sekunder"
+                <TombolIkon
+                  ikon={Trash2}
+                  gaya="bahaya"
+                  judul="Hapus sosial media"
+                  label={`Hapus sosial media ${i + 1}`}
                   onClick={() => setSosmed(sosmed.filter((_, n) => n !== i))}
-                  aria-label={`Hapus sosial media ${i + 1}`}
-                >
-                  Hapus
-                </Tombol>
+                />
               </div>
             ))}
             <Tombol

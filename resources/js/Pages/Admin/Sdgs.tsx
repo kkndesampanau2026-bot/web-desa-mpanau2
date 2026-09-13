@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Trash2 } from 'lucide-react'
 import { api, ApiRequestError, type ApiSuccess } from '@/lib/api'
 import { Kartu, Kolom, Input, Pemberitahuan, TextArea, Tombol } from '@/Components/Admin/Form'
+import { useKonfirmasi } from '@/Components/Admin/Dialog'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 
 interface SkorSdgs {
@@ -66,6 +67,8 @@ export default function SdgsAdminPage() {
   const [baris, setBaris] = useState<BarisGoal[]>(barisBaku())
   const [galat, setGalat] = useState<ApiRequestError | null>(null)
   const [sukses, setSukses] = useState<string | null>(null)
+
+  const konfirmasi = useKonfirmasi()
 
   const { data } = useQuery({
     queryKey: ['admin', 'sdgs'],
@@ -278,16 +281,16 @@ export default function SdgsAdminPage() {
               type="button"
               variasi="bahaya"
               disabled={hapusTahun.isPending}
-              onClick={() => {
-                if (
-                  confirm(
-                    `Hapus seluruh skor SDGs Desa tahun ${tahun} (18 tujuan)? ` +
-                      'Tindakan ini tidak dapat dibatalkan.',
-                  )
-                ) {
-                  hapusTahun.mutate(Number(tahun))
-                }
-              }}
+              onClick={() =>
+                konfirmasi.minta({
+                  judul: `Hapus skor SDGs Desa tahun ${tahun}?`,
+                  pesan:
+                    'Seluruh 18 tujuan pada tahun itu ikut terhapus dan tidak dapat ' +
+                    'dikembalikan.',
+                  labelAksi: `Hapus Tahun ${tahun}`,
+                  onKonfirmasi: () => hapusTahun.mutate(Number(tahun)),
+                })
+              }
             >
               <Trash2 className="size-4" aria-hidden="true" />
               {hapusTahun.isPending ? 'Menghapus…' : `Hapus Tahun ${tahun}`}
@@ -295,6 +298,8 @@ export default function SdgsAdminPage() {
           )}
         </div>
       </form>
+
+      {konfirmasi.dialog}
     </div>
   )
 }

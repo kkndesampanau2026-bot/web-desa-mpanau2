@@ -1,5 +1,6 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { MessageSquareReply } from 'lucide-react'
 import { api, ApiRequestError, type ApiSuccess } from '@/lib/api'
 import { keFormData } from '@/lib/berkas'
 import {
@@ -11,6 +12,8 @@ import {
   Pilihan,
   TextArea,
   Tombol,
+  TombolIkon,
+  useGulirKeForm,
 } from '@/Components/Admin/Form'
 import { InputBerkas, TautanBerkas } from '@/Components/Admin/Berkas'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
@@ -179,12 +182,12 @@ function DaftarPermohonan() {
                       </span>
                     </td>
                     <td className="py-2.5 text-right">
-                      <button
+                      <TombolIkon
+                        ikon={MessageSquareReply}
+                        judul="Tanggapi permohonan"
+                        label={`Tanggapi permohonan ${p.nomor_registrasi}`}
                         onClick={() => setDibuka(p)}
-                        className="text-slate-700 hover:underline"
-                      >
-                        Tanggapi
-                      </button>
+                      />
                     </td>
                   </tr>
                 ))}
@@ -209,6 +212,15 @@ function FormTanggapan({
   const [alasan, setAlasan] = useState(permohonan.alasan_penolakan ?? '')
   const [dokumen, setDokumen] = useState<File | null>(null)
   const [galat, setGalat] = useState<ApiRequestError | null>(null)
+
+  // Layar ini MENGGANTIKAN daftar permohonan, jadi ia menggulir dirinya
+  // sendiri saat muncul — kalau tidak, operator yang menanggapi baris terbawah
+  // tetap menatap posisi gulir yang lama.
+  const { ref: refForm, gulir } = useGulirKeForm<HTMLFormElement>()
+
+  useEffect(() => {
+    gulir()
+  }, [gulir])
 
   const simpan = useMutation({
     mutationFn: () =>
@@ -237,7 +249,7 @@ function FormTanggapan({
   }
 
   return (
-    <form onSubmit={kirim} className="space-y-6">
+    <form onSubmit={kirim} ref={refForm} className="scroll-mt-4 space-y-6">
       <div className="flex items-center justify-between gap-3">
         <h2 className="font-semibold text-slate-900">
           Tanggapi {permohonan.nomor_registrasi}
@@ -378,10 +390,13 @@ function DaftarInformasi() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'ppid', 'informasi'] }),
   })
 
+  const formulir = useGulirKeForm()
+
   return (
     <div className="space-y-6">
       <Kartu
         judul={sunting ? `Ubah Dokumen: ${sunting.judul}` : 'Tambah Dokumen Informasi'}
+        wadahRef={formulir.ref}
         anak={
           <form
             onSubmit={(e) => {
@@ -495,7 +510,7 @@ function DaftarInformasi() {
                       })
                       setBerkas(null)
                       setGalat(null)
-                      window.scrollTo({ top: 0, behavior: 'smooth' })
+                      formulir.gulir()
                     }}
                     onHapus={() => hapus.mutate(i.id)}
                     sedangProses={hapus.isPending}
@@ -566,10 +581,13 @@ function DaftarDasarHukum() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: kunciQuery }),
   })
 
+  const formulir = useGulirKeForm()
+
   return (
     <div className="space-y-6">
       <Kartu
         judul={sunting ? `Ubah: ${sunting.judul_regulasi}` : 'Tambah Dasar Hukum'}
+        wadahRef={formulir.ref}
         anak={
           <form
             onSubmit={(e: FormEvent) => {
@@ -685,7 +703,7 @@ function DaftarDasarHukum() {
                       })
                       setBerkas(null)
                       setGalat(null)
-                      window.scrollTo({ top: 0, behavior: 'smooth' })
+                      formulir.gulir()
                     }}
                     onHapus={() => hapus.mutate(d.id)}
                     sedangProses={hapus.isPending}

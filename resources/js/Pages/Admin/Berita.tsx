@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Plus } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiRequestError, urlBerkas, type ApiSuccess } from '@/lib/api'
@@ -12,6 +12,7 @@ import {
   Pilihan,
   TextArea,
   Tombol,
+  useGulirKeForm,
 } from '@/Components/Admin/Form'
 import { InputBerkas } from '@/Components/Admin/Berkas'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
@@ -176,6 +177,19 @@ function FormBerita({
   const [ogImage, setOgImage] = useState<File | null>(null)
 
   /*
+   * Formulir ini MENGGANTIKAN daftar berita, bukan muncul di atasnya — karena
+   * itu ia menggulir dirinya sendiri saat muncul, bukan digulir oleh tombol
+   * suntingnya. Tanpa ini, operator yang menekan sunting pada baris terbawah
+   * mendapati layar tetap di posisi lama: yang terlihat bagian tengah
+   * formulir, atau ruang kosong di bawahnya.
+   */
+  const { ref: refForm, gulir } = useGulirKeForm<HTMLFormElement>()
+
+  useEffect(() => {
+    gulir()
+  }, [gulir])
+
+  /*
     Kategori diambil dari endpoint CMS, bukan dari daftar berita yang sudah
     ada: kategori yang belum pernah dipakai satu berita pun tetap harus dapat
     dipilih — justru itulah keadaan setiap desa pada hari pertama.
@@ -229,7 +243,7 @@ function FormBerita({
   }
 
   return (
-    <form onSubmit={kirim} className="max-w-3xl space-y-6">
+    <form onSubmit={kirim} ref={refForm} className="max-w-3xl scroll-mt-4 space-y-6">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-xl font-semibold text-slate-900">
           {berita ? 'Sunting Berita' : 'Tulis Berita'}

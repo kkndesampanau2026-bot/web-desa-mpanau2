@@ -1,5 +1,6 @@
 import { Fragment, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { ExternalLink } from 'lucide-react'
 import { api, ApiRequestError, urlBerkas, type ApiSuccess } from '@/lib/api'
 import { keFormData } from '@/lib/berkas'
 import {
@@ -9,8 +10,10 @@ import {
   Kolom,
   Pemberitahuan,
   Pilihan,
+  TautanIkon,
   TextArea,
   Tombol,
+  useGulirKeForm,
 } from '@/Components/Admin/Form'
 import { InputBanyakGambar, InputBerkas } from '@/Components/Admin/Berkas'
 import { PengelolaFoto, type Foto } from '@/Components/Admin/PengelolaFoto'
@@ -162,6 +165,8 @@ function PanelPotensi() {
     setGalat(null)
   }
 
+  const formulir = useGulirKeForm()
+
   function mulaiSunting(potensi: Potensi) {
     setSunting(potensi)
     setForm({
@@ -175,6 +180,7 @@ function PanelPotensi() {
     })
     setFoto(null)
     setGalat(null)
+    formulir.gulir()
   }
 
   const simpan = useMutation({
@@ -218,6 +224,7 @@ function PanelPotensi() {
     <div className="space-y-6">
       <Kartu
         judul={sunting ? `Ubah Potensi: ${sunting.judul}` : 'Tambah Potensi Desa'}
+        wadahRef={formulir.ref}
         anak={
           <form
             onSubmit={(e: FormEvent) => {
@@ -397,21 +404,23 @@ function PanelPotensi() {
                     </p>
                   </div>
 
-                  <div className="flex shrink-0 items-center gap-3 text-sm">
-                    {/* Tautan keluar, bukan Inertia Link: halaman publik berada
-                        di luar dashboard dan sengaja dibuka di tab terpisah. */}
-                    {p.status_tampil && (
-                      <a
-                        href={`/potensi/${p.slug}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-slate-700 hover:underline"
-                      >
-                        Lihat
-                      </a>
-                    )}
+                  <div className="shrink-0">
                     <AksiBaris
                       nama={`potensi “${p.judul}”`}
+                      /* Tautan keluar, bukan Inertia Link: halaman publik berada
+                         di luar dashboard dan sengaja dibuka di tab terpisah. */
+                      anak={
+                        p.status_tampil && (
+                          <TautanIkon
+                            ikon={ExternalLink}
+                            judul="Lihat di situs publik"
+                            label={`Lihat “${p.judul}” di situs publik`}
+                            href={`/potensi/${p.slug}`}
+                            target="_blank"
+                            rel="noreferrer"
+                          />
+                        )
+                      }
                       onSunting={() => mulaiSunting(p)}
                       onHapus={() => hapus.mutate(p.id)}
                       sedangProses={hapus.isPending}
@@ -490,10 +499,13 @@ function PanelWisata() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'wisata'] }),
   })
 
+  const formulir = useGulirKeForm()
+
   return (
     <div className="space-y-6">
       <Kartu
         judul={sunting ? `Ubah Destinasi: ${sunting.nama}` : 'Tambah Destinasi Wisata'}
+        wadahRef={formulir.ref}
         anak={
           <form
             onSubmit={(e: FormEvent) => {
@@ -644,7 +656,7 @@ function PanelWisata() {
                             alamat: w.alamat ?? '',
                           })
                           setGalat(null)
-                          window.scrollTo({ top: 0, behavior: 'smooth' })
+                          formulir.gulir()
                         }}
                         onHapus={() => hapus.mutate(w.id)}
                         sedangProses={hapus.isPending}
@@ -724,10 +736,13 @@ function PanelProduk() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'produk'] }),
   })
 
+  const formulir = useGulirKeForm()
+
   return (
     <div className="space-y-6">
       <Kartu
         judul={sunting ? `Ubah Produk: ${sunting.nama_produk}` : 'Tambah Produk UMKM'}
+        wadahRef={formulir.ref}
         anak={
           <form
             onSubmit={(e: FormEvent) => {
@@ -939,7 +954,7 @@ function PanelProduk() {
                                 kontak_wa: p.kontak_wa ?? '',
                               })
                               setGalat(null)
-                              window.scrollTo({ top: 0, behavior: 'smooth' })
+                              formulir.gulir()
                             }}
                             onHapus={() => hapus.mutate(p.id)}
                             sedangProses={hapus.isPending}

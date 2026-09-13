@@ -1,8 +1,17 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Download } from 'lucide-react'
+import { Download, Eye } from 'lucide-react'
 import { api, ApiRequestError, type ApiSuccess } from '@/lib/api'
-import { Kartu, Kolom, Pemberitahuan, Pilihan, TextArea, Tombol } from '@/Components/Admin/Form'
+import {
+  Kartu,
+  Kolom,
+  Pemberitahuan,
+  Pilihan,
+  TextArea,
+  Tombol,
+  TombolIkon,
+  useGulirKeForm,
+} from '@/Components/Admin/Form'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 import type { ReactNode } from 'react'
 
@@ -175,12 +184,12 @@ export default function PengaduanAdminPage() {
                         </span>
                       </td>
                       <td className="py-2.5 text-right">
-                        <button
+                        <TombolIkon
+                          ikon={Eye}
+                          judul="Buka pengaduan"
+                          label={`Buka pengaduan ${p.nomor_tiket}`}
                           onClick={() => setDibukaId(p.id)}
-                          className="text-slate-700 hover:underline"
-                        >
-                          Buka
-                        </button>
+                        />
                       </td>
                     </tr>
                   ))}
@@ -199,6 +208,14 @@ function DetailPengaduan({ id, onSelesai }: { id: number; onSelesai: () => void 
   const [form, setForm] = useState({ status: '', tanggapan_admin: '', alasan_penolakan: '' })
   const [terisi, setTerisi] = useState(false)
 
+  /*
+   * Layar ini MENGGANTIKAN daftar pengaduan, jadi ia menggulir dirinya sendiri
+   * saat muncul. Dependensinya `data`, bukan sekali saat mount: selama data
+   * belum tiba yang dirender hanya teks "Memuat…" — formulirnya, berikut
+   * elemen yang hendak digulir, belum ada.
+   */
+  const { ref: refForm, gulir } = useGulirKeForm<HTMLFormElement>()
+
   const { data, isPending } = useQuery({
     queryKey: ['admin', 'pengaduan', 'detail', id],
     queryFn: async () => {
@@ -206,6 +223,10 @@ function DetailPengaduan({ id, onSelesai }: { id: number; onSelesai: () => void 
       return r.data.data
     },
   })
+
+  useEffect(() => {
+    if (data) gulir()
+  }, [data, gulir])
 
   // Formulir diisi sekali dari data yang dimuat; setelah itu suntingan
   // operator tidak boleh tertimpa oleh refetch.
@@ -238,7 +259,8 @@ function DetailPengaduan({ id, onSelesai }: { id: number; onSelesai: () => void 
         e.preventDefault()
         simpan.mutate()
       }}
-      className="max-w-3xl space-y-6"
+      ref={refForm}
+      className="max-w-3xl scroll-mt-4 space-y-6"
     >
       <div className="flex items-center justify-between gap-3">
         <h1 className="font-semibold text-slate-900">Pengaduan {data.nomor_tiket}</h1>

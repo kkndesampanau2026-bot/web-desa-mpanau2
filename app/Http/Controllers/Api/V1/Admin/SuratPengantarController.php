@@ -151,11 +151,20 @@ class SuratPengantarController extends Controller
                 'dusun_id' => $o->dusun_id,
                 'dusun' => $o->dusun?->nama,
                 'is_active' => $o->is_active,
-                // Chat ID hanya dikembalikan sebagai penanda ADA/TIDAK.
-                // Nilainya tidak pernah dikirim balik ke peramban: ia setara
-                // alamat kontak pribadi pejabat, dan layar ini hanya perlu
-                // tahu apakah notifikasi akan sampai.
-                'punya_telegram' => filled($o->telegram_chat_id),
+                /*
+                 * Chat ID dikembalikan APA ADANYA, atas permintaan pemilik
+                 * produk (lihat docs/DEVIASI.md §C19). Sebelumnya hanya
+                 * penanda ADA/TIDAK yang dikirim, dengan alasan ia setara
+                 * kontak pribadi pejabat — tetapi operator desa tidak punya
+                 * cara memastikan chat ID yang tersimpan memang milik orang
+                 * yang benar, dan menyunting pejabat berarti mengetik ulang
+                 * nilai yang tidak dapat dilihatnya.
+                 *
+                 * Yang menjaga: layar ini sudah di balik permission
+                 * `manage-letter-official`, dan nilainya tetap tidak pernah
+                 * menyentuh halaman publik mana pun.
+                 */
+                'telegram_chat_id' => $o->telegram_chat_id,
                 'punya_ttd' => filled($o->signature_path),
             ]);
 
@@ -246,11 +255,16 @@ class SuratPengantarController extends Controller
                 Rule::exists('dusuns', 'id')->where('village_id', $this->village->id()),
             ],
 
-            // Chat ID Telegram: bilangan bulat, boleh negatif (grup/channel).
-            'telegram_chat_id' => [
-                'nullable', 'string', 'max:32', 'regex:/^-?\d{1,20}$/',
-                Rule::unique('letter_officials', 'telegram_chat_id')->ignore($pejabat?->id),
-            ],
+            /*
+             * Chat ID Telegram: bilangan bulat, boleh negatif (grup/channel).
+             *
+             * TIDAK dituntut unik. Seseorang dapat menjabat Ketua RT pada dua
+             * RT sekaligus, dan karena satu baris pejabat hanya memegang satu
+             * `rt_id`, ia memang perlu terdaftar dua kali dengan akun Telegram
+             * yang sama. Wewenangnya tetap dijaga per-pengajuan oleh
+             * OtorisasiApprovalTelegram, bukan oleh keunikan kolom ini.
+             */
+            'telegram_chat_id' => ['nullable', 'string', 'max:32', 'regex:/^-?\d{1,20}$/'],
 
             'tanda_tangan' => [
                 'nullable', 'file',
@@ -264,7 +278,6 @@ class SuratPengantarController extends Controller
             'dusun_id.required_if' => 'Kepala Dusun wajib ditautkan ke sebuah dusun.',
             'telegram_chat_id.regex' => 'Chat ID Telegram hanya berupa angka. '
                 .'Dapatkan dengan mengirim /start ke bot desa, atau lewat @userinfobot.',
-            'telegram_chat_id.unique' => 'Chat ID ini sudah dipakai pejabat lain.',
             'tanda_tangan.mimetypes' => 'Tanda tangan harus berupa gambar PNG, JPG, atau WebP.',
             'tanda_tangan.max' => 'Ukuran gambar tanda tangan maksimal 2 MB.',
         ]);

@@ -2,7 +2,17 @@ import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 're
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Trash2 } from 'lucide-react'
 import { api, ApiRequestError, type ApiSuccess } from '@/lib/api'
-import { Kartu, Kolom, Input, Pemberitahuan, Pilihan, TextArea, Tombol } from '@/Components/Admin/Form'
+import {
+  Kartu,
+  Kolom,
+  Input,
+  Pemberitahuan,
+  Pilihan,
+  TextArea,
+  Tombol,
+  TombolIkon,
+} from '@/Components/Admin/Form'
+import { useKonfirmasi } from '@/Components/Admin/Dialog'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 
 const STATUS_IDM = ['Sangat Tertinggal', 'Tertinggal', 'Berkembang', 'Maju', 'Mandiri'] as const
@@ -64,6 +74,8 @@ export default function IdmAdminPage() {
   const [indikator, setIndikator] = useState<Indikator[]>([])
   const [galat, setGalat] = useState<ApiRequestError | null>(null)
   const [sukses, setSukses] = useState<string | null>(null)
+
+  const konfirmasi = useKonfirmasi()
 
   const { data } = useQuery({
     queryKey: ['admin', 'idm'],
@@ -365,16 +377,16 @@ export default function IdmAdminPage() {
                     type="button"
                     variasi="bahaya"
                     disabled={hapusSkor.isPending}
-                    onClick={() => {
-                      if (
-                        confirm(
-                          `Hapus skor IDM tahun ${tahun} beserta seluruh indikatornya? ` +
-                            'Tindakan ini tidak dapat dibatalkan.',
-                        )
-                      ) {
-                        hapusSkor.mutate(skorTahunIni.id)
-                      }
-                    }}
+                    onClick={() =>
+                      konfirmasi.minta({
+                        judul: `Hapus skor IDM tahun ${tahun}?`,
+                        pesan:
+                          'Seluruh indikator tahun itu ikut terhapus dan tidak dapat ' +
+                          'dikembalikan.',
+                        labelAksi: `Hapus Tahun ${tahun}`,
+                        onKonfirmasi: () => hapusSkor.mutate(skorTahunIni.id),
+                      })
+                    }
                   >
                     <Trash2 className="size-4" aria-hidden="true" />
                     {hapusSkor.isPending ? 'Menghapus…' : `Hapus Tahun ${tahun}`}
@@ -418,15 +430,16 @@ export default function IdmAdminPage() {
                         onChange={(e) => ubahIndikator(i, { nama_indikator: e.target.value })}
                       />
                     </div>
-                    <button
-                      type="button"
+                    <TombolIkon
+                      ikon={Trash2}
+                      gaya="bahaya"
+                      judul="Hapus indikator"
+                      label={`Hapus indikator ${i + 1}`}
                       onClick={() =>
                         setIndikator((lama) => lama.filter((_, idx) => idx !== i))
                       }
-                      className="mt-2 shrink-0 text-sm text-red-600 hover:underline"
-                    >
-                      Hapus
-                    </button>
+                      className="mt-1.5"
+                    />
                   </div>
 
                   <div className="grid gap-3 sm:grid-cols-2">
@@ -500,6 +513,8 @@ export default function IdmAdminPage() {
           )
         }
       />
+
+      {konfirmasi.dialog}
     </div>
   )
 }

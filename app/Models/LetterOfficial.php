@@ -85,10 +85,25 @@ class LetterOfficial extends Model
      */
     public function berwenangAtas(LetterRequest $permohonan): bool
     {
-        if (! $this->is_active) {
-            return false;
-        }
+        return $this->is_active && $this->wilayahSesuai($permohonan);
+    }
 
+    /**
+     * Kecocokan WILAYAH saja, tanpa memandang status aktif.
+     *
+     * Dipisah dari `berwenangAtas()` demi satu hal: memilih baris pejabat yang
+     * tepat ketika sebuah chat ID Telegram dipakai beberapa baris sekaligus
+     * (satu orang menjabat Ketua RT pada dua RT). Baris yang wilayahnya cocok
+     * namun sudah nonaktif tetap perlu dikenali, supaya pesan penolakannya
+     * berbunyi "akun Anda sudah tidak aktif" — bukan "pengajuan ini bukan dari
+     * wilayah Anda", yang menyesatkan dan membuat operator memeriksa pemetaan
+     * RT yang sebenarnya sudah benar.
+     *
+     * BUKAN pengganti `berwenangAtas()` pada jalur otorisasi: yang menentukan
+     * boleh-tidaknya bertindak tetap metode itu.
+     */
+    public function wilayahSesuai(LetterRequest $permohonan): bool
+    {
         return match ($this->role) {
             self::ROLE_KETUA_RT => $this->rt_id !== null
                 && $this->rt_id === $permohonan->rt_id,

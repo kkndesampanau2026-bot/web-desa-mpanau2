@@ -1,7 +1,8 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { router } from '@inertiajs/react'
 import { ArrowDown, ArrowUp, Images, Trash2, Upload } from 'lucide-react'
-import { Kartu, Kolom, Input, Pemberitahuan, Tombol } from '@/Components/Admin/Form'
+import { Kartu, Kolom, Input, Pemberitahuan, Tombol, TombolIkon } from '@/Components/Admin/Form'
+import { useKonfirmasi } from '@/Components/Admin/Dialog'
 import { InputBanyakGambar } from '@/Components/Admin/Berkas'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 import { useHalaman } from '@/types/inertia'
@@ -36,6 +37,8 @@ export default function BannerPage({
   const { flash, errors } = useHalaman().props
   const [pilihan, setPilihan] = useState<File[]>([])
   const [judulSunting, setJudulSunting] = useState<Record<number, string>>({})
+
+  const konfirmasi = useKonfirmasi()
 
   const [mengunggah, setMengunggah] = useState(false)
   const sisa = Math.max(0, maks - daftar.length)
@@ -77,9 +80,14 @@ export default function BannerPage({
     )
   }
 
-  function hapus(banner: Banner) {
-    if (!confirm('Hapus banner ini? Berkas gambarnya ikut terhapus.')) return
-    router.delete(`/admin/banner/${banner.id}`, { preserveScroll: true })
+  function hapus(banner: Banner, urutan: number) {
+    konfirmasi.minta({
+      judul: `Hapus banner ke-${urutan}?`,
+      pesan:
+        'Berkas gambarnya ikut terhapus dari server dan tidak dapat dikembalikan. ' +
+        'Bila seluruh banner dihapus, beranda kembali memakai foto bawaan situs.',
+      onKonfirmasi: () => router.delete(`/admin/banner/${banner.id}`, { preserveScroll: true }),
+    })
   }
 
   return (
@@ -174,32 +182,27 @@ export default function BannerPage({
                   </div>
 
                   <div className="flex shrink-0 items-center gap-1">
-                    <button
-                      type="button"
+                    <TombolIkon
+                      ikon={ArrowUp}
+                      judul="Naikkan urutan"
+                      label={`Naikkan urutan banner ke-${i + 1}`}
                       onClick={() => geser(banner, 'naik')}
                       disabled={i === 0}
-                      aria-label={`Naikkan urutan banner ke-${i + 1}`}
-                      className="rounded-md p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-teal-700 disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      <ArrowUp className="size-4" aria-hidden="true" />
-                    </button>
-                    <button
-                      type="button"
+                    />
+                    <TombolIkon
+                      ikon={ArrowDown}
+                      judul="Turunkan urutan"
+                      label={`Turunkan urutan banner ke-${i + 1}`}
                       onClick={() => geser(banner, 'turun')}
                       disabled={i === daftar.length - 1}
-                      aria-label={`Turunkan urutan banner ke-${i + 1}`}
-                      className="rounded-md p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-teal-700 disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      <ArrowDown className="size-4" aria-hidden="true" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => hapus(banner)}
-                      aria-label={`Hapus banner ke-${i + 1}`}
-                      className="rounded-md p-1.5 text-slate-500 transition hover:bg-red-50 hover:text-red-600"
-                    >
-                      <Trash2 className="size-4" aria-hidden="true" />
-                    </button>
+                    />
+                    <TombolIkon
+                      ikon={Trash2}
+                      gaya="bahaya"
+                      judul="Hapus banner"
+                      label={`Hapus banner ke-${i + 1}`}
+                      onClick={() => hapus(banner, i + 1)}
+                    />
                   </div>
                 </li>
               ))}
@@ -207,6 +210,8 @@ export default function BannerPage({
           )
         }
       />
+
+      {konfirmasi.dialog}
     </div>
   )
 }

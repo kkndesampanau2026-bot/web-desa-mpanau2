@@ -10,6 +10,7 @@ import {
   Pilihan,
   TextArea,
   Tombol,
+  useGulirKeForm,
 } from '@/Components/Admin/Form'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 import { formatRupiah } from '@/lib/format'
@@ -292,6 +293,8 @@ function TabKategori() {
       setGalat(e instanceof ApiRequestError ? e : new ApiRequestError('Gagal menyimpan.', 0)),
   })
 
+  const formulir = useGulirKeForm()
+
   const hapusKategori = useMutation({
     mutationFn: (id: number) => api.delete(`/admin/apbdes/kategori/${id}`),
     onSuccess: () => {
@@ -306,6 +309,7 @@ function TabKategori() {
     <div className="space-y-6">
       <Kartu
         judul={sunting ? `Ubah Kategori: ${sunting.nama}` : 'Tambah Kategori'}
+        wadahRef={formulir.ref}
         anak={
           <form
             onSubmit={(e) => {
@@ -399,7 +403,7 @@ function TabKategori() {
                           k.urutan_tampil == null ? '' : String(k.urutan_tampil),
                       })
                       setGalat(null)
-                      window.scrollTo({ top: 0, behavior: 'smooth' })
+                      formulir.gulir()
                     }}
                     onHapus={() => hapusKategori.mutate(k.id)}
                     sedangProses={hapusKategori.isPending}
@@ -500,6 +504,8 @@ function TabItem() {
     },
   })
 
+  const formulir = useGulirKeForm()
+
   function suntingItem(it: Item) {
     setEditId(it.id)
     setGalat(null)
@@ -510,6 +516,7 @@ function TabItem() {
       jumlah_realisasi: it.jumlah_realisasi === null ? '' : String(it.jumlah_realisasi),
       keterangan: it.keterangan ?? '',
     })
+    formulir.gulir()
   }
 
   function kirim(e: FormEvent) {
@@ -547,6 +554,7 @@ function TabItem() {
 
       <Kartu
         judul={editId ? 'Ubah Item' : 'Tambah Item'}
+        wadahRef={formulir.ref}
         anak={
           <form onSubmit={kirim} className="space-y-4">
             {galat && !galat.errors && <Pemberitahuan jenis="galat" pesan={galat.message} />}

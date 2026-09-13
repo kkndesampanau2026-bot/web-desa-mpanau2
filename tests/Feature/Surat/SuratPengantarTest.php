@@ -7,6 +7,7 @@ use App\Models\LetterApprovalLog;
 use App\Models\LetterOfficial;
 use App\Models\LetterRequest;
 use App\Models\Rt;
+use App\Models\User;
 use App\Models\Village;
 use App\Services\PdfSuratPengantar;
 use App\Services\TelegramBot;
@@ -14,9 +15,11 @@ use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Routing\Middleware\ThrottleRequests;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 /**
@@ -920,6 +923,164 @@ class SuratPengantarTest extends TestCase
 
         $this->artisan('surat:telegram-webhook', ['--url' => 'https://contoh.test'])
             ->assertSuccessful();
+    }
+
+    // ==================================================================
+    // Satu orang menjabat pada dua RT
+    // ==================================================================
+
+    /**
+     * Menambahkan Ketua RT kedua yang dipegang orang yang sama.
+     *
+     * Dua BARIS pejabat, satu akun Telegram: `rt_id` tunggal per baris,
+     * sehingga inilah satu-satunya cara mewakili orang yang menjabat pada dua
+     * RT sekaligus.
+     */
+    private function rtKeduaDenganKetuaYangSama(string $nomor = '01'): array
+    {
+        $rt = Rt::create([
+            'village_id' => $this->village->id,
+            'dusun_id' => $this->dusun->id,
+            'nomor' => $nomor,
+        ]);
+
+        $ketua = LetterOfficial::create([
+            'village_id' => $this->village->id,
+            'role' => LetterOfficial::ROLE_KETUA_RT,
+            'rt_id' => $rt->id,
+            'nama' => 'Ahmad Yani',
+            'telegram_chat_id' => '111111',
+            'is_active' => true,
+        ]);
+
+        return [$rt, $ketua];
+    }
+
+    public function test_satu_chat_id_dapat_menyetujui_surat_dari_kedua_rt_yang_dipegangnya(): void
+    {
+        // Yang diuji pemilihan pejabat, bukan pembatasan laju.
+        $this->withoutMiddleware(ThrottleRequests::class);
+
+        [$rtKedua, $ketuaRtKedua] = $this->rtKeduaDenganKetuaYangSama();
+
+        // --- Surat dari RT 20, wilayah baris pertama ---
+        $this->ajukan();
+        $a = $this->permohonanTerbaru();
+        $this->tekanTombol('111111', "approve_rt:{$a->uuid}")->assertOk();
+
+        $a->refresh();
+        $this->assertSame(LetterRequest::MENUNGGU_KADUS, $a->status);
+        $this->assertSame($this->ketuaRt->id, $a->approved_rt_by);
+
+        // --- Surat dari RT 01, wilayah baris kedua, chat ID yang sama ---
+        $this->ajukan(['rt_id' => $rtKedua->id]);
+        $b = $this->permohonanTerbaru();
+        $this->tekanTombol('111111', "approve_rt:{$b->uuid}")->assertOk();
+
+        $b->refresh();
+        $this->assertSame(LetterRequest::MENUNGGU_KADUS, $b->status);
+
+        // Yang tercatat sebagai penyetuju adalah baris RT 01 — bukan baris
+        // RT 20 yang kebetulan terdaftar lebih dulu. Blok tanda tangan surat
+        // dan audit trail-nya mengikuti baris ini.
+        $this->assertSame($ketuaRtKedua->id, $b->approved_rt_by);
+    }
+
+    public function test_chat_id_bersama_tetap_tidak_menjangkau_rt_di_luar_kewenangannya(): void
+    {
+        $this->rtKeduaDenganKetuaYangSama();
+
+        // RT ketiga, yang TIDAK dipegang orang itu.
+        $rtOrangLain = Rt::create([
+            'village_id' => $this->village->id,
+            'dusun_id' => $this->dusun->id,
+            'nomor' => '07',
+        ]);
+
+        LetterOfficial::create([
+            'village_id' => $this->village->id,
+            'role' => LetterOfficial::ROLE_KETUA_RT,
+            'rt_id' => $rtOrangLain->id,
+            'nama' => 'Ketua RT 07',
+            'telegram_chat_id' => '777777',
+            'is_active' => true,
+        ]);
+
+        $this->ajukan(['rt_id' => $rtOrangLain->id]);
+        $p = $this->permohonanTerbaru();
+
+        // Memegang dua RT tidak berarti memegang seluruh desa.
+        $this->tekanTombol('111111', "approve_rt:{$p->uuid}")->assertOk();
+
+        $this->assertSame(LetterRequest::MENUNGGU_RT, $p->fresh()->status);
+        $this->assertNull($p->fresh()->approved_rt_by);
+    }
+
+    public function test_pemegang_dua_rt_yang_dinonaktifkan_pada_salah_satunya_ditolak(): void
+    {
+        [$rtKedua, $ketuaRtKedua] = $this->rtKeduaDenganKetuaYangSama();
+
+        // Ia berhenti menjabat di RT 01 saja; barisnya dinonaktifkan.
+        $ketuaRtKedua->update(['is_active' => false]);
+
+        $this->ajukan(['rt_id' => $rtKedua->id]);
+        $p = $this->permohonanTerbaru();
+
+        $this->tekanTombol('111111', "approve_rt:{$p->uuid}")->assertOk();
+
+        // Baris RT 20 yang masih aktif tidak boleh menutupi penonaktifan itu.
+        $this->assertSame(LetterRequest::MENUNGGU_RT, $p->fresh()->status);
+    }
+
+    // ==================================================================
+    // CMS pejabat penanda tangan
+    // ==================================================================
+
+    private function operatorSurat(): User
+    {
+        $user = User::create([
+            'village_id' => $this->village->id,
+            'name' => 'Operator Surat',
+            'email' => uniqid().'@desa.test',
+            'password' => Hash::make('rahasia123'),
+            'status_aktif' => true,
+        ]);
+        $user->assignRole('Admin Utama');
+
+        return $user;
+    }
+
+    public function test_chat_id_yang_sama_dapat_didaftarkan_untuk_dua_rt(): void
+    {
+        Sanctum::actingAs($this->operatorSurat());
+
+        $rtKedua = Rt::create([
+            'village_id' => $this->village->id,
+            'dusun_id' => $this->dusun->id,
+            'nomor' => '01',
+        ]);
+
+        // Dulu ditolak oleh Rule::unique; kini diterima, karena orang yang
+        // sama memang dapat menjabat pada dua RT.
+        $this->postJson('/api/v1/admin/surat/pejabat', [
+            'role' => LetterOfficial::ROLE_KETUA_RT,
+            'rt_id' => $rtKedua->id,
+            'nama' => 'Ahmad Yani',
+            'telegram_chat_id' => '111111',
+        ])->assertCreated();
+
+        $this->assertSame(2, LetterOfficial::where('telegram_chat_id', '111111')->count());
+    }
+
+    public function test_daftar_pejabat_menampilkan_chat_id_yang_tersimpan(): void
+    {
+        Sanctum::actingAs($this->operatorSurat());
+
+        // Operator perlu melihat nilainya untuk memastikan notifikasi menuju
+        // orang yang benar (docs/DEVIASI.md §C19).
+        $this->getJson('/api/v1/admin/surat/pejabat')
+            ->assertOk()
+            ->assertJsonFragment(['nama' => 'Ahmad Yani', 'telegram_chat_id' => '111111']);
     }
 
     // ==================================================================

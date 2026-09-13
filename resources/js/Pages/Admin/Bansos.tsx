@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Plus } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiRequestError, type ApiSuccess } from '@/lib/api'
@@ -10,6 +10,7 @@ import {
   Pemberitahuan,
   Pilihan,
   Tombol,
+  useGulirKeForm,
 } from '@/Components/Admin/Form'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 import type { ReactNode } from 'react'
@@ -233,6 +234,19 @@ function FormPenerima({
   })
   const [galat, setGalat] = useState<ApiRequestError | null>(null)
 
+  /*
+   * Formulir ini MENGGANTIKAN daftarnya, bukan muncul di atasnya — karena itu
+   * ia menggulir dirinya sendiri saat muncul, bukan digulir oleh tombol
+   * suntingnya. Tanpa ini, operator yang menekan sunting pada baris terbawah
+   * mendapati layar tetap di posisi lama: yang terlihat bagian tengah
+   * formulir, atau ruang kosong di bawahnya.
+   */
+  const { ref: refForm, gulir } = useGulirKeForm<HTMLFormElement>()
+
+  useEffect(() => {
+    gulir()
+  }, [gulir])
+
   const { data: jenis } = useQuery({
     queryKey: ['admin', 'bansos', 'jenis'],
     queryFn: async () => {
@@ -265,7 +279,7 @@ function FormPenerima({
   }
 
   return (
-    <form onSubmit={kirim} className="space-y-6">
+    <form onSubmit={kirim} ref={refForm} className="scroll-mt-4 space-y-6">
       <div className="flex items-center justify-between gap-3">
         <h2 className="font-semibold text-slate-900">
           {penerima ? `Ubah Penerima: ${penerima.nama}` : 'Tambah Penerima Bantuan'}
@@ -402,6 +416,8 @@ function DaftarJenis() {
       setGalat(e instanceof ApiRequestError ? e : new ApiRequestError('Gagal menyimpan.', 0)),
   })
 
+  const formulir = useGulirKeForm()
+
   const hapus = useMutation({
     mutationFn: (id: number) => api.delete(`/admin/bansos/jenis/${id}`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'bansos', 'jenis'] }),
@@ -413,6 +429,7 @@ function DaftarJenis() {
     <div className="space-y-6">
       <Kartu
         judul={sunting ? `Ubah Jenis: ${sunting.nama}` : 'Tambah Jenis Bantuan'}
+        wadahRef={formulir.ref}
         anak={
           <form
             onSubmit={(e) => {
@@ -508,7 +525,7 @@ function DaftarJenis() {
                         sumber_dana: j.sumber_dana ?? '',
                       })
                       setGalat(null)
-                      window.scrollTo({ top: 0, behavior: 'smooth' })
+                      formulir.gulir()
                     }}
                     onHapus={() => hapus.mutate(j.id)}
                     sedangProses={hapus.isPending}
