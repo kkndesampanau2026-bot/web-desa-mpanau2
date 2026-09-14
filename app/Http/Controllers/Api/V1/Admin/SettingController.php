@@ -9,7 +9,9 @@ use App\Models\SocialMediaLink;
 use App\Services\ActivityLogger;
 use App\Services\CurrentVillage;
 use App\Services\MediaService;
+use App\Services\NomorWhatsapp;
 use App\Support\ApiResponse;
+use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -54,7 +56,16 @@ class SettingController extends Controller
             'jam_kerja' => ['nullable', 'array'],
             'telepon' => ['nullable', 'string', 'max:30'],
             'email' => ['nullable', 'email', 'max:255'],
-            'whatsapp' => ['nullable', 'string', 'max:30'],
+            /*
+             * Kolom `whatsapp` TIDAK lagi menerima isian.
+             *
+             * Formulir dulu punya dua tempat berbeda untuk nomor WhatsApp desa:
+             * satu kolom di "Identitas & Wilayah" — yang ternyata tidak pernah
+             * ditampilkan halaman publik mana pun — dan satu baris pada daftar
+             * sosial media yang memang tampil di footer. Atas permintaan
+             * pemilik produk yang pertama dihapus; kolom basis datanya
+             * dibiarkan agar nilai lama tidak ikut hilang.
+             */
 
             'nomor_telepon_penting' => ['nullable', 'array'],
             'nomor_telepon_penting.*.nama_layanan' => ['required', 'string', 'max:255'],
@@ -62,7 +73,34 @@ class SettingController extends Controller
 
             'sosial_media' => ['nullable', 'array'],
             'sosial_media.*.platform' => ['required', 'string', 'max:50'],
-            'sosial_media.*.url' => ['required', 'url', 'max:255'],
+            /*
+             * Bukan `url`, karena baris WhatsApp diisi NOMOR, bukan alamat.
+             *
+             * Operator desa tidak menghafal bentuk tautan wa.me, dan memaksa
+             * mereka menyusunnya sendiri adalah cara termudah mendapatkan
+             * tautan yang salah ketik. Bentuk akhirnya disusun server (lihat
+             * blok penyimpanan di bawah), sehingga yang tersimpan selalu satu
+             * bentuk dari mana pun asalnya.
+             */
+            'sosial_media.*.url' => [
+                'required', 'string', 'max:255',
+                function (string $atribut, mixed $nilai, Closure $gagal) use ($request) {
+                    $indeks = explode('.', $atribut)[1] ?? '';
+                    $platform = $request->input("sosial_media.{$indeks}.platform");
+
+                    if (NomorWhatsapp::platformWhatsapp($platform)) {
+                        if (NomorWhatsapp::tautan($nilai) === null) {
+                            $gagal('Nomor WhatsApp tidak dikenali. Tulis seperti 0812-3456-7890.');
+                        }
+
+                        return;
+                    }
+
+                    if (! filter_var($nilai, FILTER_VALIDATE_URL)) {
+                        $gagal('Alamat tautan tidak valid. Awali dengan https://');
+                    }
+                },
+            ],
             'logo' => MediaService::aturanGambar(),
             // Banner TIDAK lagi di sini: hero beranda kini memuat beberapa
             // gambar dan dikelola layar tersendiri (Admin\BannerController).
@@ -116,7 +154,13 @@ class SettingController extends Controller
                     SocialMediaLink::create([
                         'village_id' => $villageId,
                         'platform' => $item['platform'],
-                        'url' => $item['url'],
+                        // Nomor WhatsApp disimpan sebagai tautan wa.me yang
+                        // sudah jadi. Dengan begitu footer situs publik cukup
+                        // memasangnya apa adanya pada href — tidak ada satu
+                        // pun tempat lain yang perlu tahu aturan nomor WA.
+                        'url' => NomorWhatsapp::platformWhatsapp($item['platform'])
+                            ? NomorWhatsapp::tautan($item['url'])
+                            : $item['url'],
                         'urutan_tampil' => $i,
                     ]);
                 }

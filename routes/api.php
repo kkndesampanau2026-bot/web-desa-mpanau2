@@ -378,10 +378,16 @@ Route::prefix('v1')->group(function () {
             Route::get('/pengaduan/rekap', [AdminPengaduanController::class, 'rekap']);
             Route::get('/pengaduan/{complaint}', [AdminPengaduanController::class, 'show']);
             Route::put('/pengaduan/{complaint}', [AdminPengaduanController::class, 'tanggapi']);
-            Route::get(
-                '/pengaduan/{complaint}/lampiran/{attachment}',
-                [AdminPengaduanController::class, 'unduhLampiran']
-            );
+            /*
+             * Unduhan lampiran TIDAK di sini.
+             *
+             * Ia pindah ke route web `/admin/pengaduan/{complaint}/lampiran/
+             * {attachment}`: tautannya dibuka peramban sebagai navigasi biasa,
+             * dan guard `sanctum` menuntut header Origin/Referer yang tidak
+             * ikut pada navigasi semacam itu — akibatnya operator yang sudah
+             * masuk pun dijawab "Anda harus masuk". Lihat
+             * Admin\LampiranPengaduanController.
+             */
         });
 
         /*

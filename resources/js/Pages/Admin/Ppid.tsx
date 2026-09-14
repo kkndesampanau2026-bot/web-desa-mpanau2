@@ -15,6 +15,7 @@ import {
   TombolIkon,
   useGulirKeForm,
 } from '@/Components/Admin/Form'
+import { tampilkanToast } from '@/Components/Admin/Toast'
 import { InputBerkas, TautanBerkas } from '@/Components/Admin/Berkas'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 import type { ReactNode } from 'react'
@@ -238,7 +239,10 @@ function FormTanggapan({
           { method: 'PUT' },
         ),
       ),
-    onSuccess: onSelesai,
+    onSuccess: () => {
+      tampilkanToast('Tanggapan permohonan tersimpan.')
+      onSelesai()
+    },
     onError: (e) =>
       setGalat(e instanceof ApiRequestError ? e : new ApiRequestError('Gagal menyimpan.', 0)),
   })
@@ -373,6 +377,7 @@ function DaftarInformasi() {
         : api.post('/admin/ppid/informasi', isi)
     },
     onSuccess: () => {
+      tampilkanToast(sunting ? 'Perubahan dokumen tersimpan.' : 'Dokumen informasi ditambahkan.')
       // Jenis dipertahankan saat menambah beruntun: operator lazim mengunggah
       // beberapa dokumen sejenis sekaligus.
       setForm({ ...kosong, jenis: sunting ? 'berkala' : form.jenis })
@@ -387,7 +392,11 @@ function DaftarInformasi() {
 
   const hapus = useMutation({
     mutationFn: (id: number) => api.delete(`/admin/ppid/informasi/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'ppid', 'informasi'] }),
+    onSuccess: () => {
+      tampilkanToast('Dokumen informasi dihapus.')
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'ppid', 'informasi'] })
+    },
+    onError: () => tampilkanToast('Dokumen gagal dihapus. Coba lagi.', 'galat'),
   })
 
   const formulir = useGulirKeForm()
@@ -566,6 +575,7 @@ function DaftarDasarHukum() {
         : api.post('/admin/ppid/dasar-hukum', isi)
     },
     onSuccess: () => {
+      tampilkanToast(sunting ? 'Perubahan dasar hukum tersimpan.' : 'Dasar hukum ditambahkan.')
       setForm(kosong)
       setBerkas(null)
       setGalat(null)
@@ -578,7 +588,11 @@ function DaftarDasarHukum() {
 
   const hapus = useMutation({
     mutationFn: (id: number) => api.delete(`/admin/ppid/dasar-hukum/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: kunciQuery }),
+    onSuccess: () => {
+      tampilkanToast('Dasar hukum dihapus.')
+      void queryClient.invalidateQueries({ queryKey: kunciQuery })
+    },
+    onError: () => tampilkanToast('Dasar hukum gagal dihapus. Coba lagi.', 'galat'),
   })
 
   const formulir = useGulirKeForm()

@@ -6,13 +6,11 @@ import {
   Kartu,
   Kolom,
   Input,
-  Pemberitahuan,
   Pilihan,
   Tombol,
   useGulirKeForm,
 } from '@/Components/Admin/Form'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
-import { useHalaman } from '@/types/inertia'
 
 /**
  * CMS Pengelolaan Akun Operator — PRD 5.19.
@@ -55,7 +53,7 @@ export default function PenggunaPage({
   daftar_pengguna: BarisPengguna[]
   peran_tersedia: string[]
 }) {
-  const { flash } = useHalaman().props
+  // Hasil simpan muncul sebagai toast; LayoutAdmin yang mendengarkan flash-nya.
 
   /** Null = formulir tertutup. 0 = membuat akun baru. Selain itu = id yang disunting. */
   const [sedangDisunting, setSedangDisunting] = useState<number | null>(null)
@@ -114,7 +112,6 @@ export default function PenggunaPage({
 
   return (
     <div className="space-y-6">
-      {flash?.sukses && <Pemberitahuan jenis="sukses" pesan={flash.sukses} />}
 
       {/*
         Peringatan ini bukan hiasan: layar inilah satu-satunya tempat peran

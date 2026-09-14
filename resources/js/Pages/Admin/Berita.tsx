@@ -14,6 +14,7 @@ import {
   Tombol,
   useGulirKeForm,
 } from '@/Components/Admin/Form'
+import { tampilkanToast } from '@/Components/Admin/Toast'
 import { InputBerkas } from '@/Components/Admin/Berkas'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 import type { ReactNode } from 'react'
@@ -64,7 +65,11 @@ export default function BeritaPage() {
 
   const hapus = useMutation({
     mutationFn: (id: number) => api.delete(`/admin/berita/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'berita'] }),
+    onSuccess: () => {
+      tampilkanToast('Berita dihapus.')
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'berita'] })
+    },
+    onError: () => tampilkanToast('Berita gagal dihapus. Coba lagi.', 'galat'),
   })
 
   function tutupForm() {
@@ -230,6 +235,7 @@ function FormBerita({
         : api.post('/admin/berita', keFormData(isi))
     },
     onSuccess: () => {
+      tampilkanToast(berita ? 'Perubahan berita tersimpan.' : 'Berita ditambahkan.')
       void queryClient.invalidateQueries({ queryKey: ['admin', 'berita'] })
       onSelesai()
     },

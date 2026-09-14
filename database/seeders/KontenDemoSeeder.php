@@ -87,25 +87,21 @@ class KontenDemoSeeder extends Seeder
 
     private function sotk(Village $village): void
     {
-        // Tingkat menyusun bagan: 0 Kepala Desa, 1 Sekretaris, 2 para Kaur/Kasi.
+        // Urutan tampilnya disimpulkan dari jabatan (lihat Official::urut),
+        // jadi tidak ada angka urutan maupun tingkat yang perlu diisi di sini.
         $aparat = [
-            ['Nama Kepala Desa', 'Kepala Desa', 0],
-            ['Nama Sekretaris', 'Sekretaris Desa', 1],
-            ['Nama Kaur Keuangan', 'Kaur Keuangan', 2],
-            ['Nama Kaur Perencanaan', 'Kaur Perencanaan', 2],
-            ['Nama Kasi Pemerintahan', 'Kasi Pemerintahan', 2],
-            ['Nama Kasi Kesejahteraan', 'Kasi Kesejahteraan', 2],
+            ['Nama Kepala Desa', 'Kepala Desa'],
+            ['Nama Sekretaris', 'Sekretaris Desa'],
+            ['Nama Kaur Keuangan', 'Kaur Keuangan'],
+            ['Nama Kaur Perencanaan', 'Kaur Perencanaan'],
+            ['Nama Kasi Pemerintahan', 'Kasi Pemerintahan'],
+            ['Nama Kasi Kesejahteraan', 'Kasi Kesejahteraan'],
         ];
 
-        foreach ($aparat as $i => [$nama, $jabatan, $tingkat]) {
+        foreach ($aparat as [$nama, $jabatan]) {
             Official::updateOrCreate(
                 ['village_id' => $village->id, 'nama' => $nama],
-                [
-                    'jabatan' => $jabatan,
-                    'urutan_tampil' => $i + 1,
-                    'tingkat' => $tingkat,
-                    'status_aktif' => true,
-                ]
+                ['jabatan' => $jabatan, 'status_aktif' => true]
             );
         }
 
@@ -116,10 +112,10 @@ class KontenDemoSeeder extends Seeder
             ['Nama Anggota BPD', 'Anggota'],
         ];
 
-        foreach ($bpd as $i => [$nama, $jabatan]) {
+        foreach ($bpd as [$nama, $jabatan]) {
             BpdMember::updateOrCreate(
                 ['village_id' => $village->id, 'nama' => $nama],
-                ['jabatan' => $jabatan, 'urutan_tampil' => $i + 1, 'status_aktif' => true]
+                ['jabatan' => $jabatan, 'status_aktif' => true]
             );
         }
     }

@@ -25,10 +25,9 @@ class OfficialController extends Controller
 
     public function index(): JsonResponse
     {
-        $data = Official::where('village_id', $this->village->id())
-            ->orderBy('urutan_tampil')
-            ->orderBy('nama')
-            ->get();
+        // Urutan yang sama dengan halaman publik — termasuk yang nonaktif,
+        // supaya operator melihat daftarnya persis seperti warga melihatnya.
+        $data = Official::where('village_id', $this->village->id())->urut()->get();
 
         return ApiResponse::success($data);
     }

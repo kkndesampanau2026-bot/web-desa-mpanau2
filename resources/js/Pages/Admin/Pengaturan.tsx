@@ -13,7 +13,9 @@ import {
   Tombol,
   TombolIkon,
 } from '@/Components/Admin/Form'
+import { tampilkanToast } from '@/Components/Admin/Toast'
 import { InputBerkas } from '@/Components/Admin/Berkas'
+import { adalahWhatsapp } from '@/Components/IkonSosialMedia'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 import type { ReactNode } from 'react'
 
@@ -43,7 +45,14 @@ const KOLOM_TEKS = [
   ['kode_pos', 'Kode Pos'],
   ['telepon', 'Telepon'],
   ['email', 'Email'],
-  ['whatsapp', 'WhatsApp'],
+  /*
+   * Tidak ada kolom WhatsApp di sini.
+   *
+   * Dulu ada, dan hasilnya dua tempat berbeda untuk satu nomor: kolom ini —
+   * yang ternyata tidak pernah ditampilkan halaman publik mana pun — dan baris
+   * WhatsApp pada daftar Sosial Media di bawah, yang memang tampil di footer
+   * dan dapat ditekan pengunjung. Yang tersisa sekarang hanya yang kedua.
+   */
 ] as const
 
 /** CMS Pengaturan Umum — PRD 5.19 & 6.17. */
@@ -54,7 +63,6 @@ export default function PengaturanPage() {
   const [sosmed, setSosmed] = useState<SosialMedia[]>([])
   const [logo, setLogo] = useState<File | null>(null)
   const [galat, setGalat] = useState<ApiRequestError | null>(null)
-  const [sukses, setSukses] = useState(false)
 
   const { data, isPending } = useQuery({
     queryKey: ['admin', 'settings'],
@@ -99,16 +107,14 @@ export default function PengaturanPage() {
       ),
     onSuccess: () => {
       setGalat(null)
-      setSukses(true)
+      tampilkanToast('Pengaturan berhasil disimpan.')
       // Berkas dilepas setelah terkirim; bila tidak, menyimpan ulang akan
       // mengunggah logo yang sama untuk kedua kalinya.
       setLogo(null)
       void queryClient.invalidateQueries({ queryKey: ['admin', 'settings'] })
     },
-    onError: (e) => {
-      setSukses(false)
-      setGalat(e instanceof ApiRequestError ? e : new ApiRequestError('Gagal menyimpan.', 0))
-    },
+    onError: (e) =>
+      setGalat(e instanceof ApiRequestError ? e : new ApiRequestError('Gagal menyimpan.', 0)),
   })
 
   function kirim(e: FormEvent) {
@@ -127,7 +133,6 @@ export default function PengaturanPage() {
         </p>
       </div>
 
-      {sukses && <Pemberitahuan jenis="sukses" pesan="Pengaturan berhasil disimpan." />}
       {galat && !galat.errors && <Pemberitahuan jenis="galat" pesan={galat.message} />}
 
       <Kartu
@@ -145,10 +150,7 @@ export default function PengaturanPage() {
                 <Input
                   id={kunci}
                   value={form[kunci] ?? ''}
-                  onChange={(e) => {
-                    setForm({ ...form, [kunci]: e.target.value })
-                    setSukses(false)
-                  }}
+                  onChange={(e) => setForm({ ...form, [kunci]: e.target.value })}
                   galat={galat?.fieldError(kunci)}
                 />
               </Kolom>
@@ -170,10 +172,7 @@ export default function PengaturanPage() {
                 label="Logo Desa"
                 jenis="gambar"
                 berkas={logo}
-                onPilih={(b) => {
-                  setLogo(b)
-                  setSukses(false)
-                }}
+                onPilih={setLogo}
                 pathTersimpan={data?.setting?.logo}
                 petunjuk="Tampil pada kepala situs publik dan dokumen resmi."
                 galat={galat?.fieldError('logo')}
@@ -250,39 +249,72 @@ export default function PengaturanPage() {
       <Kartu
         judul="Sosial Media"
         anak={
-          <div className="space-y-2">
-            {sosmed.map((s, i) => (
-              <div key={i} className="flex gap-2">
-                <Input
-                  aria-label={`Platform ${i + 1}`}
-                  placeholder="mis. Facebook"
-                  value={s.platform}
-                  onChange={(e) => {
-                    const baru = [...sosmed]
-                    baru[i] = { ...baru[i], platform: e.target.value }
-                    setSosmed(baru)
-                  }}
-                />
-                <Input
-                  aria-label={`URL ${i + 1}`}
-                  type="url"
-                  placeholder="https://…"
-                  value={s.url}
-                  onChange={(e) => {
-                    const baru = [...sosmed]
-                    baru[i] = { ...baru[i], url: e.target.value }
-                    setSosmed(baru)
-                  }}
-                />
-                <TombolIkon
-                  ikon={Trash2}
-                  gaya="bahaya"
-                  judul="Hapus sosial media"
-                  label={`Hapus sosial media ${i + 1}`}
-                  onClick={() => setSosmed(sosmed.filter((_, n) => n !== i))}
-                />
-              </div>
-            ))}
+          <div className="space-y-3">
+            {sosmed.map((s, i) => {
+              /*
+               * Baris WhatsApp meminta NOMOR, bukan alamat — dan karenanya
+               * tidak boleh memakai `type="url"`, yang membuat peramban
+               * menolak "0812…" sebelum sempat terkirim ke server. Tautan
+               * wa.me-nya disusun server saat menyimpan.
+               */
+              const wa = adalahWhatsapp(s.platform)
+              const galatIsi = galat?.fieldError(`sosial_media.${i}.url`)
+
+              return (
+                <div key={i}>
+                  <div className="flex gap-2">
+                    <Input
+                      id={`sosmed-platform-${i}`}
+                      aria-label={`Platform ${i + 1}`}
+                      placeholder="mis. Facebook"
+                      value={s.platform}
+                      onChange={(e) => {
+                        const baru = [...sosmed]
+                        baru[i] = { ...baru[i], platform: e.target.value }
+                        setSosmed(baru)
+                      }}
+                    />
+                    <Input
+                      id={`sosmed-isi-${i}`}
+                      aria-label={wa ? `Nomor WhatsApp ${i + 1}` : `URL ${i + 1}`}
+                      inputMode={wa ? 'tel' : undefined}
+                      placeholder={wa ? 'mis. 0812-3456-7890' : 'https://…'}
+                      value={s.url}
+                      onChange={(e) => {
+                        const baru = [...sosmed]
+                        baru[i] = { ...baru[i], url: e.target.value }
+                        setSosmed(baru)
+                      }}
+                      galat={galatIsi}
+                    />
+                    <TombolIkon
+                      ikon={Trash2}
+                      gaya="bahaya"
+                      judul="Hapus sosial media"
+                      label={`Hapus sosial media ${i + 1}`}
+                      onClick={() => setSosmed(sosmed.filter((_, n) => n !== i))}
+                    />
+                  </div>
+
+                  {galatIsi ? (
+                    <p
+                      id={`sosmed-isi-${i}-galat`}
+                      role="alert"
+                      className="mt-1 text-sm text-red-600"
+                    >
+                      {galatIsi}
+                    </p>
+                  ) : (
+                    wa && (
+                      <p className="mt-1 text-xs text-slate-500">
+                        Cukup nomornya. Pengunjung yang menekan ikon WhatsApp di footer
+                        langsung masuk ke percakapan dengan nomor ini.
+                      </p>
+                    )
+                  )}
+                </div>
+              )
+            })}
             <Tombol
               type="button"
               variasi="sekunder"

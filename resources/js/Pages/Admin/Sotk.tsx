@@ -12,6 +12,7 @@ import {
   Tombol,
   useGulirKeForm,
 } from '@/Components/Admin/Form'
+import { tampilkanToast } from '@/Components/Admin/Toast'
 import { InputBerkas } from '@/Components/Admin/Berkas'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 import type { ReactNode } from 'react'
@@ -20,11 +21,9 @@ interface Anggota {
   id: number
   nama: string
   jabatan: string
+  /** Daerah pemilihan — hanya pada anggota BPD. */
   dapil?: string | null
   foto?: string | null
-  urutan_tampil: number
-  /** Hanya pada aparat desa; menyusun tingkatan bagan struktur. */
-  tingkat?: number | null
   status_aktif: boolean
 }
 
@@ -83,7 +82,7 @@ function DaftarAnggota({ jenis }: { jenis: 'officials' | 'bpd-members' }) {
   const kunciQuery = ['admin', jenis]
   const bpd = jenis === 'bpd-members'
 
-  const kosong = { nama: '', jabatan: bpd ? 'Anggota' : '', urutan_tampil: '', tingkat: '' }
+  const kosong = { nama: '', jabatan: bpd ? 'Anggota' : '', dapil: '' }
 
   const [form, setForm] = useState(kosong)
   const [foto, setFoto] = useState<File | null>(null)
@@ -103,9 +102,9 @@ function DaftarAnggota({ jenis }: { jenis: 'officials' | 'bpd-members' }) {
     mutationFn: (nilai: typeof form) => {
       const isi = {
         ...nilai,
-        urutan_tampil: nilai.urutan_tampil || 0,
-        // Tingkat hanya berlaku untuk bagan aparat; BPD mengabaikannya.
-        ...(bpd ? {} : { tingkat: nilai.tingkat || 0 }),
+        // Daerah pemilihan hanya dimiliki anggota BPD; mengirimnya pada aparat
+        // desa berarti menulis kolom yang tidak ada pada tabelnya.
+        ...(bpd ? { dapil: nilai.dapil || null } : { dapil: undefined }),
         foto,
       }
 
@@ -116,6 +115,7 @@ function DaftarAnggota({ jenis }: { jenis: 'officials' | 'bpd-members' }) {
         : api.post(`/admin/${jenis}`, keFormData(isi))
     },
     onSuccess: () => {
+      tampilkanToast(sunting ? 'Perubahan tersimpan.' : `${bpd ? 'Anggota BPD' : 'Aparat desa'} ditambahkan.`)
       batalSunting()
       void queryClient.invalidateQueries({ queryKey: kunciQuery })
     },
@@ -125,7 +125,11 @@ function DaftarAnggota({ jenis }: { jenis: 'officials' | 'bpd-members' }) {
 
   const hapus = useMutation({
     mutationFn: (id: number) => api.delete(`/admin/${jenis}/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: kunciQuery }),
+    onSuccess: () => {
+      tampilkanToast(`${bpd ? 'Anggota BPD' : 'Aparat desa'} dihapus.`)
+      void queryClient.invalidateQueries({ queryKey: kunciQuery })
+    },
+    onError: () => tampilkanToast('Data gagal dihapus. Coba lagi.', 'galat'),
   })
 
   const formulir = useGulirKeForm()
@@ -135,8 +139,7 @@ function DaftarAnggota({ jenis }: { jenis: 'officials' | 'bpd-members' }) {
     setForm({
       nama: a.nama,
       jabatan: a.jabatan,
-      urutan_tampil: String(a.urutan_tampil ?? ''),
-      tingkat: String(a.tingkat ?? ''),
+      dapil: a.dapil ?? '',
     })
     // Foto dikosongkan, bukan diisi berkas lama: memilih berkas baru berarti
     // mengganti, membiarkannya kosong berarti mempertahankan yang tersimpan.
@@ -172,7 +175,7 @@ function DaftarAnggota({ jenis }: { jenis: 'officials' | 'bpd-members' }) {
           <form onSubmit={kirim} className="space-y-4">
             {galat && !galat.errors && <Pemberitahuan jenis="galat" pesan={galat.message} />}
 
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className={`grid gap-4 ${bpd ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
               <Kolom label="Nama" htmlFor="nama" galat={galat?.fieldError('nama')}>
                 <Input
                   id="nama"
@@ -203,37 +206,45 @@ function DaftarAnggota({ jenis }: { jenis: 'officials' | 'bpd-members' }) {
                 )}
               </Kolom>
 
-              <Kolom
-                label="Urutan Tampil"
-                htmlFor="urutan_tampil"
-                petunjuk="Angka kecil tampil lebih dulu."
-              >
-                <Input
-                  id="urutan_tampil"
-                  type="number"
-                  min={0}
-                  value={form.urutan_tampil}
-                  onChange={(e) => setForm({ ...form, urutan_tampil: e.target.value })}
-                />
-              </Kolom>
-
-              {/* Tingkat menyusun bagan struktur; tidak relevan untuk BPD. */}
-              {!bpd && (
+              {/*
+                Daerah pemilihan hanya dimiliki anggota BPD — merekalah yang
+                dipilih mewakili wilayah tertentu; aparat desa diangkat.
+              */}
+              {bpd && (
                 <Kolom
-                  label="Tingkat Bagan"
-                  htmlFor="tingkat"
-                  petunjuk="0 = Kepala Desa, 1 = Sekretaris, 2 = Kaur/Kasi, dst. Tingkat sama = sebaris."
+                  label="Daerah Pemilihan"
+                  htmlFor="dapil"
+                  petunjuk="Opsional. Tampil di bawah jabatan pada halaman publik."
+                  galat={galat?.fieldError('dapil')}
                 >
                   <Input
-                    id="tingkat"
-                    type="number"
-                    min={0}
-                    value={form.tingkat}
-                    onChange={(e) => setForm({ ...form, tingkat: e.target.value })}
+                    id="dapil"
+                    placeholder="mis. Dusun 1"
+                    value={form.dapil}
+                    onChange={(e) => setForm({ ...form, dapil: e.target.value })}
+                    galat={galat?.fieldError('dapil')}
                   />
                 </Kolom>
               )}
+
             </div>
+
+            {/*
+              "Urutan Tampil" dan "Tingkat Bagan" dulu berdiri di sini.
+
+              Keduanya dihapus atas permintaan pemilik produk: mengisi dua angka
+              demi menyusun beberapa nama adalah pekerjaan yang seharusnya tidak
+              pernah ada, dan satu angka yang terlewat membuat Kepala Desa
+              tampil di tengah daftar. Urutannya kini disimpulkan server dari
+              jenjang jabatan (docs/DEVIASI.md §C22).
+            */}
+            <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
+              Urutan tampil di situs publik mengikuti jenjang jabatan secara otomatis
+              {bpd
+                ? ' — Ketua, Wakil Ketua, Sekretaris, lalu Anggota.'
+                : ' — Kepala Desa, Sekretaris Desa, Kaur/Kasi, lalu Kepala Dusun.'}{' '}
+              Jabatan setara diurutkan menurut abjad nama.
+            </p>
 
             <InputBerkas
               label="Foto"
@@ -291,6 +302,7 @@ function DaftarAnggota({ jenis }: { jenis: 'officials' | 'bpd-members' }) {
                     <p className="truncate font-medium text-slate-900">{a.nama}</p>
                     <p className="truncate text-sm text-slate-500">
                       {a.jabatan}
+                      {a.dapil && ` · ${a.dapil}`}
                       {!a.status_aktif && ' · nonaktif'}
                     </p>
                   </div>

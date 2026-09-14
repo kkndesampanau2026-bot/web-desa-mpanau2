@@ -4,6 +4,7 @@ import { Trash2 } from 'lucide-react'
 import { api, ApiRequestError, type ApiSuccess } from '@/lib/api'
 import { Kartu, Kolom, Input, Pemberitahuan, TextArea, Tombol } from '@/Components/Admin/Form'
 import { useKonfirmasi } from '@/Components/Admin/Dialog'
+import { tampilkanToast } from '@/Components/Admin/Toast'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 
 interface SkorSdgs {
@@ -66,7 +67,6 @@ export default function SdgsAdminPage() {
   const [publikasikan, setPublikasikan] = useState(false)
   const [baris, setBaris] = useState<BarisGoal[]>(barisBaku())
   const [galat, setGalat] = useState<ApiRequestError | null>(null)
-  const [sukses, setSukses] = useState<string | null>(null)
 
   const konfirmasi = useKonfirmasi()
 
@@ -127,13 +127,11 @@ export default function SdgsAdminPage() {
       }),
     onSuccess: () => {
       setGalat(null)
-      setSukses(`Skor SDGs Desa tahun ${tahun} berhasil disimpan.`)
+      tampilkanToast(`Skor SDGs Desa tahun ${tahun} berhasil disimpan.`)
       void queryClient.invalidateQueries({ queryKey: ['admin', 'sdgs'] })
     },
-    onError: (e) => {
-      setSukses(null)
-      setGalat(e instanceof ApiRequestError ? e : new ApiRequestError('Gagal menyimpan.', 0))
-    },
+    onError: (e) =>
+      setGalat(e instanceof ApiRequestError ? e : new ApiRequestError('Gagal menyimpan.', 0)),
   })
 
   // Satuan penghapusan adalah TAHUN, bukan tujuan: ke-18 tujuan disimpan
@@ -143,13 +141,11 @@ export default function SdgsAdminPage() {
     mutationFn: (t: number) => api.delete(`/admin/sdgs/${t}`),
     onSuccess: () => {
       setGalat(null)
-      setSukses(`Skor SDGs Desa tahun ${tahun} berhasil dihapus.`)
+      tampilkanToast(`Skor SDGs Desa tahun ${tahun} berhasil dihapus.`)
       void queryClient.invalidateQueries({ queryKey: ['admin', 'sdgs'] })
     },
-    onError: (e) => {
-      setSukses(null)
-      setGalat(e instanceof ApiRequestError ? e : new ApiRequestError('Gagal menghapus.', 0))
-    },
+    onError: (e) =>
+      setGalat(e instanceof ApiRequestError ? e : new ApiRequestError('Gagal menghapus.', 0)),
   })
 
   const tahunSudahAda = tahunTersedia.includes(Number(tahun))
@@ -178,7 +174,6 @@ export default function SdgsAdminPage() {
           anak={
             <div className="space-y-4">
               {galat && !galat.errors && <Pemberitahuan jenis="galat" pesan={galat.message} />}
-              {sukses && <Pemberitahuan jenis="sukses" pesan={sukses} />}
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <Kolom

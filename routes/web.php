@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AkunController;
 use App\Http\Controllers\Admin\BannerController;
 use App\Http\Controllers\Admin\EksporPengaduanController;
+use App\Http\Controllers\Admin\LampiranPengaduanController;
 use App\Http\Controllers\Admin\PenggunaController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Publik\BerandaController;
@@ -140,36 +141,35 @@ Route::middleware('catat.kunjungan')->group(function () {
     /*
     | Pengaduan Masyarakat — PRD 6.15.
     |
-    | Halaman FORMULIRNYA sudah tidak ada. Mengadu kini hanya lewat tombol
-    | mengambang "Aduan Warga" yang menemani pengunjung di setiap halaman —
-    | halaman tersendiri berisi formulir yang sama hanyalah pintu masuk kedua
-    | menuju tempat yang sama.
+    | Mengadu punya DUA pintu masuk yang memuat formulir yang sama:
     |
-    | Yang tersisa adalah pelacakannya, dan ia pindah ke bawah /layanan-mandiri
-    | bersama layanan warga lain. POST /pengaduan (pengiriman aduan) TETAP di
-    | alamat lama — itu endpoint yang dipanggil tombol mengambang, bukan
-    | halaman.
+    |   - tombol mengambang "Aduan Warga" di setiap halaman publik — cepat,
+    |     tetapi tidak punya alamat sehingga tidak dapat dibagikan;
+    |   - halaman /pengaduan di bawah ini — punya alamat, sehingga dapat
+    |     ditempel di papan pengumuman atau dikirim lewat WhatsApp grup RT.
+    |
+    | Halaman ini sempat dihapus dengan alasan "cukup satu pintu masuk", lalu
+    | dikembalikan atas permintaan pemilik produk (docs/DEVIASI.md §A5).
+    | Formulirnya sendiri tetap satu: `Components/FormAduan`.
+    |
+    | Pelacakannya tinggal di bawah /layanan-mandiri bersama layanan warga
+    | lain, sedangkan POST /pengaduan (pengiriman aduan) tetap di alamat lama.
     */
+    Route::get('/pengaduan', [PengaduanController::class, 'formulir'])
+        ->name('pengaduan.ajukan');
+
     Route::get('/layanan-mandiri/lacak', [PengaduanController::class, 'lacak'])
         ->name('pengaduan.lacak');
 
     /*
-    | Alamat lama. Nomor tiket beredar bersama tautannya — tersalin ke
-    | WhatsApp, tercatat di buku agenda desa — jadi keduanya tetap dijawab
-    | sebagai pengalihan permanen alih-alih berubah menjadi 404.
+    | Alamat lacak yang lama. Nomor tiket beredar bersama tautannya — tersalin
+    | ke WhatsApp, tercatat di buku agenda desa — jadi ia tetap dijawab sebagai
+    | pengalihan permanen alih-alih berubah menjadi 404.
+    |
+    | `Route::get`, BUKAN `Route::redirect`: yang terakhir mendaftarkan route
+    | untuk SEMUA method, termasuk POST — dan POST ke alamat pengaduan adalah
+    | endpoint pengiriman aduan yang sesungguhnya.
     */
-    /*
-     * `Route::get`, BUKAN `Route::redirect`.
-     *
-     * `Route::redirect()` mendaftarkan route untuk SEMUA method, termasuk
-     * POST — dan `POST /pengaduan` adalah endpoint yang dipakai tombol
-     * mengambang "Aduan Warga" untuk mengirim aduan. Saat ini pengirimannya
-     * selamat semata karena route POST-nya didaftarkan belakangan sehingga
-     * menimpa entri milik redirect; sandaran yang hilang begitu urutan baris
-     * di berkas ini berubah, dan gejalanya paling buruk: aduan warga berbalas
-     * "berhasil" padahal tidak pernah tersimpan.
-     */
-    Route::get('/pengaduan', fn () => redirect('/layanan-mandiri', 301));
 
     Route::get(
         '/pengaduan/lacak',
@@ -370,6 +370,20 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::get('/pengaduan/ekspor', EksporPengaduanController::class)
         ->middleware('permission:respond-complaint')
         ->name('pengaduan.ekspor');
+
+    /*
+    | Lampiran pengaduan.
+    |
+    | Route WEB, bukan /api/v1 — tautannya dibuka peramban sebagai navigasi
+    | biasa, dan guard `sanctum` menuntut header Origin/Referer yang tidak ikut
+    | pada navigasi semacam itu. Penjelasan lengkapnya ada di controllernya.
+    |
+    | Didaftarkan SESUDAH /pengaduan/ekspor: segmen literal harus lebih dulu
+    | agar tidak tertelan parameter {complaint}.
+    */
+    Route::get('/pengaduan/{complaint}/lampiran/{attachment}', LampiranPengaduanController::class)
+        ->middleware('permission:respond-complaint')
+        ->name('pengaduan.lampiran');
 
     /*
     | Banner hero beranda.

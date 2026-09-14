@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\NomorWhatsapp;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -57,28 +58,12 @@ class Product extends Model
     /**
      * Nomor WhatsApp dalam format internasional untuk tautan wa.me.
      *
-     * Warga lazim menuliskan nomor sebagai "0812-3456-7890" atau
-     * "+62 812 3456 7890"; keduanya harus menghasilkan tautan yang sama.
-     * Dinormalkan saat ditampilkan, bukan saat disimpan, agar admin tetap
-     * melihat nomor persis seperti yang ia masukkan.
+     * Dinormalkan saat DITAMPILKAN, bukan saat disimpan, agar admin tetap
+     * melihat nomor persis seperti yang ia masukkan. Aturannya sendiri tinggal
+     * di `NomorWhatsapp` karena Pengaturan Umum memakainya juga.
      */
     public function whatsappInternasional(): ?string
     {
-        if (blank($this->kontak_wa)) {
-            return null;
-        }
-
-        $angka = preg_replace('/\D/', '', $this->kontak_wa) ?? '';
-
-        if ($angka === '') {
-            return null;
-        }
-
-        // 08xx -> 628xx; 8xx -> 628xx; 62xx dibiarkan.
-        if (str_starts_with($angka, '0')) {
-            return '62'.substr($angka, 1);
-        }
-
-        return str_starts_with($angka, '62') ? $angka : '62'.$angka;
+        return NomorWhatsapp::internasional($this->kontak_wa);
     }
 }

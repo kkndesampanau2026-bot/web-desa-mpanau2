@@ -83,6 +83,18 @@ export function labelPlatform(platform: string): string {
   return LAMBANG[kunci(platform)]?.label ?? platform
 }
 
+/**
+ * Apakah baris ini akun WhatsApp.
+ *
+ * Dipakai formulir CMS untuk beralih dari "alamat tautan" ke "nomor telepon".
+ * Tinggal di sini, bukan di halaman Pengaturan, supaya "apa yang dihitung
+ * sebagai WhatsApp" hanya punya satu definisi di sisi peramban — yang sama
+ * dengan yang memilih ikonnya. Padanannya di server: `NomorWhatsapp`.
+ */
+export function adalahWhatsapp(platform: string): boolean {
+  return kunci(platform) === 'whatsapp'
+}
+
 export function IkonSosialMedia({
   platform,
   className,

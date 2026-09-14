@@ -34,7 +34,8 @@ export default function BannerPage({
   daftar_banner: Banner[]
   maks_banner: number
 }) {
-  const { flash, errors } = useHalaman().props
+  // Hasil simpan muncul sebagai toast; LayoutAdmin yang mendengarkan flash-nya.
+  const { errors } = useHalaman().props
   const [pilihan, setPilihan] = useState<File[]>([])
   const [judulSunting, setJudulSunting] = useState<Record<number, string>>({})
 
@@ -92,7 +93,6 @@ export default function BannerPage({
 
   return (
     <div className="space-y-6">
-      {flash?.sukses && <Pemberitahuan jenis="sukses" pesan={flash.sukses} />}
       {errors?.gambar && <Pemberitahuan jenis="galat" pesan={errors.gambar} />}
 
       <Kartu

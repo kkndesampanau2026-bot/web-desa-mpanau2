@@ -12,6 +12,7 @@ import {
   TombolIkon,
   useGulirKeForm,
 } from '@/Components/Admin/Form'
+import { tampilkanToast } from '@/Components/Admin/Toast'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 import type { ReactNode } from 'react'
 
@@ -50,7 +51,13 @@ const LABEL_STATUS: Record<string, string> = {
   ditolak: 'Ditolak',
 }
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
+/*
+ * Tidak ada BASE_URL di sini.
+ *
+ * Dua unduhan pada layar ini — rekap Excel dan lampiran — memakai alamat
+ * relatif ke route web `/admin/…`, sehingga selalu benar di domain mana pun
+ * tanpa bergantung pada VITE_API_URL yang harus disetel saat build.
+ */
 
 /** Manajemen Pengaduan — PRD 5.18. */
 export default function PengaduanAdminPage() {
@@ -246,7 +253,10 @@ function DetailPengaduan({ id, onSelesai }: { id: number; onSelesai: () => void 
         tanggapan_admin: form.tanggapan_admin || null,
         alasan_penolakan: form.alasan_penolakan || null,
       }),
-    onSuccess: onSelesai,
+    onSuccess: () => {
+      tampilkanToast('Tanggapan pengaduan tersimpan.')
+      onSelesai()
+    },
     onError: (e) =>
       setGalat(e instanceof ApiRequestError ? e : new ApiRequestError('Gagal menyimpan.', 0)),
   })
@@ -290,13 +300,23 @@ function DetailPengaduan({ id, onSelesai }: { id: number; onSelesai: () => void 
                     <li key={l.id}>
                       {/*
                         Lampiran berada pada disk privat; tautan ini menuju
-                        endpoint admin yang memeriksa izin, bukan URL berkas
+                        route admin yang memeriksa izin, bukan URL berkas
                         langsung.
+
+                        Alamatnya /admin/… (route web), BUKAN /api/v1/… —
+                        jalur API dijaga guard `sanctum` yang menuntut header
+                        Origin/Referer, dan navigasi unduhan tidak membawanya.
+                        Dulu tautan ini ke /api/v1 dan selalu dijawab "Anda
+                        harus masuk untuk mengakses sumber daya ini" meski
+                        operatornya jelas sudah masuk.
+
+                        Tanpa target="_blank": responsnya sudah berupa
+                        attachment, jadi peramban mengunduhnya tanpa berpindah
+                        halaman — tab kosong yang langsung tertutup hanya
+                        membuat operator mengira ada yang gagal.
                       */}
                       <a
-                        href={`${BASE_URL}/api/v1/admin/pengaduan/${id}/lampiran/${l.id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        href={`/admin/pengaduan/${id}/lampiran/${l.id}`}
                         className="text-sm text-slate-700 underline hover:text-slate-900"
                       >
                         {l.nama_asli}

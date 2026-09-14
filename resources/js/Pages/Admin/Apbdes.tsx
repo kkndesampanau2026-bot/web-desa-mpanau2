@@ -12,6 +12,7 @@ import {
   Tombol,
   useGulirKeForm,
 } from '@/Components/Admin/Form'
+import { tampilkanToast } from '@/Components/Admin/Toast'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 import { formatRupiah } from '@/lib/format'
 
@@ -121,6 +122,7 @@ function TabTahun() {
     mutationFn: () => api.post('/admin/apbdes/tahun', { tahun: Number(tahun) }),
     onSuccess: () => {
       setGalat(null)
+      tampilkanToast(`Tahun anggaran ${tahun} ditambahkan.`)
       void queryClient.invalidateQueries({ queryKey: ['admin', 'apbdes', 'tahun'] })
     },
     onError: (e) =>
@@ -130,13 +132,18 @@ function TabTahun() {
   const ubah = useMutation({
     mutationFn: (payload: { id: number; status?: string; publikasikan?: boolean }) =>
       api.put(`/admin/apbdes/tahun/${payload.id}`, payload),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'apbdes', 'tahun'] }),
+    onSuccess: () => {
+      tampilkanToast('Tahun anggaran diperbarui.')
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'apbdes', 'tahun'] })
+    },
+    onError: () => tampilkanToast('Perubahan gagal disimpan. Coba lagi.', 'galat'),
   })
 
   const hapus = useMutation({
     mutationFn: (id: number) => api.delete(`/admin/apbdes/tahun/${id}`),
     onSuccess: () => {
       setGalat(null)
+      tampilkanToast('Tahun anggaran dihapus.')
       void queryClient.invalidateQueries({ queryKey: ['admin', 'apbdes', 'tahun'] })
     },
     // Server menolak tahun yang masih berisi rincian; pesannya diteruskan apa
@@ -282,6 +289,7 @@ function TabKategori() {
         : api.post('/admin/apbdes/kategori', isi)
     },
     onSuccess: () => {
+      tampilkanToast(sunting ? 'Perubahan kategori tersimpan.' : 'Kategori ditambahkan.')
       // Kelompok dipertahankan saat menambah beruntun: kategori lazim
       // dimasukkan sekelompok-sekelompok.
       setForm({ ...kosong, kelompok: sunting ? 'Belanja' : form.kelompok })
@@ -299,6 +307,7 @@ function TabKategori() {
     mutationFn: (id: number) => api.delete(`/admin/apbdes/kategori/${id}`),
     onSuccess: () => {
       setGalat(null)
+      tampilkanToast('Kategori dihapus.')
       void queryClient.invalidateQueries({ queryKey: ['admin', 'apbdes', 'kategori'] })
     },
     onError: (e) =>
@@ -488,6 +497,7 @@ function TabItem() {
         : api.post('/admin/apbdes/items', payload)
     },
     onSuccess: () => {
+      tampilkanToast(editId ? 'Perubahan item tersimpan.' : 'Item anggaran ditambahkan.')
       reset()
       void queryClient.invalidateQueries({ queryKey: ['admin', 'apbdes', 'items'] })
       void queryClient.invalidateQueries({ queryKey: ['admin', 'apbdes', 'tahun'] })
@@ -499,9 +509,11 @@ function TabItem() {
   const hapus = useMutation({
     mutationFn: (id: number) => api.delete(`/admin/apbdes/items/${id}`),
     onSuccess: () => {
+      tampilkanToast('Item anggaran dihapus.')
       void queryClient.invalidateQueries({ queryKey: ['admin', 'apbdes', 'items'] })
       void queryClient.invalidateQueries({ queryKey: ['admin', 'apbdes', 'tahun'] })
     },
+    onError: () => tampilkanToast('Item gagal dihapus. Coba lagi.', 'galat'),
   })
 
   const formulir = useGulirKeForm()

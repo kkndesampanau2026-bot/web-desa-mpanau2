@@ -98,9 +98,9 @@ class EksporPengaduanTest extends TestCase
 
     public function test_formulir_publik_menawarkan_dan_menerima_kategori_baru(): void
     {
-        // Halaman formulirnya sudah tidak ada; kategori kini sampai ke warga
-        // lewat prop bersama yang menyertai SETIAP halaman publik, karena
-        // formulirnya berupa popup mengambang.
+        // Kategori sampai ke warga lewat prop bersama yang menyertai SETIAP
+        // halaman publik — satu sumber untuk popup mengambang maupun halaman
+        // /pengaduan, sehingga keduanya tidak pernah menawarkan daftar berbeda.
         $this->get('/')->assertOk()->assertInertia(
             fn ($page) => $page->where('kategori_pengaduan', Complaint::KATEGORI)
         );
@@ -115,13 +115,20 @@ class EksporPengaduanTest extends TestCase
         $this->assertDatabaseHas('complaints', ['kategori_pengaduan' => 'TRANTIBUM']);
     }
 
-    public function test_halaman_formulir_pengaduan_sudah_tidak_ada(): void
+    /**
+     * Mengadu punya alamat sendiri lagi.
+     *
+     * Halaman ini sempat dihapus dan alamatnya dialihkan ke /layanan-mandiri,
+     * dengan alasan cukup satu pintu masuk (popup mengambang). Dikembalikan
+     * atas permintaan pemilik produk — lihat docs/DEVIASI.md §A5 — justru
+     * karena alamat itulah yang dapat dibagikan lewat WhatsApp grup RT atau
+     * ditempel di papan pengumuman.
+     */
+    public function test_halaman_formulir_pengaduan_punya_alamat_sendiri(): void
     {
-        // Mengadu kini hanya lewat popup mengambang. Alamat lamanya dialihkan,
-        // bukan dibiarkan menjadi 404 — ia sempat beredar dan terindeks.
         $this->get('/pengaduan')
-            ->assertRedirect('/layanan-mandiri')
-            ->assertStatus(301);
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->component('Publik/Pengaduan/Ajukan'));
     }
 
     public function test_alamat_lacak_lama_dialihkan_beserta_nomor_tiketnya(): void

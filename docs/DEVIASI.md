@@ -81,6 +81,28 @@ pun.** Yang dihapus:
 
 - Tombol "Kirim Pengaduan" pada hero Beranda, serta kartu "Pengaduan
   Masyarakat" dan "Lacak Pengaduan" di Layanan Mandiri.
+
+  > **Dikembalikan (14 September 2026).** Atas permintaan pemilik produk,
+  > kartu **"Kirim Aduan Warga"** berdiri lagi di Layanan Mandiri — berpasangan
+  > dengan kartu pelacakannya seperti layanan lain — dan **halaman
+  > `/pengaduan` hidup kembali** sebagai tujuannya.
+  >
+  > Dua alasan penghapusan dulu ternyata meleset:
+  >
+  > 1. *"Sudah ada tombol mengambang di setiap halaman."* Warga yang membuka
+  >    "Layanan Mandiri" datang untuk membaca DAFTAR layanan; yang tidak
+  >    tercantum di daftar itu praktis tidak ada baginya, betapapun tombolnya
+  >    melayang di sudut layar.
+  > 2. *"Halaman tersendiri hanyalah pintu masuk kedua ke tempat yang sama."*
+  >    Yang terlewat: popup tidak punya ALAMAT. Ia tidak dapat ditempel di
+  >    papan pengumuman, dikirim ke WhatsApp grup RT, ditulis pada surat
+  >    edaran, maupun diindeks mesin pencari — padahal begitulah layanan desa
+  >    sebenarnya disebarkan.
+  >
+  > Yang dijaga agar keduanya tidak menjadi dua formulir: isinya diangkat ke
+  > `Components/FormAduan.tsx`, dipakai bersama oleh popup dan halaman.
+  > Aturan lampiran, daftar kategori, dan tujuan pengirimannya hidup di satu
+  > berkas. Tombol "Kirim Pengaduan" di hero Beranda tetap tidak ada.
 - Formulir **Cek Penerima** pada `/infografis/bansos` berikut route
   `POST /infografis/bansos/cek` dan method `InfografisController::cekPenerima`.
   Halaman itu kini murni agregat: total penerima dan jumlah penerima per jenis
@@ -691,6 +713,110 @@ menyadarinya — pengajuan berikutnya lalu tertahan tanpa notifikasi. Nilainya
 tetap berada di balik permission `manage-letter-official` dan tidak pernah
 menyentuh halaman publik.
 
+
+### C20. Satu tempat untuk nomor WhatsApp desa (14 September 2026)
+
+PRD 6.17 mendaftar `whatsapp` sebagai salah satu kolom Pengaturan Umum, dan ia
+memang ada sejak Fase 2 — pada kartu "Identitas & Wilayah", bersama telepon dan
+email. Yang baru ketahuan saat ditinjau: **kolom itu tidak pernah ditampilkan
+satu pun halaman publik.** Ia dikirim ke klien sebagai `pengaturan.kontak.
+whatsapp`, lalu berhenti di sana; footer hanya menggambar telepon dan email.
+
+Sementara itu nomor WhatsApp yang BENAR-BENAR tampil dan dapat ditekan
+pengunjung datang dari tempat lain: baris pada daftar **Sosial Media**, yang
+sudah punya ikon WhatsApp sendiri di footer. Jadi ada dua kolom untuk satu
+nomor, dan hanya satu yang berfungsi. **Atas permintaan pemilik produk, yang
+pertama dihapus.**
+
+- Kolom hilang dari formulir CMS dan dari prop bersama `pengaturan.kontak`.
+  **Kolom basis datanya dibiarkan** beserta `Setting::$fillable`: nilai lama
+  tidak ikut terhapus, dan tidak ada migrasi yang perlu dibatalkan bila
+  keputusan ini ditinjau ulang.
+- Baris WhatsApp pada Sosial Media kini diisi **nomor**, bukan alamat. Operator
+  desa tidak menghafal bentuk tautan `wa.me`, dan memaksa mereka menyusunnya
+  sendiri adalah cara termudah mendapatkan tautan salah ketik yang baru
+  ketahuan setelah warga mengeluh. Servernya yang menyusun: aturan nomor
+  tinggal di `App\Services\NomorWhatsapp` — diangkat dari
+  `Product::whatsappInternasional()` yang sudah memilikinya lebih dulu,
+  sehingga katalog UMKM dan Pengaturan Umum memakai satu definisi.
+- Yang tersimpan selalu berbentuk `https://wa.me/62…`, dari mana pun asalnya
+  (nomor lokal, +62, atau tautan wa.me yang ditempel). Karena itu footer cukup
+  memasangnya apa adanya pada `href` — tidak ada tempat kedua yang perlu tahu
+  aturan nomor WhatsApp. Baris non-WhatsApp tetap menuntut URL yang sah.
+
+Diuji pada `tests/Feature/Pengaturan/SosialMediaTest.php`, termasuk bahwa
+alamat situs lain yang terlanjur diketik pada baris WhatsApp ditolak — bukan
+diam-diam diperas menjadi angka yang kebetulan ada di dalamnya.
+
+### C21. Hasil simpan/hapus CMS memakai toast, bukan kotak dalam formulir (14 September 2026)
+
+Seluruh layar CMS dulu menyatakan hasilnya dengan kotak hijau di DALAM
+formulir, dan sebagian layar tidak menyatakannya sama sekali. Dua-duanya
+bermasalah dengan cara yang sama: operator yang menekan "Simpan" di bagian
+bawah layar panjang tidak melihat apa pun, lalu menekan Simpan sekali lagi.
+
+Sekarang satu tempat untuk seluruh dashboard — `Components/Admin/Toast.tsx`,
+tengah atas layar, wadahnya terpasang sekali di `LayoutAdmin`. Layar Inertia
+(Akun Saya, Banner, Akun Operator) ikut lewat pendengar peristiwa kunjungan,
+bukan `useEffect` atas nilai `flash.sukses`: dua penyimpanan beruntun
+menghasilkan pesan yang sama persis, dan efek yang bergantung pada nilainya
+tidak akan berjalan untuk yang kedua.
+
+Galat validasi per kolom TIDAK ikut menjadi toast — tempatnya tetap di bawah
+kolom yang bersangkutan, karena yang perlu diperbaiki ada di sana.
+
+### C22. Urutan SOTK disimpulkan dari jabatan, bukan diisi tangan (14 September 2026)
+
+PRD 5.4 menetapkan kolom `urutan_tampil` pada aparat desa & BPD, dan Fase 2
+menambahkan `tingkat` untuk menyusun bagan struktur. **Atas permintaan pemilik
+produk, keduanya dihapus dari formulir CMS.**
+
+Alasannya terlihat begitu dipakai: menyusun enam nama menuntut operator mengisi
+dua angka pada setiap baris, dan satu angka yang terlewat membuat Kepala Desa
+tampil di tengah daftar — kesalahan yang baru ketahuan dari halaman publik.
+`tingkat` bahkan sudah kehilangan pekerjaannya lebih dulu: sejak bagan struktur
+menjadi **gambar yang diunggah** (§A7 & `ProfilController`), tidak ada satu pun
+halaman yang menggambar bagan dari angka itu.
+
+Penggantinya: `Official::urut()` mengurutkan menurut **jenjang jabatan** —
+Kepala Desa, Sekretaris, Kaur/Kepala Urusan, Kasi/Kepala Seksi, Kepala Dusun,
+Staf — lalu jabatan, lalu nama. Karena `jabatan` berupa teks bebas,
+pencocokannya memakai pola awalan, dan jabatan yang tidak dikenali jatuh ke
+jenjang terakhir alih-alih hilang. BPD tidak memerlukan daftar seperti itu:
+jabatannya sudah berupa pilihan tertutup, sehingga `BpdMember::urut()` cukup
+memakai hierarki jabatan lalu nama.
+
+Konsekuensi yang perlu diketahui:
+
+- **Urutan di dalam satu jenjang kini menurut abjad nama**, bukan urutan yang
+  dulu disusun operator. Untuk empat Kaur yang setara, urutan abjad adalah
+  urutan yang dapat dijelaskan; urutan lama tidak dapat dipulihkan dari data
+  karena angkanya tidak lagi dibaca.
+- **Kolom basis datanya dibiarkan** (`officials.urutan_tampil`,
+  `officials.tingkat`, `bpd_members.urutan_tampil`) beserta aturan validasinya:
+  nilai lama tidak ikut terhapus dan tidak ada migrasi yang perlu dibatalkan
+  bila keputusan ini ditinjau ulang. Yang berubah hanya siapa yang membacanya —
+  sekarang tidak ada.
+- Daftar di CMS memakai urutan yang SAMA dengan halaman publik, supaya yang
+  dilihat operator sama persis dengan yang dilihat warga.
+
+### C23. BPD ikut tampil di halaman Pemerintah Desa (14 September 2026)
+
+Kartu di Beranda sudah lama berbunyi "Susunan aparat desa dan Badan
+Permusyawaratan Desa", tetapi halaman yang dituju hanya memuat aparat —
+pengunjung yang menekannya menemukan separuh dari yang dijanjikan. BPD kini
+menjadi bagian kedua pada halaman yang sama, sesuai PRD 3.2 yang menegaskan
+keduanya lembaga terpisah.
+
+Keduanya sengaja tidak dicampur dalam satu kisi kartu: deretan tanpa batas
+membuatnya terbaca sebagai satu susunan jabatan, padahal Ketua BPD bukan
+bawahan Kepala Desa. Bagian yang belum terisi tetap digambar lengkap dengan
+judul dan penjelasannya — pengunjung yang mencari BPD perlu tahu lembaganya
+memang ada dan datanya belum diisi.
+
+Menyertainya di CMS: kolom **Daerah Pemilihan** yang selama ini ada di basis
+data dan divalidasi server, tetapi tidak pernah punya tempat di formulir —
+sehingga satu-satunya cara mengisinya adalah lewat basis data langsung.
 
 ---
 

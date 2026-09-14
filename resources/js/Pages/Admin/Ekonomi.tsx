@@ -15,6 +15,7 @@ import {
   Tombol,
   useGulirKeForm,
 } from '@/Components/Admin/Form'
+import { tampilkanToast } from '@/Components/Admin/Toast'
 import { InputBanyakGambar, InputBerkas } from '@/Components/Admin/Berkas'
 import { PengelolaFoto, type Foto } from '@/Components/Admin/PengelolaFoto'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
@@ -205,6 +206,7 @@ function PanelPotensi() {
         : api.post('/admin/potensi', keFormData(isi))
     },
     onSuccess: () => {
+      tampilkanToast(sunting ? 'Perubahan potensi tersimpan.' : 'Potensi desa ditambahkan.')
       bersihkan()
       void queryClient.invalidateQueries({ queryKey: ['admin', 'potensi'] })
     },
@@ -216,8 +218,10 @@ function PanelPotensi() {
     mutationFn: (id: number) => api.delete(`/admin/potensi/${id}`),
     onSuccess: (_, id) => {
       if (sunting?.id === id) bersihkan()
+      tampilkanToast('Potensi desa dihapus.')
       void queryClient.invalidateQueries({ queryKey: ['admin', 'potensi'] })
     },
+    onError: () => tampilkanToast('Potensi gagal dihapus. Coba lagi.', 'galat'),
   })
 
   return (
@@ -484,6 +488,7 @@ function PanelWisata() {
       }
     },
     onSuccess: () => {
+      tampilkanToast(sunting ? 'Perubahan destinasi tersimpan.' : 'Destinasi wisata ditambahkan.')
       setForm(kosong)
       setSunting(null)
       setFotoBaru([])
@@ -496,7 +501,11 @@ function PanelWisata() {
 
   const hapus = useMutation({
     mutationFn: (id: number) => api.delete(`/admin/wisata/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'wisata'] }),
+    onSuccess: () => {
+      tampilkanToast('Destinasi wisata dihapus.')
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'wisata'] })
+    },
+    onError: () => tampilkanToast('Destinasi gagal dihapus. Coba lagi.', 'galat'),
   })
 
   const formulir = useGulirKeForm()
@@ -721,6 +730,7 @@ function PanelProduk() {
       }
     },
     onSuccess: () => {
+      tampilkanToast(sunting ? 'Perubahan produk tersimpan.' : 'Produk UMKM ditambahkan.')
       setForm(kosong)
       setSunting(null)
       setFotoBaru([])
@@ -733,7 +743,11 @@ function PanelProduk() {
 
   const hapus = useMutation({
     mutationFn: (id: number) => api.delete(`/admin/produk/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'produk'] }),
+    onSuccess: () => {
+      tampilkanToast('Produk UMKM dihapus.')
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'produk'] })
+    },
+    onError: () => tampilkanToast('Produk gagal dihapus. Coba lagi.', 'galat'),
   })
 
   const formulir = useGulirKeForm()

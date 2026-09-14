@@ -24,8 +24,8 @@ import {
   Wallet,
   type LucideIcon,
 } from 'lucide-react'
-import { WadahToast } from '@/Components/Admin/Toast'
-import { punyaIzin, useHalaman } from '@/types/inertia'
+import { tampilkanToast, WadahToast } from '@/Components/Admin/Toast'
+import { punyaIzin, useHalaman, type PropsBersama } from '@/types/inertia'
 
 /**
  * Kerangka dashboard admin.
@@ -143,6 +143,27 @@ export function LayoutAdmin({
 
   const [notifikasiTerbuka, setNotifikasiTerbuka] = useState(false)
   const notifikasiRef = useRef<HTMLDivElement>(null)
+
+  /*
+   * Hasil simpan pada layar Inertia (Akun Saya, Banner, Akun Operator)
+   * dinyatakan lewat flash session, bukan callback mutation seperti layar yang
+   * masih memakai react-query. Didengarkan sekali di sini supaya ketiganya
+   * tidak perlu menuliskan efeknya sendiri-sendiri.
+   *
+   * Sengaja lewat peristiwa kunjungan, BUKAN `useEffect` atas nilai
+   * `props.flash.sukses`: dua penyimpanan beruntun menghasilkan pesan yang
+   * sama persis, dan efek yang bergantung pada nilainya tidak akan berjalan
+   * untuk yang kedua — operator menyimpan, tidak melihat apa pun, lalu
+   * menyimpan lagi.
+   */
+  useEffect(() => {
+    return router.on('success', (peristiwa) => {
+      const flash = (peristiwa.detail.page.props as Partial<PropsBersama>).flash
+
+      if (flash?.sukses) tampilkanToast(flash.sukses)
+      if (flash?.galat) tampilkanToast(flash.galat, 'galat')
+    })
+  }, [])
 
   // Menutup dropdown saat mengklik di luar panel atau menekan Escape — pola
   // standar untuk menu mengambang yang tidak punya overlay sendiri.

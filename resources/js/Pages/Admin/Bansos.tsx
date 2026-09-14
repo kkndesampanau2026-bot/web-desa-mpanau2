@@ -12,6 +12,7 @@ import {
   Tombol,
   useGulirKeForm,
 } from '@/Components/Admin/Form'
+import { tampilkanToast } from '@/Components/Admin/Toast'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 import type { ReactNode } from 'react'
 
@@ -114,8 +115,11 @@ function DaftarPenerima() {
 
   const hapus = useMutation({
     mutationFn: (id: number) => api.delete(`/admin/bansos/penerima/${id}`),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ['admin', 'bansos', 'penerima'] }),
+    onSuccess: () => {
+      tampilkanToast('Data penerima dihapus.')
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'bansos', 'penerima'] })
+    },
+    onError: () => tampilkanToast('Data penerima gagal dihapus. Coba lagi.', 'galat'),
   })
 
   if (formTerbuka) {
@@ -268,7 +272,12 @@ function FormPenerima({
         ? api.put(`/admin/bansos/penerima/${penerima.id}`, isi)
         : api.post('/admin/bansos/penerima', isi)
     },
-    onSuccess: onSelesai,
+    onSuccess: () => {
+      tampilkanToast(
+        penerima ? 'Perubahan data penerima tersimpan.' : 'Penerima bantuan ditambahkan.',
+      )
+      onSelesai()
+    },
     onError: (e) =>
       setGalat(e instanceof ApiRequestError ? e : new ApiRequestError('Gagal menyimpan.', 0)),
   })
@@ -407,6 +416,7 @@ function DaftarJenis() {
         ? api.put(`/admin/bansos/jenis/${sunting.id}`, form)
         : api.post('/admin/bansos/jenis', form),
     onSuccess: () => {
+      tampilkanToast(sunting ? 'Perubahan jenis bantuan tersimpan.' : 'Jenis bantuan ditambahkan.')
       setForm(kosong)
       setSunting(null)
       setGalat(null)
@@ -420,7 +430,10 @@ function DaftarJenis() {
 
   const hapus = useMutation({
     mutationFn: (id: number) => api.delete(`/admin/bansos/jenis/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'bansos', 'jenis'] }),
+    onSuccess: () => {
+      tampilkanToast('Jenis bantuan dihapus.')
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'bansos', 'jenis'] })
+    },
     onError: (e) =>
       setGalat(e instanceof ApiRequestError ? e : new ApiRequestError('Gagal menghapus.', 0)),
   })

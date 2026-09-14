@@ -5,6 +5,7 @@ import { api, ApiRequestError, urlBerkas } from '@/lib/api'
 import { keFormData } from '@/lib/berkas'
 import { Pemberitahuan, Tombol } from '@/Components/Admin/Form'
 import { useKonfirmasi } from '@/Components/Admin/Dialog'
+import { tampilkanToast } from '@/Components/Admin/Toast'
 import { InputBanyakGambar } from '@/Components/Admin/Berkas'
 
 export interface Foto {
@@ -63,6 +64,7 @@ export function PengelolaFoto({
   const unggah = useMutation({
     mutationFn: () => api.post(urlUnggah, keFormData({ foto: pilihan })),
     onSuccess: () => {
+      tampilkanToast(`${pilihan.length} foto diunggah.`)
       setPilihan([])
       setGalat(null)
       onBerubah()
@@ -75,6 +77,7 @@ export function PengelolaFoto({
     mutationFn: (idFoto: number) =>
       api.put(urlUbah!(idFoto), { caption: caption || null, alt_text: caption || null }),
     onSuccess: () => {
+      tampilkanToast('Keterangan foto tersimpan.')
       setSuntingId(null)
       setGalat(null)
       onBerubah()
@@ -97,6 +100,7 @@ export function PengelolaFoto({
   const hapus = useMutation({
     mutationFn: (idFoto: number) => api.delete(urlHapus(idFoto)),
     onSuccess: () => {
+      tampilkanToast('Foto dihapus.')
       setGalat(null)
       onBerubah()
     },

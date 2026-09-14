@@ -17,9 +17,10 @@ class OfficialResource extends JsonResource
             'foto' => $this->foto ? asset('storage/'.$this->foto) : null,
             'periode_mulai' => $this->periode_mulai?->toDateString(),
             'periode_selesai' => $this->periode_selesai?->toDateString(),
-            'urutan_tampil' => $this->urutan_tampil,
-            // Tingkat dalam bagan struktur: 0 = puncak, membesar ke bawah.
-            'tingkat' => $this->tingkat,
+            // `urutan_tampil` & `tingkat` tidak lagi dikirim: urutannya kini
+            // disimpulkan server dari jenjang jabatan (lihat Official::urut),
+            // sehingga tidak ada satu pun halaman yang perlu mengurutkan ulang.
+            //
             // no_sk_pengangkatan sengaja TIDAK diekspos ke publik —
             // dokumen kepegawaian bukan informasi yang wajib diumumkan.
         ];

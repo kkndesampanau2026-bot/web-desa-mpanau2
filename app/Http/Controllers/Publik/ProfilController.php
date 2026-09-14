@@ -32,11 +32,20 @@ class ProfilController extends Controller
         ]);
     }
 
-    /** Halaman tersendiri berisi susunan aparat desa beserta masa baktinya. */
+    /**
+     * Susunan Pemerintah Desa DAN Badan Permusyawaratan Desa.
+     *
+     * Keduanya dua lembaga terpisah (PRD 3.2) dan tampil sebagai dua bagian
+     * berurutan pada satu halaman. BPD sempat tidak ada di sini sama sekali —
+     * padahal kartu di Beranda sudah menjanjikan "Susunan aparat desa dan Badan
+     * Permusyawaratan Desa", sehingga pengunjung yang menekannya menemukan
+     * separuh dari yang dijanjikan.
+     */
     public function pemerintah(): Response
     {
         return Inertia::render('Publik/Pemerintah', [
             'aparat' => $this->profil->aparat(),
+            'bpd' => $this->profil->bpd(),
         ]);
     }
 }

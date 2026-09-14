@@ -12,6 +12,7 @@ import {
   Tombol,
   useGulirKeForm,
 } from '@/Components/Admin/Form'
+import { tampilkanToast } from '@/Components/Admin/Toast'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 import type { ReactNode } from 'react'
 
@@ -70,7 +71,16 @@ interface HasilImpor {
   galat: { baris: number; nik: string; pesan: string }[]
 }
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
+/*
+ * Tidak ada BASE_URL di sini.
+ *
+ * Tautan unduhan template dulu disusun dari `VITE_API_URL ??
+ * 'http://localhost:8000'` — artinya satu build tanpa variabel itu menghasilkan
+ * tautan yang menunjuk mesin pengembang, dan tidak ada yang menyadarinya sampai
+ * ada operator yang menekannya di produksi. Alamat relatif selalu benar di
+ * domain mana pun, sama seperti `lib/api.ts` yang memang sengaja memakai basis
+ * URL kosong.
+ */
 
 /**
  * CMS Data Penduduk — PRD 5.5 & 10.5.
@@ -127,6 +137,7 @@ export default function PendudukPage() {
         : api.post('/admin/residents', isi)
     },
     onSuccess: () => {
+      tampilkanToast(sunting ? 'Perubahan data warga tersimpan.' : 'Data warga ditambahkan.')
       tutupForm()
       void queryClient.invalidateQueries({ queryKey: ['admin', 'residents'] })
     },
@@ -136,7 +147,11 @@ export default function PendudukPage() {
 
   const hapus = useMutation({
     mutationFn: (id: number) => api.delete(`/admin/residents/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'residents'] }),
+    onSuccess: () => {
+      tampilkanToast('Data warga dihapus.')
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'residents'] })
+    },
+    onError: () => tampilkanToast('Data warga gagal dihapus. Coba lagi.', 'galat'),
   })
 
   const formulir = useGulirKeForm()
@@ -243,7 +258,7 @@ export default function PendudukPage() {
             </p>
 
             <a
-              href={`${BASE_URL}/api/v1/admin/residents/template-csv`}
+              href="/api/v1/admin/residents/template-csv"
               className="inline-block rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
             >
               Unduh Template CSV

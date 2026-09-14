@@ -33,9 +33,11 @@ export interface Official {
   foto: string | null
   periode_mulai: string | null
   periode_selesai: string | null
-  urutan_tampil: number
-  /** Tingkat pada bagan struktur: 0 = puncak (Kepala Desa), membesar ke bawah. */
-  tingkat: number
+  /**
+   * Tidak ada `urutan_tampil` maupun `tingkat`: urutannya sudah ditetapkan
+   * server menurut jenjang jabatan (lihat `Official::urut`), jadi daftar ini
+   * tinggal dirender apa adanya.
+   */
 }
 
 export interface BpdMember {
@@ -112,8 +114,12 @@ export interface Pengaturan {
   }
   alamat_kantor: string | null
   jam_kerja: Record<string, { buka?: string; tutup?: string; libur?: boolean }>
-  kontak: { telepon: string | null; email: string | null; whatsapp: string | null }
+  kontak: { telepon: string | null; email: string | null }
   nomor_telepon_penting: { nama_layanan: string; nomor: string }[]
+  /**
+   * Baris WhatsApp sudah berupa tautan wa.me siap pakai — server yang
+   * menyusunnya dari nomor yang diketik operator (lihat SettingController).
+   */
   sosial_media: { platform: string; url: string }[]
 }
 

@@ -1,9 +1,8 @@
 import { type FormEvent, type ReactNode } from 'react'
 import { useForm } from '@inertiajs/react'
 import { KeyRound, UserCog } from 'lucide-react'
-import { Kartu, Kolom, Input, Pemberitahuan, Tombol } from '@/Components/Admin/Form'
+import { Kartu, Kolom, Input, Tombol } from '@/Components/Admin/Form'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
-import { useHalaman } from '@/types/inertia'
 
 /**
  * Akun operator yang sedang masuk.
@@ -26,8 +25,7 @@ interface Akun {
 }
 
 export default function AkunPage({ akun }: { akun: Akun }) {
-  const { flash } = useHalaman().props
-
+  // Hasil simpan muncul sebagai toast; LayoutAdmin yang mendengarkan flash-nya.
   const profil = useForm({
     nama: akun.nama,
     email: akun.email,
@@ -57,7 +55,6 @@ export default function AkunPage({ akun }: { akun: Akun }) {
 
   return (
     <div className="space-y-6">
-      {flash?.sukses && <Pemberitahuan jenis="sukses" pesan={flash.sukses} />}
 
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-xl border border-slate-200 bg-white px-5 py-4 text-sm shadow-sm">
         <div>

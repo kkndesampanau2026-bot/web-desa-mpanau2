@@ -1,41 +1,20 @@
-import { useEffect, useState, type FormEvent } from 'react'
-import { useForm } from '@inertiajs/react'
+import { useEffect, useState } from 'react'
 import { Megaphone, X } from 'lucide-react'
-import { GAYA_INPUT, Pilihan } from '@/Components/ui'
-import { useHalaman } from '@/types/inertia'
+import { FormAduan } from '@/Components/FormAduan'
 
 /**
  * Tombol mengambang "Aduan Warga" beserta popup formulirnya.
  *
- * Inilah SATU-SATUNYA cara warga mengirim aduan: halaman `/pengaduan` yang
- * dulu memuat formulir kembarannya sudah dihapus, karena ia hanya pintu masuk
- * kedua menuju formulir yang sama.
+ * Pintu masuk CEPAT: ia menemani pengunjung di setiap halaman publik, sehingga
+ * warga yang menemukan persoalan di tengah membaca berita tidak perlu mencari
+ * halaman formulir lebih dulu.
  *
- * Setelah terkirim, server mengarahkan ke halaman lacak beserta nomor
- * tiketnya — bukan `back()` — sebab popup ini dapat dibuka dari halaman mana
- * pun, dan tanda terima belum tentu terlihat pada halaman asalnya.
- *
- * Kategori pengaduan datang sebagai prop bersama Inertia agar popup tidak
- * perlu memuat data sendiri.
+ * Pintu masuk satunya adalah halaman `/pengaduan`, yang punya alamat sendiri
+ * dan karena itu dapat dibagikan lewat tautan. Keduanya memuat formulir yang
+ * SAMA — `FormAduan` — bukan dua salinan yang harus dijaga tetap serupa.
  */
 export function AduanWarga() {
   const [buka, setBuka] = useState(false)
-  const { kategori_pengaduan } = useHalaman().props
-  const kategori = kategori_pengaduan ?? []
-
-  const { data, setData, post, processing, errors, reset } = useForm<{
-    nama: string
-    no_telepon_wa: string
-    kategori_pengaduan: string
-    isi_pengaduan: string
-    lampiran: File[]
-  }>({
-    nama: '',
-    no_telepon_wa: '',
-    kategori_pengaduan: '',
-    isi_pengaduan: '',
-    lampiran: [],
-  })
 
   useEffect(() => {
     if (!buka) return
@@ -48,19 +27,6 @@ export function AduanWarga() {
 
     return () => window.removeEventListener('keydown', tanganiTombol)
   }, [buka])
-
-  function kirim(e: FormEvent) {
-    e.preventDefault()
-    post('/pengaduan', {
-      forceFormData: true,
-      // Sukses memicu redirect server ke /layanan-mandiri/lacak beserta
-      // nomor tiketnya; popup ditutup & dikosongkan sebelum navigasi.
-      onSuccess: () => {
-        reset()
-        setBuka(false)
-      },
-    })
-  }
 
   return (
     <>
@@ -101,129 +67,23 @@ export function AduanWarga() {
               </button>
             </div>
 
-            <form onSubmit={kirim} className="space-y-4 p-6" noValidate>
-              <Kolom label="Nama Lengkap" htmlFor="aduan_nama" galat={errors.nama}>
-                <input
-                  id="aduan_nama"
-                  required
-                  value={data.nama}
-                  onChange={(e) => setData('nama', e.target.value)}
-                  className={GAYA_INPUT}
-                />
-              </Kolom>
-
-              <Kolom
-                label="Nomor Telepon / WhatsApp"
-                htmlFor="aduan_telepon"
-                galat={errors.no_telepon_wa}
-                petunjuk="Dipakai petugas bila perlu keterangan tambahan; tidak ditampilkan publik."
-              >
-                <input
-                  id="aduan_telepon"
-                  required
-                  inputMode="tel"
-                  placeholder="08xx atau +62xx"
-                  value={data.no_telepon_wa}
-                  onChange={(e) => setData('no_telepon_wa', e.target.value)}
-                  className={GAYA_INPUT}
-                />
-              </Kolom>
-
-              <Kolom
-                label="Kategori Pengaduan"
-                htmlFor="aduan_kategori"
-                galat={errors.kategori_pengaduan}
-              >
-                <Pilihan
-                  id="aduan_kategori"
-                  value={data.kategori_pengaduan}
-                  onChange={(v) => setData('kategori_pengaduan', v)}
-                  placeholder="Pilih kategori…"
-                  options={kategori.map((k) => ({ value: k, label: k }))}
-                />
-              </Kolom>
-
-              <Kolom
-                label="Isi Pengaduan"
-                htmlFor="aduan_isi"
-                galat={errors.isi_pengaduan}
-                petunjuk="Uraikan persoalan sejelas mungkin: apa, di mana, dan sejak kapan."
-              >
-                <textarea
-                  id="aduan_isi"
-                  required
-                  rows={5}
-                  value={data.isi_pengaduan}
-                  onChange={(e) => setData('isi_pengaduan', e.target.value)}
-                  className={GAYA_INPUT}
-                />
-              </Kolom>
-
-              <Kolom
-                label="Lampiran (opsional)"
-                htmlFor="aduan_lampiran"
-                galat={(errors as Record<string, string | undefined>)['lampiran.0']}
-                petunjuk="Maksimal 3 berkas, masing-masing 5 MB. Format: JPG, PNG, WebP, atau PDF."
-              >
-                <input
-                  id="aduan_lampiran"
-                  type="file"
-                  multiple
-                  accept="image/jpeg,image/png,image/webp,application/pdf"
-                  onChange={(e) => setData('lampiran', Array.from(e.target.files ?? []))}
-                  className="w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-navy/5 file:px-4 file:py-2 file:text-sm file:font-medium file:text-slate-700 hover:file:bg-navy/10"
-                />
-              </Kolom>
-
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setBuka(false)}
-                  className="rounded-lg border border-navy/20 px-4 py-2.5 text-sm font-semibold text-navy transition hover:bg-navy/5"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={processing}
-                  className="rounded-lg bg-navy px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-navy-light disabled:opacity-60"
-                >
-                  {processing ? 'Mengirim…' : 'Kirim Pengaduan'}
-                </button>
-              </div>
-            </form>
+            <div className="p-6">
+              <FormAduan
+                onSelesai={() => setBuka(false)}
+                aksiTambahan={
+                  <button
+                    type="button"
+                    onClick={() => setBuka(false)}
+                    className="rounded-lg border border-navy/20 px-4 py-2.5 text-sm font-semibold text-navy transition hover:bg-navy/5"
+                  >
+                    Batal
+                  </button>
+                }
+              />
+            </div>
           </div>
         </div>
       )}
     </>
-  )
-}
-
-function Kolom({
-  label,
-  htmlFor,
-  galat,
-  petunjuk,
-  children,
-}: {
-  label: string
-  htmlFor: string
-  galat?: string
-  petunjuk?: string
-  children: React.ReactNode
-}) {
-  return (
-    <div>
-      <label htmlFor={htmlFor} className="block text-sm font-semibold text-navy">
-        {label}
-      </label>
-      {petunjuk && <p className="mt-0.5 text-xs text-slate-500">{petunjuk}</p>}
-      <div className="mt-1.5">{children}</div>
-      {galat && (
-        <p role="alert" className="mt-1.5 text-sm text-rose-700">
-          {galat}
-        </p>
-      )}
-    </div>
   )
 }

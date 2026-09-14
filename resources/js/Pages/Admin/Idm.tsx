@@ -13,6 +13,7 @@ import {
   TombolIkon,
 } from '@/Components/Admin/Form'
 import { useKonfirmasi } from '@/Components/Admin/Dialog'
+import { tampilkanToast } from '@/Components/Admin/Toast'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 
 const STATUS_IDM = ['Sangat Tertinggal', 'Tertinggal', 'Berkembang', 'Maju', 'Mandiri'] as const
@@ -73,7 +74,6 @@ export default function IdmAdminPage() {
   const [skor, setSkor] = useState(SKOR_KOSONG)
   const [indikator, setIndikator] = useState<Indikator[]>([])
   const [galat, setGalat] = useState<ApiRequestError | null>(null)
-  const [sukses, setSukses] = useState<string | null>(null)
 
   const konfirmasi = useKonfirmasi()
 
@@ -131,26 +131,22 @@ export default function IdmAdminPage() {
       }),
     onSuccess: () => {
       setGalat(null)
-      setSukses(`Skor IDM tahun ${tahun} berhasil disimpan.`)
+      tampilkanToast(`Skor IDM tahun ${tahun} berhasil disimpan.`)
       void queryClient.invalidateQueries({ queryKey: ['admin', 'idm'] })
     },
-    onError: (e) => {
-      setSukses(null)
-      setGalat(e instanceof ApiRequestError ? e : new ApiRequestError('Gagal menyimpan.', 0))
-    },
+    onError: (e) =>
+      setGalat(e instanceof ApiRequestError ? e : new ApiRequestError('Gagal menyimpan.', 0)),
   })
 
   const hapusSkor = useMutation({
     mutationFn: (id: number) => api.delete(`/admin/idm/${id}`),
     onSuccess: () => {
       setGalat(null)
-      setSukses(`Skor IDM tahun ${tahun} berhasil dihapus.`)
+      tampilkanToast(`Skor IDM tahun ${tahun} berhasil dihapus.`)
       void queryClient.invalidateQueries({ queryKey: ['admin', 'idm'] })
     },
-    onError: (e) => {
-      setSukses(null)
-      setGalat(e instanceof ApiRequestError ? e : new ApiRequestError('Gagal menghapus.', 0))
-    },
+    onError: (e) =>
+      setGalat(e instanceof ApiRequestError ? e : new ApiRequestError('Gagal menghapus.', 0)),
   })
 
   const simpanIndikator = useMutation({
@@ -170,13 +166,11 @@ export default function IdmAdminPage() {
     },
     onSuccess: () => {
       setGalat(null)
-      setSukses('Tabel indikator berhasil disimpan.')
+      tampilkanToast('Tabel indikator berhasil disimpan.')
       void queryClient.invalidateQueries({ queryKey: ['admin', 'idm'] })
     },
-    onError: (e) => {
-      setSukses(null)
-      setGalat(e instanceof ApiRequestError ? e : new ApiRequestError('Gagal menyimpan.', 0))
-    },
+    onError: (e) =>
+      setGalat(e instanceof ApiRequestError ? e : new ApiRequestError('Gagal menyimpan.', 0)),
   })
 
   function ubahIndikator(i: number, ubahan: Partial<Indikator>) {
@@ -234,7 +228,6 @@ export default function IdmAdminPage() {
           anak={
             <div className="space-y-4">
               {galat && !galat.errors && <Pemberitahuan jenis="galat" pesan={galat.message} />}
-              {sukses && <Pemberitahuan jenis="sukses" pesan={sukses} />}
 
               <div className="grid gap-4 sm:grid-cols-4">
                 <Kolom

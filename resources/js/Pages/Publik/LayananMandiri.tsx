@@ -5,6 +5,7 @@ import {
   FileSearch,
   FileSignature,
   FileText,
+  Megaphone,
   MessageSquareWarning,
   TicketCheck,
   type LucideIcon,
@@ -14,13 +15,14 @@ import { IsiHalaman, Kartu, KepalaHalaman } from '@/Components/ui'
 import { LayoutPublik } from '@/Layouts/LayoutPublik'
 
 const DESKRIPSI =
-  'Berbagai layanan warga yang dapat diakses mandiri tanpa perlu datang ke kantor desa: mengajukan surat pengantar, memantau proses persetujuannya, memohon informasi publik kepada PPID Desa, hingga melacak pengaduan yang sudah dikirim.'
+  'Berbagai layanan warga yang dapat diakses mandiri tanpa perlu datang ke kantor desa: mengajukan surat pengantar, memantau proses persetujuannya, memohon informasi publik kepada PPID Desa, hingga mengirim dan melacak pengaduan.'
 
 interface Layanan {
   ikon: LucideIcon
   judul: string
   deskripsi: string
   ke: string
+  /** Teks tautan di kaki kartu. */
   aksi: string
 }
 
@@ -67,14 +69,28 @@ const LAYANAN: Layanan[] = [
     aksi: 'Lacak permohonan',
   },
   /*
-   * Hanya PELACAKANNYA yang berdiri di sini, bukan formulir pengaduannya.
+   * Mengadu dan melacaknya berdiri berpasangan di sini, seperti surat
+   * pengantar dan permohonan PPID di atas.
    *
-   * Mengirim aduan sudah punya jalannya sendiri lewat tombol mengambang
-   * "Aduan Warga" yang menemani pengunjung di SETIAP halaman — menaruh kartu
-   * kedua menuju formulir yang sama hanya menggandakan pintu masuk. Yang
-   * selama ini tidak punya pintu justru pelacakannya: warga yang sudah
-   * memegang nomor tiket harus menebak alamatnya sendiri.
+   * Kartu "Kirim Aduan" sempat tidak ada — alasannya waktu itu: mengadu sudah
+   * punya tombol mengambang yang menemani pengunjung di setiap halaman, jadi
+   * kartu kedua dianggap menggandakan pintu masuk. Atas permintaan pemilik
+   * produk kartunya dikembalikan (docs/DEVIASI.md §A5): warga yang membuka
+   * "Layanan Mandiri" datang untuk mencari daftar layanan, dan layanan yang
+   * tidak tercantum di daftar itu praktis tidak ada baginya — betapapun
+   * tombolnya melayang di sudut layar.
+   *
+   * Yang TIDAK digandakan adalah formulirnya: halaman tujuan memuat komponen
+   * `FormAduan` yang sama persis dengan popup mengambang.
    */
+  {
+    ikon: Megaphone,
+    judul: 'Kirim Aduan Warga',
+    deskripsi:
+      'Sampaikan keluhan, laporan kerusakan, atau masukan kepada pemerintah desa. Anda menerima nomor tiket untuk memantau tindak lanjutnya.',
+    ke: '/pengaduan',
+    aksi: 'Kirim aduan',
+  },
   {
     ikon: MessageSquareWarning,
     judul: 'Lacak Aduan Warga',
@@ -107,35 +123,40 @@ export default function LayananMandiri() {
       <KepalaHalaman eyebrow="Pusat Layanan Warga" judul="Layanan Mandiri" deskripsi={DESKRIPSI} />
 
       {/*
-        Empat kolom hanya mulai xl. Di bawah itu dua kolom: dengan empat
-        layanan, kisi tiga kolom menyisakan satu kolom menganga pada baris
-        kedua, sedangkan satu baris berisi empat kartu baru muat tanpa kartunya
-        menjadi terlalu sempit ketika kerangka sudah selebar 1280px.
+        Tiga kolom mulai lg, dua di bawahnya — dengan enam layanan, keduanya
+        menghasilkan baris yang terisi penuh. Sempat empat kolom sewaktu
+        layanannya masih lima; kartu keenam membuat baris terakhir menyisakan
+        dua kolom menganga.
       */}
       <IsiHalaman lebar="lebar">
-        <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
           {LAYANAN.map((layanan) => (
-            <Link key={layanan.ke} href={layanan.ke} className="group">
-              <Kartu interaktif className="flex h-full flex-col p-5 sm:p-6">
-                <layanan.ikon className="size-5 shrink-0 text-gold-dark" aria-hidden="true" />
-
-                <h2 className="font-heading mt-3.5 text-base font-bold text-navy transition group-hover:text-gold-dark sm:text-lg">
-                  {layanan.judul}
-                </h2>
-                <p className="mt-2 flex-1 text-sm leading-relaxed text-slate-600">
-                  {layanan.deskripsi}
-                </p>
-
-                <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-gold-dark">
-                  {layanan.aksi}
-                  <ArrowRight className="size-4 transition group-hover:translate-x-0.5" />
-                </span>
-              </Kartu>
-            </Link>
+            <KartuLayanan key={layanan.judul} layanan={layanan} />
           ))}
         </div>
       </IsiHalaman>
     </>
+  )
+}
+
+/** Satu kartu layanan — seluruhnya menuju halaman tersendiri. */
+function KartuLayanan({ layanan }: { layanan: Layanan }) {
+  return (
+    <Link href={layanan.ke} className="group">
+      <Kartu interaktif className="flex h-full flex-col p-5 sm:p-6">
+        <layanan.ikon className="size-5 shrink-0 text-gold-dark" aria-hidden="true" />
+
+        <h2 className="font-heading mt-3.5 text-base font-bold text-navy transition group-hover:text-gold-dark sm:text-lg">
+          {layanan.judul}
+        </h2>
+        <p className="mt-2 flex-1 text-sm leading-relaxed text-slate-600">{layanan.deskripsi}</p>
+
+        <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-gold-dark">
+          {layanan.aksi}
+          <ArrowRight className="size-4 transition group-hover:translate-x-0.5" aria-hidden="true" />
+        </span>
+      </Kartu>
+    </Link>
   )
 }
 

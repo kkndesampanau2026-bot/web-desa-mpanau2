@@ -4,16 +4,12 @@ namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Complaint;
-use App\Models\ComplaintAttachment;
 use App\Services\ActivityLogger;
 use App\Services\CurrentVillage;
-use App\Services\LampiranPengaduanService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Manajemen Pengaduan — PRD 5.18 & 9.4.
@@ -23,7 +19,6 @@ class PengaduanController extends Controller
     public function __construct(
         private readonly CurrentVillage $village,
         private readonly ActivityLogger $logger,
-        private readonly LampiranPengaduanService $lampiran,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -134,38 +129,16 @@ class PengaduanController extends Controller
         );
     }
 
-    /**
-     * Mengunduh lampiran.
+    /*
+     * `unduhLampiran()` TIDAK lagi di sini — pindah ke
+     * `Admin\LampiranPengaduanController` sebagai route web.
      *
-     * Berkas berada pada disk privat, sehingga hanya dapat diambil lewat jalur
-     * ini yang sudah melewati autentikasi + permission. Header Content-Type
-     * dipaksakan dari MIME yang tercatat saat unggah, dan berkas selalu
-     * dikirim sebagai attachment agar peramban tidak pernah merendernya
-     * inline — sebuah SVG atau HTML berbahaya tidak akan tereksekusi di
-     * domain kita.
+     * Sebabnya bukan kerapian: unduhan dibuka peramban sebagai navigasi biasa,
+     * dan guard `sanctum` yang menjaga seluruh jalur ini hanya mengakui sesi
+     * login bila permintaannya membawa header Origin/Referer. Navigasi unduhan
+     * tidak membawanya, sehingga operator yang sudah masuk pun dijawab "Anda
+     * harus masuk untuk mengakses sumber daya ini".
      */
-    public function unduhLampiran(Complaint $complaint, ComplaintAttachment $attachment): StreamedResponse
-    {
-        $this->pastikanMilikDesaIni($complaint);
-
-        abort_unless($attachment->complaint_id === $complaint->id, 404);
-        abort_unless(Storage::disk(LampiranPengaduanService::DISK)->exists($attachment->path), 404);
-
-        $this->logger->logAccess(
-            $complaint,
-            "Mengunduh lampiran pengaduan {$complaint->nomor_tiket}: {$attachment->nama_asli}"
-        );
-
-        return Storage::disk(LampiranPengaduanService::DISK)->download(
-            $attachment->path,
-            $attachment->nama_asli,
-            [
-                'Content-Type' => $attachment->mime_type,
-                'Content-Disposition' => 'attachment',
-                'X-Content-Type-Options' => 'nosniff',
-            ]
-        );
-    }
 
     /** Rekap jumlah pengaduan per status & kategori untuk dashboard. */
     public function rekap(): JsonResponse

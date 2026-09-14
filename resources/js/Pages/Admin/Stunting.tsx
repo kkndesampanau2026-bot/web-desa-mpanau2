@@ -12,6 +12,7 @@ import {
   Tombol,
   useGulirKeForm,
 } from '@/Components/Admin/Form'
+import { tampilkanToast } from '@/Components/Admin/Toast'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 
 interface CatatanStunting {
@@ -48,7 +49,6 @@ export default function StuntingAdminPage() {
   const queryClient = useQueryClient()
   const [form, setForm] = useState(FORM_KOSONG)
   const [galat, setGalat] = useState<ApiRequestError | null>(null)
-  const [sukses, setSukses] = useState<string | null>(null)
 
   const { data, isPending } = useQuery({
     queryKey: ['admin', 'stunting'],
@@ -78,18 +78,20 @@ export default function StuntingAdminPage() {
     onSuccess: () => {
       setForm(FORM_KOSONG)
       setGalat(null)
-      setSukses('Data stunting berhasil disimpan.')
+      tampilkanToast('Data stunting berhasil disimpan.')
       void queryClient.invalidateQueries({ queryKey: ['admin', 'stunting'] })
     },
-    onError: (e) => {
-      setSukses(null)
-      setGalat(e instanceof ApiRequestError ? e : new ApiRequestError('Gagal menyimpan.', 0))
-    },
+    onError: (e) =>
+      setGalat(e instanceof ApiRequestError ? e : new ApiRequestError('Gagal menyimpan.', 0)),
   })
 
   const hapus = useMutation({
     mutationFn: (id: number) => api.delete(`/admin/stunting/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'stunting'] }),
+    onSuccess: () => {
+      tampilkanToast('Data stunting dihapus.')
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'stunting'] })
+    },
+    onError: () => tampilkanToast('Data stunting gagal dihapus. Coba lagi.', 'galat'),
   })
 
   const formulir = useGulirKeForm()
@@ -112,7 +114,6 @@ export default function StuntingAdminPage() {
       keterangan: c.keterangan ?? '',
     })
     setGalat(null)
-    setSukses(null)
     formulir.gulir()
   }
 
@@ -138,7 +139,6 @@ export default function StuntingAdminPage() {
         anak={
           <form onSubmit={kirim} className="space-y-4">
             {galat && !galat.errors && <Pemberitahuan jenis="galat" pesan={galat.message} />}
-            {sukses && <Pemberitahuan jenis="sukses" pesan={sukses} />}
 
             <div className="grid gap-4 sm:grid-cols-2">
               <Kolom

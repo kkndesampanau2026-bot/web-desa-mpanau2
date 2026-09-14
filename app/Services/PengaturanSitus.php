@@ -73,10 +73,18 @@ class PengaturanSitus
                 ],
                 'alamat_kantor' => $setting?->alamat_kantor,
                 'jam_kerja' => $setting?->jam_kerja ?? [],
+                /*
+                 * WhatsApp tidak lagi di sini.
+                 *
+                 * Kolom `settings.whatsapp` pernah ikut dikirim, tetapi tidak
+                 * satu pun halaman publik menampilkannya — sementara akun
+                 * WhatsApp desa yang BENAR-BENAR tampil di footer datang dari
+                 * `sosial_media` di bawah. Dua sumber untuk satu nomor hanya
+                 * membuat operator menebak yang mana yang berlaku.
+                 */
                 'kontak' => [
                     'telepon' => $setting?->telepon,
                     'email' => $setting?->email,
-                    'whatsapp' => $setting?->whatsapp,
                 ],
                 'nomor_telepon_penting' => ImportantPhoneNumber::where('village_id', $villageId)
                     ->orderBy('urutan_tampil')

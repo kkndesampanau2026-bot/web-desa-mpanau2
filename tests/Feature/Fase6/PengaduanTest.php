@@ -259,17 +259,42 @@ class PengaduanTest extends TestCase
         ])->assertStatus(422)->assertJsonValidationErrors(['lampiran.0']);
     }
 
+    /**
+     * Alamat unduhan lampiran.
+     *
+     * Route WEB `/admin/…`, bukan `/api/v1/…`. Perbedaannya bukan kosmetik:
+     * unduhan dibuka peramban sebagai navigasi biasa, dan guard `sanctum` yang
+     * menjaga jalur API hanya mengakui sesi login bila permintaannya membawa
+     * header Origin/Referer. Selama tautannya menunjuk /api/v1, operator yang
+     * sudah masuk selalu dijawab "Anda harus masuk untuk mengakses sumber daya
+     * ini" — dan tidak satu pun test menangkapnya, karena `Sanctum::actingAs`
+     * menyetel guard secara langsung sehingga jalur statefulness itu tidak
+     * pernah dilewati.
+     */
+    private function alamatLampiran(Complaint $pengaduan, ComplaintAttachment $lampiran): string
+    {
+        return "/admin/pengaduan/{$pengaduan->id}/lampiran/{$lampiran->id}";
+    }
+
     /** Lampiran tidak boleh dapat diambil lewat URL publik. */
     public function test_lampiran_tidak_dapat_diakses_tanpa_autentikasi(): void
     {
         $this->ajukan([], ['lampiran' => [UploadedFile::fake()->image('bukti.jpg')]])
             ->assertCreated();
 
-        $pengaduan = Complaint::first();
-        $lampiran = ComplaintAttachment::first();
+        $this->get($this->alamatLampiran(Complaint::first(), ComplaintAttachment::first()))
+            ->assertRedirect(route('login'));
+    }
 
-        $this->getJson("/api/v1/admin/pengaduan/{$pengaduan->id}/lampiran/{$lampiran->id}")
-            ->assertStatus(401);
+    /** Operator tanpa izin menanggapi pengaduan tidak boleh membuka lampirannya. */
+    public function test_lampiran_ditolak_bagi_operator_tanpa_izin(): void
+    {
+        $this->ajukan([], ['lampiran' => [UploadedFile::fake()->image('bukti.jpg')]])
+            ->assertCreated();
+
+        $this->actingAs($this->operator('Operator PPID'))
+            ->get($this->alamatLampiran(Complaint::first(), ComplaintAttachment::first()))
+            ->assertForbidden();
     }
 
     public function test_admin_berwenang_dapat_mengunduh_lampiran(): void
@@ -277,12 +302,18 @@ class PengaduanTest extends TestCase
         $this->ajukan([], ['lampiran' => [UploadedFile::fake()->image('bukti.jpg')]])
             ->assertCreated();
 
-        $pengaduan = Complaint::first();
-        $lampiran = ComplaintAttachment::first();
+        $alamat = $this->alamatLampiran(Complaint::first(), ComplaintAttachment::first());
 
-        Sanctum::actingAs($this->operator());
-
-        $response = $this->get("/api/v1/admin/pengaduan/{$pengaduan->id}/lampiran/{$lampiran->id}");
+        /*
+         * `withoutHeader('referer')` meniru keadaan yang sebenarnya terjadi di
+         * peramban: menekan tautan unduhan tidak mengirim Origin, dan tautannya
+         * dulu memakai rel="noreferrer" yang ikut membuang Referer. Inilah
+         * kondisi yang dulu membuat unduhan gagal; sesi web tidak boleh
+         * bergantung padanya.
+         */
+        $response = $this->actingAs($this->operator())
+            ->withoutHeader('referer')
+            ->get($alamat);
 
         $response->assertOk();
         // Selalu attachment, tidak pernah dirender inline oleh peramban.
@@ -302,10 +333,9 @@ class PengaduanTest extends TestCase
         $lampiran = ComplaintAttachment::first();
         $pengaduanLain = Complaint::where('nama', 'Orang Lain')->first();
 
-        Sanctum::actingAs($this->operator());
-
-        $this->get("/api/v1/admin/pengaduan/{$pengaduanLain->id}/lampiran/{$lampiran->id}")
-            ->assertStatus(404);
+        $this->actingAs($this->operator())
+            ->get($this->alamatLampiran($pengaduanLain, $lampiran))
+            ->assertNotFound();
     }
 
     // ------------------------------------------------------------------

@@ -33,6 +33,19 @@ class PengaduanController extends Controller
     ) {}
 
 
+    /**
+     * Halaman formulir aduan — PRD 6.15.
+     *
+     * Tidak membawa prop apa pun: kategori pengaduan sudah menyertai SETIAP
+     * respons halaman publik lewat `HandleInertiaRequests` (dipakai juga oleh
+     * popup mengambang), jadi mengirimkannya lagi di sini berarti dua sumber
+     * untuk daftar yang sama.
+     */
+    public function formulir(): Response
+    {
+        return Inertia::render('Publik/Pengaduan/Ajukan');
+    }
+
     public function ajukan(Request $request): RedirectResponse
     {
         $data = $request->validate([

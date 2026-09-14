@@ -44,17 +44,26 @@ class BpdMember extends Model
         return $this->belongsTo(Village::class);
     }
 
+    /**
+     * Urutan tampil baku: hierarki jabatan (Ketua di atas), lalu nama.
+     *
+     * Kolom `urutan_tampil` tidak lagi ikut: jabatannya sendiri sudah berupa
+     * daftar pilihan tertutup, sehingga hierarkinya selalu benar tanpa satu
+     * angka pun diisi tangan (docs/DEVIASI.md §C22). Sesama "Anggota" diurut
+     * abjad — urutan yang dapat dijelaskan, bukan urutan input.
+     *
+     * Dipakai halaman publik MAUPUN daftar di CMS, supaya yang dilihat operator
+     * sama persis dengan yang dilihat warga.
+     */
+    public function scopeUrut(Builder $query): Builder
+    {
+        return $query
+            ->orderByRaw('FIELD(jabatan, ?, ?, ?, ?)', self::URUTAN_JABATAN)
+            ->orderBy('nama');
+    }
+
     public function scopeTampil(Builder $query): Builder
     {
-        // Diurutkan menurut hierarki jabatan lebih dulu (Ketua di atas), baru
-        // urutan manual — supaya bagan tetap benar meski admin lupa mengisi
-        // urutan_tampil.
-        return $query->where('status_aktif', true)
-            ->orderByRaw(
-                'FIELD(jabatan, ?, ?, ?, ?)',
-                self::URUTAN_JABATAN
-            )
-            ->orderBy('urutan_tampil')
-            ->orderBy('nama');
+        return $query->where('status_aktif', true)->urut();
     }
 }

@@ -12,6 +12,7 @@ import {
   Tombol,
   useGulirKeForm,
 } from '@/Components/Admin/Form'
+import { tampilkanToast } from '@/Components/Admin/Toast'
 import { InputBerkas } from '@/Components/Admin/Berkas'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 import type { ReactNode } from 'react'
@@ -72,6 +73,7 @@ export default function PetaAdminPage() {
           )
         : api.post('/admin/points-of-interest', keFormData({ ...form, foto })),
     onSuccess: () => {
+      tampilkanToast(sunting ? 'Perubahan titik lokasi tersimpan.' : 'Titik lokasi ditambahkan.')
       // Kategori sengaja dipertahankan saat menambah beruntun: operator lazim
       // memasukkan beberapa titik sekategori sekaligus.
       setForm({ ...kosong, kategori: sunting ? '' : form.kategori })
@@ -111,7 +113,11 @@ export default function PetaAdminPage() {
 
   const hapus = useMutation({
     mutationFn: (id: number) => api.delete(`/admin/points-of-interest/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'poi'] }),
+    onSuccess: () => {
+      tampilkanToast('Titik lokasi dihapus.')
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'poi'] })
+    },
+    onError: () => tampilkanToast('Titik lokasi gagal dihapus. Coba lagi.', 'galat'),
   })
 
   return (

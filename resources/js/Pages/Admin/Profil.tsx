@@ -12,6 +12,7 @@ import {
   Tombol,
   TombolIkon,
 } from '@/Components/Admin/Form'
+import { tampilkanToast } from '@/Components/Admin/Toast'
 import { InputBerkas } from '@/Components/Admin/Berkas'
 import { LayoutAdmin } from '@/Layouts/LayoutAdmin'
 import type { ReactNode } from 'react'
@@ -66,7 +67,6 @@ export default function ProfilPage() {
     bagan_bpd: null,
   })
   const [galat, setGalat] = useState<ApiRequestError | null>(null)
-  const [sukses, setSukses] = useState(false)
 
   const { data, isPending } = useQuery({
     queryKey: ['admin', 'profil'],
@@ -114,21 +114,18 @@ export default function ProfilPage() {
       ),
     onSuccess: () => {
       setGalat(null)
-      setSukses(true)
+      tampilkanToast('Profil desa berhasil disimpan.')
       // Berkas yang sudah terkirim dilepas dari state; bila tidak, menyimpan
       // ulang akan mengunggah gambar yang sama untuk kedua kalinya.
       setGambar({ foto_kepala_desa: null, bagan_pemerintahan: null, bagan_bpd: null })
       void queryClient.invalidateQueries({ queryKey: ['admin', 'profil'] })
     },
-    onError: (e) => {
-      setSukses(false)
-      setGalat(e instanceof ApiRequestError ? e : new ApiRequestError('Gagal menyimpan.', 0))
-    },
+    onError: (e) =>
+      setGalat(e instanceof ApiRequestError ? e : new ApiRequestError('Gagal menyimpan.', 0)),
   })
 
   function ubah<K extends keyof ProfilForm>(kunci: K, nilai: ProfilForm[K]) {
     setForm((f) => ({ ...f, [kunci]: nilai }))
-    setSukses(false)
   }
 
   function kirim(e: FormEvent) {
@@ -154,7 +151,6 @@ export default function ProfilPage() {
         </Tombol>
       </div>
 
-      {sukses && <Pemberitahuan jenis="sukses" pesan="Profil desa berhasil disimpan." />}
       {galat && !galat.errors && <Pemberitahuan jenis="galat" pesan={galat.message} />}
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -234,10 +230,7 @@ export default function ProfilPage() {
                     label="Foto Kepala Desa"
                     jenis="gambar"
                     berkas={gambar.foto_kepala_desa}
-                    onPilih={(b) => {
-                      setGambar((g) => ({ ...g, foto_kepala_desa: b }))
-                      setSukses(false)
-                    }}
+                    onPilih={(b) => setGambar((g) => ({ ...g, foto_kepala_desa: b }))}
                     pathTersimpan={data?.foto_kepala_desa as string | null}
                     galat={galat?.fieldError('foto_kepala_desa')}
                   />
@@ -270,10 +263,7 @@ export default function ProfilPage() {
                         label={label}
                         jenis="gambar"
                         berkas={gambar[kunci]}
-                        onPilih={(b) => {
-                          setGambar((g) => ({ ...g, [kunci]: b }))
-                          setSukses(false)
-                        }}
+                        onPilih={(b) => setGambar((g) => ({ ...g, [kunci]: b }))}
                         pathTersimpan={data?.[kunci] as string | null}
                         galat={galat?.fieldError(kunci)}
                       />
