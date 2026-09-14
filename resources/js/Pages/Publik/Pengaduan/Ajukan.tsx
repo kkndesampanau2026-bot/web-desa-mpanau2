@@ -12,9 +12,9 @@ const DESKRIPSI =
 /**
  * Halaman Aduan Warga — PRD 6.15.
  *
- * Alamatnya sendiri (`/pengaduan`) supaya dapat dibagikan: ditempel di papan
- * pengumuman, dikirim lewat WhatsApp grup RT, atau ditulis pada surat edaran
- * desa. Popup mengambang tidak bisa melakukan itu — ia tidak punya alamat.
+ * Alamatnya sendiri (`/layanan-mandiri/aduan`) supaya dapat dibagikan: ditempel
+ * di papan pengumuman, dikirim lewat WhatsApp grup RT, atau ditulis pada surat
+ * edaran desa. Popup mengambang tidak bisa melakukan itu — ia tidak punya alamat.
  *
  * Formulirnya komponen yang sama dengan popup (`FormAduan`), bukan salinan.
  */

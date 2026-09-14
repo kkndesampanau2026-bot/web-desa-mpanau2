@@ -7,7 +7,7 @@ import { useHalaman } from '@/types/inertia'
  * Formulir Aduan Warga — SATU-SATUNYA di situs ini.
  *
  * Dipakai dua tempat: popup mengambang yang menemani pengunjung di setiap
- * halaman (`AduanWarga`), dan halaman `/pengaduan` yang punya alamat sendiri
+ * halaman (`AduanWarga`), dan halaman `/layanan-mandiri/aduan` yang punya alamat
  * sehingga dapat dibagikan lewat tautan.
  *
  * Isinya diangkat ke komponen tersendiri justru supaya keduanya tidak menjadi
@@ -46,7 +46,7 @@ export function FormAduan({ onSelesai, aksiTambahan }: {
 
   function kirim(e: FormEvent) {
     e.preventDefault()
-    post('/pengaduan', {
+    post('/layanan-mandiri/aduan', {
       forceFormData: true,
       onSuccess: () => {
         reset()

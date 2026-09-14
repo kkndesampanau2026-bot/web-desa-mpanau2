@@ -88,7 +88,7 @@ const LAYANAN: Layanan[] = [
     judul: 'Kirim Aduan Warga',
     deskripsi:
       'Sampaikan keluhan, laporan kerusakan, atau masukan kepada pemerintah desa. Anda menerima nomor tiket untuk memantau tindak lanjutnya.',
-    ke: '/pengaduan',
+    ke: '/layanan-mandiri/aduan',
     aksi: 'Kirim aduan',
   },
   {

@@ -49,6 +49,7 @@ class SitemapController extends Controller
             ['path' => '/ppid/dikecualikan', 'priority' => '0.6', 'changefreq' => 'monthly'],
             ['path' => '/layanan-mandiri', 'priority' => '0.8', 'changefreq' => 'monthly'],
             ['path' => '/layanan-mandiri/surat-pengantar', 'priority' => '0.8', 'changefreq' => 'monthly'],
+            ['path' => '/layanan-mandiri/aduan', 'priority' => '0.8', 'changefreq' => 'monthly'],
         ];
 
         foreach ($staticRoutes as $r) {

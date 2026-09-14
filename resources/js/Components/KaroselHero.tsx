@@ -181,7 +181,15 @@ export function KaroselHero({ gambar }: { gambar: GambarHero[] }) {
                   className="group grid size-11 place-items-center"
                 >
                   <span
-                    className={`block h-1.5 rounded-full transition-all ${
+                    /*
+                     * `transition-[width,background-color]`, bukan
+                     * `transition-all`: yang terakhir ikut mengawasi SETIAP
+                     * properti yang mungkin berubah, sehingga peramban
+                     * memeriksa perubahan yang tidak pernah terjadi pada
+                     * setiap bingkai. Di sini hanya lebar dan warnanya yang
+                     * berpindah nilai.
+                     */
+                    className={`block h-1.5 rounded-full transition-[width,background-color] duration-300 ease-out ${
                       i === aktif
                         ? 'w-7 bg-gold'
                         : 'w-1.5 bg-white/50 group-hover:bg-white/80'

@@ -100,12 +100,12 @@ class EksporPengaduanTest extends TestCase
     {
         // Kategori sampai ke warga lewat prop bersama yang menyertai SETIAP
         // halaman publik — satu sumber untuk popup mengambang maupun halaman
-        // /pengaduan, sehingga keduanya tidak pernah menawarkan daftar berbeda.
+        // /layanan-mandiri/aduan, sehingga keduanya tak pernah beda daftar.
         $this->get('/')->assertOk()->assertInertia(
             fn ($page) => $page->where('kategori_pengaduan', Complaint::KATEGORI)
         );
 
-        $this->post('/pengaduan', [
+        $this->post('/layanan-mandiri/aduan', [
             'nama' => 'Warga Uji',
             'no_telepon_wa' => '081234567890',
             'kategori_pengaduan' => 'TRANTIBUM',
@@ -126,9 +126,44 @@ class EksporPengaduanTest extends TestCase
      */
     public function test_halaman_formulir_pengaduan_punya_alamat_sendiri(): void
     {
-        $this->get('/pengaduan')
+        $this->get('/layanan-mandiri/aduan')
             ->assertOk()
             ->assertInertia(fn ($page) => $page->component('Publik/Pengaduan/Ajukan'));
+    }
+
+    /**
+     * Alamat formulir yang lama.
+     *
+     * Halaman ini sempat berdiri di akar situs sebagai `/pengaduan` sebelum
+     * dipindahkan ke bawah /layanan-mandiri bersama layanan warga lain.
+     * Tautannya sudah terlanjur beredar di papan pengumuman dan WhatsApp grup
+     * RT, jadi alamat lama tidak boleh berubah menjadi 404.
+     */
+    public function test_alamat_formulir_lama_dialihkan_permanen(): void
+    {
+        $this->get('/pengaduan')
+            ->assertRedirect('/layanan-mandiri/aduan')
+            ->assertStatus(301);
+    }
+
+    /**
+     * POST ke alamat lama TIDAK dialihkan, melainkan ditolak 405.
+     *
+     * Sebuah 301 atas POST diubah peramban menjadi GET tanpa badan
+     * permintaan: warga akan melihat halaman formulir terbuka kembali seolah
+     * tidak terjadi apa-apa, padahal aduannya tidak pernah tersimpan.
+     * Penolakan yang terlihat jauh lebih baik daripada kehilangan yang diam.
+     */
+    public function test_pengiriman_ke_alamat_lama_tidak_diam_diam_hilang(): void
+    {
+        $this->post('/pengaduan', [
+            'nama' => 'Warga Uji',
+            'no_telepon_wa' => '081234567890',
+            'kategori_pengaduan' => 'TRANTIBUM',
+            'isi_pengaduan' => 'Aduan ini tidak boleh hilang tanpa jejak.',
+        ])->assertStatus(405);
+
+        $this->assertSame(0, Complaint::count());
     }
 
     public function test_alamat_lacak_lama_dialihkan_beserta_nomor_tiketnya(): void
@@ -145,13 +180,13 @@ class EksporPengaduanTest extends TestCase
 
     public function test_mengadu_mengarahkan_ke_halaman_lacak_beserta_tanda_terima(): void
     {
-        // POST /pengaduan HARUS tetap sampai ke controller, bukan tertelan
-        // pengalihan GET yang menempati alamat yang sama. Bila ia tertelan,
-        // popup "Aduan Warga" akan menjawab "berhasil" tanpa pernah menyimpan
-        // apa pun — kegagalan paling buruk yang mungkin terjadi di sini.
+        // POST /layanan-mandiri/aduan HARUS tetap sampai ke controller, bukan
+        // tertelan route GET yang menempati alamat yang sama. Bila ia
+        // tertelan, popup "Aduan Warga" akan menjawab "berhasil" tanpa pernah
+        // menyimpan apa pun — kegagalan paling buruk yang mungkin di sini.
         $this->assertSame(0, Complaint::count());
 
-        $this->post('/pengaduan', [
+        $this->post('/layanan-mandiri/aduan', [
             'nama' => 'Warga Uji',
             'no_telepon_wa' => '081234567890',
             'kategori_pengaduan' => 'PERUMAHAN',
@@ -171,7 +206,7 @@ class EksporPengaduanTest extends TestCase
 
     public function test_kategori_lama_ditolak_validasi(): void
     {
-        $this->post('/pengaduan', [
+        $this->post('/layanan-mandiri/aduan', [
             'nama' => 'Warga Uji',
             'no_telepon_wa' => '081234567890',
             'kategori_pengaduan' => 'Kebersihan',

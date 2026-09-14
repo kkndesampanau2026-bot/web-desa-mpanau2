@@ -9,7 +9,7 @@ import { FormAduan } from '@/Components/FormAduan'
  * warga yang menemukan persoalan di tengah membaca berita tidak perlu mencari
  * halaman formulir lebih dulu.
  *
- * Pintu masuk satunya adalah halaman `/pengaduan`, yang punya alamat sendiri
+ * Pintu masuk satunya adalah halaman `/layanan-mandiri/aduan`, yang punya alamat
  * dan karena itu dapat dibagikan lewat tautan. Keduanya memuat formulir yang
  * SAMA — `FormAduan` — bukan dua salinan yang harus dijaga tetap serupa.
  */

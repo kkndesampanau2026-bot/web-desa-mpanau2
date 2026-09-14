@@ -84,8 +84,20 @@ pun.** Yang dihapus:
 
   > **Dikembalikan (14 September 2026).** Atas permintaan pemilik produk,
   > kartu **"Kirim Aduan Warga"** berdiri lagi di Layanan Mandiri — berpasangan
-  > dengan kartu pelacakannya seperti layanan lain — dan **halaman
-  > `/pengaduan` hidup kembali** sebagai tujuannya.
+  > dengan kartu pelacakannya seperti layanan lain — dan **halaman formulirnya
+  > hidup kembali** sebagai tujuannya.
+  >
+  > **Alamatnya dipindahkan ke `/layanan-mandiri/aduan` (14 September 2026),**
+  > atas permintaan pemilik produk. Semula ia berdiri di akar situs sebagai
+  > `/pengaduan`, satu-satunya layanan warga yang tidak bersarang di bawah
+  > `/layanan-mandiri` — sisa dari masa ketika halaman ini memang berdiri
+  > sendiri. Kini ia sepola dengan Surat Pengantar: formulir dan pengirimannya
+  > (GET & POST) berbagi satu alamat, pelacakannya alamat tersendiri.
+  > `GET /pengaduan` dijawab **301** ke alamat baru, sebab tautannya sudah
+  > beredar di papan pengumuman dan WhatsApp grup RT. `POST /pengaduan`
+  > sengaja TIDAK dialihkan melainkan dibiarkan menjadi **405**: 301 atas POST
+  > diubah peramban menjadi GET tanpa badan permintaan, sehingga aduan warga
+  > akan lenyap tanpa pesan galat apa pun.
   >
   > Dua alasan penghapusan dulu ternyata meleset:
   >
@@ -119,11 +131,12 @@ Yang **tidak** dihapus, beserta alasannya:
   inilah satu-satunya pintu masuk pengaduan yang tetap ditawarkan, dan ia hadir
   di seluruh halaman publik termasuk Beranda. Karena itu prop bersama
   `kategori_pengaduan` pada `HandleInertiaRequests` juga tetap dikirim.
-- Route publik `/pengaduan` dan `/pengaduan/lacak`. Tidak ada tautan menu
-  menuju keduanya, tetapi popup di atas mengirim ke sana (server lalu
-  mengalihkan ke halaman tanda terima berisi nomor tiket), dan nomor tiket yang
-  terlanjur dipegang warga masih dapat dilacak lewat alamat yang sudah mereka
-  simpan.
+- Route publik pengiriman & pelacakan aduan — kini `POST
+  /layanan-mandiri/aduan` dan `GET /layanan-mandiri/lacak`. Popup mengambang
+  mengirim ke sana (server lalu mengalihkan ke halaman tanda terima berisi
+  nomor tiket), dan nomor tiket yang terlanjur dipegang warga tetap dapat
+  dilacak. Kedua alamat lamanya (`/pengaduan`, `/pengaduan/lacak`) dijawab
+  sebagai pengalihan permanen, lengkap dengan nomor tiket pada querystring.
 - Endpoint API lama `POST /api/v1/infografis/bansos/cek` beserta
   `BansosSearchService`, log pencariannya, dan layar pemantauan anomali di CMS.
   Seluruh lapisan `routes/api.php` memang dijadwalkan dihapus pada "Fase 5"

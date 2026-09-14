@@ -14,6 +14,8 @@ import {
   MapPin,
   MessageSquareWarning,
   Newspaper,
+  PanelLeftClose,
+  PanelLeftOpen,
   Settings,
   ShieldCheck,
   Store,
@@ -25,6 +27,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { tampilkanToast, WadahToast } from '@/Components/Admin/Toast'
+import { useKelasAnimasiHalaman } from '@/lib/animasi'
 import { punyaIzin, useHalaman, type PropsBersama } from '@/types/inertia'
 
 /**
@@ -121,6 +124,27 @@ const MENU: GrupMenu[] = [
 ]
 
 /**
+ * Preferensi lebar sidebar, per peramban.
+ *
+ * Operator yang bekerja di layar 13 inci hampir selalu menyempitkannya, dan
+ * memaksanya menekan tombol yang sama setiap kali masuk adalah gangguan kecil
+ * yang terulang ratusan kali. Disimpan lokal karena ini selera per perangkat,
+ * bukan atribut akun: laptop sempit dan monitor kantor pantas berbeda.
+ */
+const KUNCI_SIDEBAR = 'admin:sidebar-menyempit'
+
+function bacaPreferensiSidebar(): boolean {
+  // Mode penyamaran dan peramban yang memblokir data situs melempar galat di
+  // sini, bukan sekadar mengembalikan null. Halaman tidak boleh gagal dimuat
+  // hanya karena preferensi kosmetik tidak dapat dibaca.
+  try {
+    return localStorage.getItem(KUNCI_SIDEBAR) === '1'
+  } catch {
+    return false
+  }
+}
+
+/**
  * `judul` mengisi tab peramban, menjadi konteks pada breadcrumb topbar, dan
  * menghemat satu `<Head>` di tiap halaman: layar CMS mengembalikan satu elemen
  * akar (form atau div), sehingga menambahkan <Head> di dalamnya menuntut
@@ -143,6 +167,22 @@ export function LayoutAdmin({
 
   const [notifikasiTerbuka, setNotifikasiTerbuka] = useState(false)
   const notifikasiRef = useRef<HTMLDivElement>(null)
+
+  /*
+   * Dibaca sebagai nilai awal `useState`, BUKAN di dalam `useEffect`. Kalau
+   * lewat efek, render pertama selalu melebar lalu menyempit sesudahnya —
+   * sidebar berkedip setiap kali halaman dimuat, dan justru pada operator yang
+   * memilih menyempitkannya.
+   */
+  const [menyempit, setMenyempit] = useState(bacaPreferensiSidebar)
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(KUNCI_SIDEBAR, menyempit ? '1' : '0')
+    } catch {
+      // Penyimpanan ditolak peramban; pilihannya cukup berlaku sesi ini saja.
+    }
+  }, [menyempit])
 
   /*
    * Hasil simpan pada layar Inertia (Akun Saya, Banner, Akun Operator)
@@ -198,6 +238,7 @@ export function LayoutAdmin({
   // gulir tanpa membantu, karena seluruh item sudah terlihat sekaligus.
   const menuTampil = grupTampil.flatMap((g) => g.item)
   const jalur = url.split('?')[0]
+  const kelasAnimasi = useKelasAnimasiHalaman(jalur)
 
   function aktif(ke: string, ujung?: boolean) {
     return ujung ? jalur === ke : jalur === ke || jalur.startsWith(`${ke}/`)
@@ -209,12 +250,47 @@ export function LayoutAdmin({
     <div className="area-admin flex min-h-screen bg-[#f8f9ff]">
       {judul && <Head title={judul} />}
 
-      <aside className="hidden w-64 shrink-0 border-r border-slate-200 bg-white lg:flex lg:flex-col">
-        <div className="flex items-center gap-3 border-b border-slate-200 px-6 py-4">
-          <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-teal-600 text-white">
-            <Landmark className="size-5" aria-hidden="true" />
+      {/*
+        Sidebar ikut aliran halaman, BUKAN `fixed`.
+
+        Versi sebelumnya memakai panel melayang yang melebar saat disentuh
+        kursor: isi halaman tinggal diam sementara sidebar menutupinya, dan
+        gerakannya terbaca aneh karena dua hal yang bersebelahan bergerak
+        dengan aturan berbeda. Kini lebarnya saja yang berubah; `main` adalah
+        saudara flex-nya, sehingga ia menyusul dengan sendirinya dalam satu
+        gerakan yang sama.
+
+        Melebar-menyempitnya dikendalikan tombol di topbar, bukan kursor.
+        Dengan tata letak yang saling mendorong, pemicu sentuhan kursor berarti
+        seluruh tabel bergeser setiap kali tetikus melintas — persis kejanggalan
+        yang hendak diperbaiki.
+      */}
+      <aside
+        id="sidebar-admin"
+        className={`hidden shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-white transition-[width] duration-200 ease-out lg:flex ${
+          menyempit ? 'w-16' : 'w-64'
+        }`}
+      >
+        {/*
+          `py-3` menyamai topbar di sebelahnya, sehingga garis bawah keduanya
+          bersambung menjadi satu garis lurus. Teks namanya disembunyikan dengan
+          opacity dan tetap memakan tinggi, jadi barisnya tidak berubah tinggi
+          saat menyempit.
+        */}
+        <div className="flex shrink-0 items-center gap-3 border-b border-slate-200 px-4 py-3">
+          <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-teal-600 text-white">
+            <Landmark className="size-4.5" aria-hidden="true" />
           </span>
-          <span className="min-w-0">
+          {/*
+            Nama tetap ada di DOM saat menyempit — pembaca layar tidak melihat
+            lebar panel dan tetap perlu tahu bagian apa ini. Yang disembunyikan
+            hanya tampakannya.
+          */}
+          <span
+            className={`min-w-0 whitespace-nowrap transition-opacity duration-200 ${
+              menyempit ? 'opacity-0' : 'opacity-100'
+            }`}
+          >
             <span className="block font-bold tracking-tight text-teal-700">Dashboard Desa</span>
             <span className="block text-xs font-semibold text-slate-500">
               Sistem Informasi Desa
@@ -222,11 +298,24 @@ export function LayoutAdmin({
           </span>
         </div>
 
-        <nav aria-label="Navigasi dashboard" className="flex-1 space-y-5 overflow-y-auto p-3">
+        <nav
+          aria-label="Navigasi dashboard"
+          className="gulir-menu flex-1 space-y-5 overflow-x-hidden overflow-y-auto p-2"
+        >
           {grupTampil.map((grup, i) => (
             <div key={grup.judul ?? `grup-${i}`} className="space-y-1">
+              {/*
+                Judul grup tetap memakan tingginya walau tak terbaca saat
+                menyempit: itulah yang menjaga posisi tegak setiap ikon persis
+                sama sebelum dan sesudah melebar, sehingga ikon yang hendak
+                diklik tidak berpindah di bawah kursor.
+              */}
               {grup.judul && (
-                <p className="px-3 pb-1 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
+                <p
+                  className={`truncate px-3 pb-1 text-[11px] font-semibold tracking-wider text-slate-400 uppercase transition-opacity duration-200 ${
+                    menyempit ? 'opacity-0' : 'opacity-100'
+                  }`}
+                >
                   {grup.judul}
                 </p>
               )}
@@ -238,15 +327,26 @@ export function LayoutAdmin({
                   <Link
                     key={m.ke}
                     href={m.ke}
+                    // Tooltip hanya berguna selagi labelnya tak terbaca; saat
+                    // melebar ia cuma mengulang teks yang sudah terlihat.
+                    title={menyempit ? m.label : undefined}
                     aria-current={ini ? 'page' : undefined}
-                    className={`flex items-center gap-3 rounded-lg py-2.5 text-sm font-medium transition ${
+                    className={`flex items-center gap-3 rounded-lg py-2.5 pr-3 text-sm font-medium transition-colors ${
+                      // Lebar garis penanda dikurangkan dari padding kirinya
+                      // supaya ikon item aktif sebaris dengan yang lain.
                       ini
-                        ? 'border-l-4 border-teal-700 bg-teal-600/10 pr-3 pl-3 text-teal-700'
-                        : 'px-3 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                        ? 'border-l-4 border-teal-700 bg-teal-600/10 pl-2 text-teal-700'
+                        : 'pl-3 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                     }`}
                   >
-                    <m.ikon className="size-[18px] shrink-0" aria-hidden="true" />
-                    {m.label}
+                    <m.ikon className="size-4.5 shrink-0" aria-hidden="true" />
+                    <span
+                      className={`truncate transition-opacity duration-200 ${
+                        menyempit ? 'opacity-0' : 'opacity-100'
+                      }`}
+                    >
+                      {m.label}
+                    </span>
                   </Link>
                 )
               })}
@@ -259,6 +359,29 @@ export function LayoutAdmin({
         <header className="border-b border-slate-200 bg-white">
           <div className="flex items-center justify-between gap-4 px-6 py-3">
             <div className="flex min-w-0 items-center gap-2">
+              {/*
+                Tombol lebar sidebar. Ditaruh di topbar, bukan menempel pada
+                sidebarnya: saat menyempit, lebarnya tinggal 4rem dan harus
+                dibagi dengan logo, sehingga tombol di sana menjadi sasaran
+                sempit yang berpindah tempat mengikuti keadaannya sendiri. Di
+                sini letaknya tetap, seberapa pun lebar sidebarnya.
+              */}
+              <button
+                type="button"
+                onClick={() => setMenyempit((m) => !m)}
+                aria-expanded={!menyempit}
+                aria-controls="sidebar-admin"
+                aria-label={menyempit ? 'Lebarkan sidebar' : 'Kecilkan sidebar'}
+                title={menyempit ? 'Lebarkan sidebar' : 'Kecilkan sidebar'}
+                className="hidden rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 lg:inline-flex"
+              >
+                {menyempit ? (
+                  <PanelLeftOpen className="size-5" aria-hidden="true" />
+                ) : (
+                  <PanelLeftClose className="size-5" aria-hidden="true" />
+                )}
+              </button>
+
               <span className="hidden text-sm text-slate-500 sm:inline">Dashboard Admin</span>
               <span className="hidden text-slate-300 sm:inline" aria-hidden="true">
                 ›
@@ -448,7 +571,16 @@ export function LayoutAdmin({
           </nav>
         </header>
 
-        <main className="flex-1 p-6">{children}</main>
+        {/*
+          `key={jalur}` memasang ulang simpulnya saat alamat berubah, sehingga
+          animasinya berjalan lagi — layout ini persisten, jadi tanpa kunci itu
+          animasi hanya bermain sekali seumur sesi. Querystring sengaja tidak
+          ikut: `?buka=12` pada layar Pengaduan membuka satu aduan di tempat,
+          bukan berpindah halaman.
+        */}
+        <main key={jalur} className={`flex-1 p-6 ${kelasAnimasi}`}>
+          {children}
+        </main>
       </div>
 
       {/*

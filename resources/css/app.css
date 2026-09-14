@@ -164,6 +164,21 @@ h3 {
 }
 
 /*
+ * Daftar menu sidebar dashboard, yang menggulir tegak bila menunya lebih
+ * panjang dari layar. Bilah gulirnya disembunyikan karena sidebar itu menyempit
+ * menjadi rel selebar 4rem saat kursor tidak di atasnya: bilah gulir setebal
+ * ~15px di sana memakan seperempat lebarnya dan menggeser seluruh ikon. Gulir
+ * roda tetikus dan papan ketik tetap berfungsi seperti biasa.
+ */
+.gulir-menu {
+  scrollbar-width: none;
+}
+
+.gulir-menu::-webkit-scrollbar {
+  display: none;
+}
+
+/*
  * Dashboard CMS mewarisi reset yang sama tetapi bukan bahasa visualnya:
  * huruf serif pada judul tabel data justru memperlambat pemindaian mata.
  */
@@ -207,12 +222,67 @@ h3 {
   animation: toast-masuk 0.18s ease-out;
 }
 
-/* Pengunjung yang meminta gerak dikurangi tetap melihat keduanya muncul,
-   hanya tanpa perpindahan posisi. */
+/*
+ * Pergantian halaman.
+ *
+ * Inertia menukar isi `<main>` seketika, sehingga perpindahan halaman terbaca
+ * sebagai kedipan: satu halaman lenyap dan halaman lain sudah ada di tempatnya
+ * tanpa apa pun yang menghubungkan keduanya. Bilah kemajuan emas di tepi atas
+ * menjelaskan penantiannya, tetapi tidak menjelaskan kedatangannya.
+ *
+ * Hanya `opacity` dan `transform` yang digerakkan — keduanya dikerjakan
+ * compositor tanpa menghitung ulang tata letak, jadi tidak ada biaya bagi
+ * halaman panjang seperti Infografis. Sengaja pendek (0,22 detik): animasi
+ * pergantian halaman ditonton berkali-kali dalam satu kunjungan, dan yang
+ * terasa elegan pada kali pertama menjadi lambat pada kali kesepuluh.
+ */
+@keyframes halaman-masuk {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+.animasi-halaman {
+  animation: halaman-masuk 0.22s ease-out;
+}
+
+/*
+ * Gerak dikurangi — berlaku untuk SELURUH situs, bukan hanya dialog & toast.
+ *
+ * "prefers-reduced-motion" bukan soal selera. Ia dinyalakan orang yang
+ * mengalami pusing, mual, atau vertigo oleh gerak di layar; sistem operasi
+ * menyediakan sakelarnya justru supaya satu setelan cukup untuk semua situs.
+ * Sebelum ini hanya dua kelas animasi yang menghormatinya, sementara puluhan
+ * transisi dan — yang paling berdampak — `scroll-behavior: smooth` di atas
+ * tetap berjalan. Gulir halus adalah pemicu vestibular yang paling sering
+ * disebut: satu ketukan tautan anchor menggeser seluruh layar.
+ *
+ * Dinolkan sebagai 0,01ms, BUKAN `none`. Transisi yang benar-benar
+ * ditiadakan tidak pernah memicu `transitionend`, sehingga kode yang menunggu
+ * peristiwa itu menggantung selamanya. Durasi yang tak terlihat mata tetap
+ * menyelesaikan siklusnya dengan benar.
+ *
+ * `!important` memang tumpul, tetapi di sinilah tempatnya: aturan ini harus
+ * mengalahkan setiap utilitas Tailwind yang menyetel durasi pada elemennya
+ * sendiri, dan utilitas semacam itu tersebar di puluhan berkas.
+ */
 @media (prefers-reduced-motion: reduce) {
-  .animasi-dialog,
-  .animasi-toast {
-    animation: none;
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    /* Menghentikan animasi berulang — denyut, putaran memuat — agar tidak
+       terus bergerak di sudut layar sepanjang halaman dibuka. */
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
   }
 }
 

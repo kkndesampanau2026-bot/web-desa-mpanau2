@@ -96,6 +96,46 @@ class VisitorTracker
         );
     }
 
+    /**
+     * Deret kunjungan harian untuk grafik tren dashboard — PRD 5.20.
+     *
+     * Hari tanpa kunjungan TIDAK punya baris di `visitor_daily_summary`.
+     * Mengirim apa adanya membuat grafik melompati hari-hari sepi dan menarik
+     * garis lurus di atasnya, sehingga pekan yang sepi justru terbaca ramai.
+     * Karena itu rentangnya dibangun lebih dulu secara lengkap, lalu diisi.
+     *
+     * @param  int  $hari  Banyaknya hari ke belakang, termasuk hari ini.
+     * @return list<array{tanggal: string, jumlah: int}>
+     */
+    public function tren(int $hari = 30, ?int $villageId = null): array
+    {
+        $mulai = today()->subDays($hari - 1);
+
+        $terkumpul = VisitorDailySummary::query()
+            ->when($villageId, fn ($q) => $q->where('village_id', $villageId))
+            ->where('tanggal', '>=', $mulai->toDateString())
+            ->groupBy('tanggal')
+            ->pluck(DB::raw('SUM(jumlah_unique_visit)'), 'tanggal')
+            ->mapWithKeys(fn ($jumlah, $tanggal) => [
+                // Kolomnya di-cast ke date, sehingga kuncinya dapat kembali
+                // sebagai "2026-09-14 00:00:00" tergantung driver.
+                Carbon::parse($tanggal)->toDateString() => (int) $jumlah,
+            ]);
+
+        $deret = [];
+
+        for ($i = 0; $i < $hari; $i++) {
+            $tanggal = $mulai->copy()->addDays($i)->toDateString();
+
+            $deret[] = [
+                'tanggal' => $tanggal,
+                'jumlah' => $terkumpul[$tanggal] ?? 0,
+            ];
+        }
+
+        return $deret;
+    }
+
     private function jumlahAntara(?int $villageId, Carbon $dari, Carbon $sampai): int
     {
         return (int) VisitorDailySummary::query()

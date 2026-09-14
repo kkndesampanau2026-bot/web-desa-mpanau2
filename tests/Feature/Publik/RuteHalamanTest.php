@@ -68,7 +68,7 @@ class RuteHalamanTest extends TestCase
             'ppid permohonan' => ['/ppid/permintaan', 'Publik/Ppid/Permohonan'],
             'ppid lacak' => ['/ppid/permintaan/lacak', 'Publik/Ppid/Lacak'],
             'layanan mandiri' => ['/layanan-mandiri', 'Publik/LayananMandiri'],
-            'kirim aduan' => ['/pengaduan', 'Publik/Pengaduan/Ajukan'],
+            'kirim aduan' => ['/layanan-mandiri/aduan', 'Publik/Pengaduan/Ajukan'],
             'lacak aduan' => ['/layanan-mandiri/lacak', 'Publik/Pengaduan/Lacak'],
             'peta' => ['/listing', 'Publik/Peta/Listing'],
         ];

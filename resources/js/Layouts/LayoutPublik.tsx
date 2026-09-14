@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from '@inertiajs/react'
 import { Clock, Mail, MapPin, Menu, Phone, X } from 'lucide-react'
+import { useKelasAnimasiHalaman } from '@/lib/animasi'
 import { useHalaman } from '@/types/inertia'
 import { GAYA_WADAH } from '@/Components/ui'
 import { MenuAksesibilitas } from '@/Components/MenuAksesibilitas'
@@ -82,6 +83,8 @@ export function LayoutPublik({ children }: { children: ReactNode }) {
   const { props, url } = useHalaman()
   const pengaturan = props.pengaturan
   const [menuTerbuka, setMenuTerbuka] = useState(false)
+  const jalur = url.split('?')[0]
+  const kelasAnimasi = useKelasAnimasiHalaman(jalur)
 
   // Menu ponsel ditutup setiap kali berpindah halaman; membiarkannya terbuka
   // akan menutupi konten yang baru saja dituju pengunjung.
@@ -227,7 +230,16 @@ export function LayoutPublik({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <main id="konten-utama">{children}</main>
+      {/*
+        `key={jalur}` yang memicu animasinya: React membuang simpul lama dan
+        memasang yang baru saat alamatnya berubah, sehingga `animation` berjalan
+        lagi. Tanpa itu animasi hanya bermain sekali seumur kunjungan, sebab
+        layout ini persisten dan `<main>`-nya tidak pernah dipasang ulang.
+        Lihat `useKelasAnimasiHalaman` untuk alasan muat pertama dilewati.
+      */}
+      <main key={jalur} id="konten-utama" className={kelasAnimasi}>
+        {children}
+      </main>
 
       {/*
         Footer mengikuti konten, tidak didorong ke dasar layar. Ruang sisa di

@@ -4,8 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\News;
 use App\Models\Potential;
-use App\Models\Product;
-use App\Models\TourismSpot;
 use App\Models\Village;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -37,7 +35,7 @@ class SitemapTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertHeader('Content-Type', 'application/xml; charset=utf-8');
-        
+
         $content = $response->getContent();
         $this->assertStringContainsString('<?xml version="1.0" encoding="UTF-8"?>', $content);
         $this->assertStringContainsString('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">', $content);
@@ -45,5 +43,28 @@ class SitemapTest extends TestCase
         $this->assertStringContainsString('/potensi/potensi-uji-sitemap', $content);
         $this->assertStringContainsString('/infografis/penduduk', $content);
         $this->assertStringContainsString('/profil', $content);
+    }
+
+    /**
+     * Layanan warga ikut terdaftar, di alamatnya yang sekarang.
+     *
+     * Formulir aduan pindah dari `/pengaduan` ke `/layanan-mandiri/aduan`
+     * (DEVIASI §A5). Sitemap adalah tempat paling mudah tertinggal saat sebuah
+     * alamat berpindah — tidak ada yang membukanya sehari-hari, sehingga
+     * kekeliruannya baru ketahuan dari laporan Search Console berbulan-bulan
+     * kemudian.
+     */
+    public function test_sitemap_memuat_alamat_layanan_warga_yang_berlaku(): void
+    {
+        Village::factory()->create();
+
+        $content = $this->get('/sitemap.xml')->assertOk()->getContent();
+
+        $this->assertStringContainsString('/layanan-mandiri/aduan', $content);
+        $this->assertStringContainsString('/layanan-mandiri/surat-pengantar', $content);
+
+        // Alamat lama hanya boleh hidup sebagai pengalihan, bukan sebagai
+        // alamat yang ditawarkan sendiri kepada mesin pencari.
+        $this->assertStringNotContainsString('<loc>'.url('/pengaduan').'</loc>', $content);
     }
 }

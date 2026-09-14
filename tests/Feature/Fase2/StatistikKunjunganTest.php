@@ -3,7 +3,9 @@
 namespace Tests\Feature\Fase2;
 
 use App\Models\Village;
+use App\Models\VisitorDailySummary;
 use App\Models\VisitorLog;
+use App\Services\VisitorTracker;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
@@ -90,5 +92,76 @@ class StatistikKunjunganTest extends TestCase
         $this->getJson('/api/v1/visitor-stats')->assertOk();
 
         $this->assertSame(0, VisitorLog::count());
+    }
+
+    // -----------------------------------------------------------------
+    // Deret tren untuk grafik dashboard — PRD 5.20
+    // -----------------------------------------------------------------
+
+    /**
+     * Hari tanpa kunjungan tidak punya baris di `visitor_daily_summary`.
+     *
+     * Kalau deretnya dikirim apa adanya, grafik akan menarik garis lurus
+     * melewati hari-hari sepi itu — dan pekan paling sunyi justru terbaca
+     * paling ramai. Inilah kesalahan yang dijaga pengujian ini.
+     */
+    public function test_tren_mengisi_hari_tanpa_kunjungan_dengan_nol(): void
+    {
+        $desa = Village::where('slug', 'desa-uji')->firstOrFail();
+
+        VisitorDailySummary::create([
+            'village_id' => $desa->id,
+            'tanggal' => today()->subDays(5)->toDateString(),
+            'jumlah_unique_visit' => 12,
+        ]);
+        VisitorDailySummary::create([
+            'village_id' => $desa->id,
+            'tanggal' => today()->toDateString(),
+            'jumlah_unique_visit' => 3,
+        ]);
+
+        $tren = app(VisitorTracker::class)->tren(7, $desa->id);
+
+        $this->assertCount(7, $tren, 'Rentangnya selalu utuh, bukan hanya hari yang berisi.');
+        $this->assertSame(
+            [0, 12, 0, 0, 0, 0, 3],
+            array_column($tren, 'jumlah')
+        );
+
+        $this->assertSame(today()->subDays(6)->toDateString(), $tren[0]['tanggal']);
+        $this->assertSame(today()->toDateString(), $tren[6]['tanggal']);
+    }
+
+    public function test_tren_tidak_mencampur_kunjungan_desa_lain(): void
+    {
+        $desa = Village::where('slug', 'desa-uji')->firstOrFail();
+        $desaLain = Village::create([
+            'nama' => 'Desa Lain', 'slug' => 'desa-lain', 'is_active' => true,
+        ]);
+
+        VisitorDailySummary::create([
+            'village_id' => $desa->id,
+            'tanggal' => today()->toDateString(),
+            'jumlah_unique_visit' => 4,
+        ]);
+        VisitorDailySummary::create([
+            'village_id' => $desaLain->id,
+            'tanggal' => today()->toDateString(),
+            'jumlah_unique_visit' => 99,
+        ]);
+
+        $tren = app(VisitorTracker::class)->tren(3, $desa->id);
+
+        $this->assertSame(4, $tren[2]['jumlah']);
+    }
+
+    public function test_tren_rentang_sepi_tetap_menghasilkan_deret_penuh_bernilai_nol(): void
+    {
+        $desa = Village::where('slug', 'desa-uji')->firstOrFail();
+
+        $tren = app(VisitorTracker::class)->tren(30, $desa->id);
+
+        $this->assertCount(30, $tren);
+        $this->assertSame(0, array_sum(array_column($tren, 'jumlah')));
     }
 }

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AkunController;
 use App\Http\Controllers\Admin\BannerController;
+use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EksporPengaduanController;
 use App\Http\Controllers\Admin\LampiranPengaduanController;
 use App\Http\Controllers\Admin\PenggunaController;
@@ -152,24 +153,31 @@ Route::middleware('catat.kunjungan')->group(function () {
     | dikembalikan atas permintaan pemilik produk (docs/DEVIASI.md §A5).
     | Formulirnya sendiri tetap satu: `Components/FormAduan`.
     |
-    | Pelacakannya tinggal di bawah /layanan-mandiri bersama layanan warga
-    | lain, sedangkan POST /pengaduan (pengiriman aduan) tetap di alamat lama.
+    | Formulir dan pelacakannya sama-sama bersarang di bawah /layanan-mandiri,
+    | mengikuti pola Surat Pengantar: seluruh layanan warga berdiri pada satu
+    | cabang alamat, tidak ada lagi satu layanan yang tinggal sendirian di akar
+    | situs. Pengiriman aduan (POST) menempati alamat yang sama dengan
+    | formulirnya, juga sepola dengan Surat Pengantar.
     */
-    Route::get('/pengaduan', [PengaduanController::class, 'formulir'])
+    Route::get('/layanan-mandiri/aduan', [PengaduanController::class, 'formulir'])
         ->name('pengaduan.ajukan');
 
     Route::get('/layanan-mandiri/lacak', [PengaduanController::class, 'lacak'])
         ->name('pengaduan.lacak');
 
     /*
-    | Alamat lacak yang lama. Nomor tiket beredar bersama tautannya — tersalin
-    | ke WhatsApp, tercatat di buku agenda desa — jadi ia tetap dijawab sebagai
-    | pengalihan permanen alih-alih berubah menjadi 404.
+    | Alamat-alamat lama. Keduanya beredar di luar kendali kami — tertempel di
+    | papan pengumuman, tersalin ke WhatsApp grup RT, tercatat di buku agenda
+    | desa — jadi keduanya dijawab sebagai pengalihan permanen alih-alih
+    | berubah menjadi 404. Nomor tiket ikut dibawa serta: membuangnya saat
+    | mengalihkan memaksa warga mengetik ulang tiket yang sudah di tangannya.
     |
     | `Route::get`, BUKAN `Route::redirect`: yang terakhir mendaftarkan route
-    | untuk SEMUA method, termasuk POST — dan POST ke alamat pengaduan adalah
-    | endpoint pengiriman aduan yang sesungguhnya.
+    | untuk SEMUA method, termasuk POST. Sebuah POST yang dijawab 301 diubah
+    | peramban menjadi GET tanpa badan permintaan — aduan warga lenyap tanpa
+    | pesan galat apa pun, kegagalan paling buruk yang mungkin terjadi di sini.
     */
+    Route::get('/pengaduan', fn () => redirect('/layanan-mandiri/aduan', 301));
 
     Route::get(
         '/pengaduan/lacak',
@@ -231,7 +239,14 @@ Route::post('/ppid/permintaan', [PpidController::class, 'ajukanPermohonan'])
 
 // Pengaduan menerima unggahan berkas, sehingga batasnya lebih ketat —
 // formulir ini jalur termudah untuk membanjiri penyimpanan server.
-Route::post('/pengaduan', [PengaduanController::class, 'ajukan'])
+//
+// Sealamat dengan formulirnya (GET /layanan-mandiri/aduan). Alamat lamanya,
+// POST /pengaduan, sengaja TIDAK disediakan pengalihan: 301 atas sebuah POST
+// diubah peramban menjadi GET tanpa badan permintaan, sehingga aduan warga
+// akan lenyap diam-diam. Jawaban 405 jauh lebih baik daripada kehilangan
+// yang tidak terlihat — dan tidak ada formulir tersimpan yang masih menuju
+// ke sana, sebab halamannya selalu dirender ulang dari server.
+Route::post('/layanan-mandiri/aduan', [PengaduanController::class, 'ajukan'])
     ->middleware('throttle:3,1')
     ->name('pengaduan.kirim');
 
@@ -305,7 +320,13 @@ Route::post('/admin/keluar', [LoginController::class, 'keluar'])
 | menyembunyikan tautan bukan kontrol akses (PRD 12.2).
 */
 Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/', fn () => Inertia::render('Admin/Dashboard'))->name('dashboard');
+    /*
+    | Beranda dashboard. Tanpa `permission:` tersendiri — siapa pun yang boleh
+    | masuk boleh melihatnya; isinya sendiri yang menyaring diri per izin di
+    | dalam controller, sehingga operator hanya membaca angka modul yang
+    | memang menjadi kewenangannya.
+    */
+    Route::get('/', DashboardController::class)->name('dashboard');
 
     /*
     | Tiap layar dijaga permission-nya masing-masing. Menyembunyikan menu di
